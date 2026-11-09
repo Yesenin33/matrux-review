@@ -1,0 +1,22 @@
+
+# подпись выпуска
+keystore.properties
+*.jks
+*.keystore
+
+# образы и архивы (гигабайты, в git не нужны)
+backend/data/images/
+backend/data/*.sqlite3*
+image-build/*rootfs/
+*.tar.zst
+
+# сборка и артефакты
+build/
+app/build/
+.gradle/
+dist/
+art/
+stand/
+local.properties
+cc-*.log
+docs/*-run.json

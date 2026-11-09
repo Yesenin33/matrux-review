@@ -1,0 +1,20 @@
+(320/327) Installing font-alias (1.0.5-r0)
+(321/327) Installing util-macros (1.20.0-r0)
+(322/327) Installing font-cursor-misc (1.0.4-r1)
+(323/327) Installing font-misc-misc (1.1.3-r1)
+(324/327) Installing xkbcomp (1.5.0-r0)
+(325/327) Installing xorg-server-common (21.1.14-r0)
+(326/327) Installing libxfont2 (2.0.6-r4)
+(327/327) Installing xvfb (21.1.14-r0)
+Executing busybox-1.36.1-r29.trigger
+Executing ca-certificates-20261020-r0.trigger
+Executing dbus-1.14.10-r1.trigger
+Executing glib-2.80.5-r0.trigger
+Executing fontconfig-2.15.0-r1.trigger
+Executing shared-mime-info-2.4-r0.trigger
+Executing gdk-pixbuf-2.42.12-r0.trigger
+Executing gtk-update-icon-cache-3.24.43-r0.trigger
+Executing gtk+3.0-3.24.43-r0.trigger
+Executing desktop-file-utils-0.27-r0.trigger
+Executing mkfontscale-1.2.2-r6.trigger
+OK: 752 MiB in 341 packages

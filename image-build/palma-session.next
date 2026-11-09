@@ -1,0 +1,530 @@
+#!/bin/sh
+mode="${1:-vnc}"
+LOG=/tmp/palma-session.log
+: > "$LOG"
+: > /tmp/trace.log
+exec >>/tmp/trace.log 2>&1
+echo "BOOT $(date +%H:%M:%S 2>/dev/null) mode=$mode args=$*"
+
+export HOME=/root
+export USER=root
+export TMPDIR=/tmp
+export XDG_RUNTIME_DIR=/tmp/runtime-root
+export XDG_DATA_DIRS=/usr/local/share:/usr/share
+export XDG_CONFIG_DIRS=/etc/xdg
+export XDG_CACHE_HOME=/tmp/.cache
+export NO_AT_BRIDGE=1
+export GIO_USE_VFS=local
+export LANG=ru_RU.UTF-8
+export LC_MESSAGES=ru_RU.UTF-8
+mkdir -p "$XDG_RUNTIME_DIR" /tmp/.X11-unix "$XDG_CACHE_HOME"
+chmod 700 "$XDG_RUNTIME_DIR"
+chmod 1777 /tmp/.X11-unix
+
+PIDS_FILE=/tmp/palma-pids
+GEOMETRY="${PALMA_GEOMETRY:-1280x800}"
+case "$GEOMETRY" in
+  [0-9]*x[0-9]*) ;;
+  *) GEOMETRY=1280x800 ;;
+esac
+GW=${GEOMETRY%x*}
+GH=${GEOMETRY#*x}
+side_of() {
+  if [ "$2" -gt "$1" ] 2>/dev/null; then echo "$2"; else echo "$1"; fi
+}
+SIDE=$(side_of "$GW" "$GH")
+[ -n "$SIDE" ] || SIDE=1280
+SCREEN="${SIDE}x${SIDE}"
+NORESIZE=""
+
+say() {
+  line="matrux $(date +%H:%M:%S 2>/dev/null): $*"
+  echo "$line"
+  echo "$line" >> /tmp/trace.log
+}
+
+live() {
+  [ -n "$1" ] && [ -d "/proc/$1" ]
+}
+
+alive() {
+  live "$1" && echo "pid=$1" || echo none
+}
+
+
+
+
+lock_pid() {
+  [ -f "/tmp/.X$1-lock" ] || return 1
+  tr -d ' \n' < "/tmp/.X$1-lock" 2>/dev/null
+}
+
+
+own_display() {
+  pid=$(lock_pid "$1") || return 1
+  [ -n "$pid" ] && [ "$pid" = "$XPID" ]
+}
+
+desktop_up() {
+  if command -v xprop >/dev/null 2>&1; then
+    xprop -display "$DISP" -root _NET_SUPPORTING_WM_CHECK 2>/dev/null | grep -q "window id" && return 0
+    command -v xlsclients >/dev/null 2>&1 || return 1
+  fi
+  if command -v xlsclients >/dev/null 2>&1; then
+    xlsclients -display "$DISP" 2>/dev/null | grep -q xfce4-panel && return 0
+    return 1
+  fi
+  return 0
+}
+
+tune_panel() {
+  return 0
+}
+
+display_state() {
+  say "state desktop=$(desktop_up && echo yes || echo no) pid=$DESKPID alive=$(live "$DESKPID" && echo yes || echo no) display=$DISP"
+}
+
+VPORT="${PALMA_VNC_PORT:-5901}"
+XPID=""
+VPID=""
+DESKPID=""
+DISP=""
+FOUND=""
+VSTARTED=""
+
+track() {
+  [ -n "$1" ] && echo "$1" >> "$PIDS_FILE" 2>/dev/null
+}
+
+clean_leftovers() {
+  if [ -f "$PIDS_FILE" ]; then
+    for p in $(cat "$PIDS_FILE" 2>/dev/null); do
+      kill -9 "$p" 2>/dev/null
+    done
+    : > "$PIDS_FILE"
+  fi
+  for n in 0 1 2 3; do
+    pid=$(lock_pid "$n") || true
+    if [ -n "$pid" ] && [ "$pid" != "1" ]; then
+      kill -9 "$pid" 2>/dev/null
+    fi
+    rm -f "/tmp/.X$n-lock" "/tmp/.X11-unix/X$n" 2>/dev/null
+  done
+  sleep 0.3
+}
+
+wait_socket() {
+  i=0
+  while [ "$i" -lt 100 ]; do
+    if [ -S "/tmp/.X11-unix/X$1" ] && live "$XPID"; then sleep 1; return 0; fi
+    live "$XPID" || return 1
+    i=$((i + 1))
+    sleep 0.2
+  done
+  return 1
+}
+
+wait_port() {
+  i=0
+  while [ "$i" -lt 50 ]; do
+    live "$VPID" && return 0
+    i=$((i + 1))
+    sleep 0.2
+  done
+  return 1
+}
+
+start_vnc() {
+  VSTARTED=1
+  x11vnc -display "$1" -localhost -forever -shared -nopw -noshm -xrandr -defer 5 -rfbport "$VPORT" $2 -o /tmp/x11vnc.log >/dev/null 2>&1 &
+  track "$!"
+  VPID=$!
+}
+
+try_vnc() {
+  start_vnc "$1" ""
+  i=0
+  while [ "$i" -lt 10 ]; do
+    live "$VPID" || break
+    sleep 0.3
+    i=$((i + 1))
+  done
+  if ! live "$VPID"; then
+    say "x11vnc died on $1, retry"
+    start_vnc "$1" ""
+    sleep 1
+  fi
+  live "$VPID" || return 1
+  return 0
+}
+
+start_desktop() {
+  say "desktop start dbus-run-session xfce4-session (display $DISP)"
+  dbus-run-session -- xfce4-session >/tmp/xfce.log 2>&1 &
+  DESKPID=$!
+  track "$DESKPID"
+}
+
+kill_desktop() {
+  for p in "$VPID" "$DESKPID" "$XPID"; do
+    [ -n "$p" ] && kill -9 "$p" 2>/dev/null
+  done
+  for d in /proc/[0-9]*; do
+    case "$(cat "$d/comm" 2>/dev/null)" in
+      xfwm4|xfdesktop|xfce4-panel|xfce4-session|xfsettingsd|xfconfd|xfce4-notifyd|xfce4-power-man*) kill -9 "${d#/proc/}" 2>/dev/null ;;
+    esac
+  done
+  sleep 0.5
+}
+
+start_display() {
+  rm -f "/tmp/.X${DISP#:}-lock" "/tmp/.X11-unix/X${DISP#:}" "/tmp/xvfb-${DISP#:}.log" "/tmp/xvnc.log"
+  if command -v Xvnc >/dev/null 2>&1; then
+    say "Xvnc ${SCREEN} на $DISP"
+    Xvnc "$DISP" -geometry "$SCREEN" -depth 24 -rfbport "$VPORT" \
+      -SecurityTypes None -AlwaysShared -AcceptSetDesktopSize=1 -localhost=1 \
+      -nolisten tcp -desktop Matrux -noreset >/tmp/xvnc.log 2>&1 &
+    XPID=$!
+    VPID=$XPID
+    VSTARTED=1
+    track "$XPID"
+    wait_port || true
+    return 0
+  fi
+  Xvfb "$DISP" -screen 0 "${SCREEN}x24" -nolisten tcp -ac -noreset >"/tmp/xvfb-${DISP#:}.log" 2>&1 &
+  XPID=$!
+  track "$XPID"
+  wait_socket "${DISP#:}" || true
+  start_vnc "$DISP" ""
+  wait_port || true
+}
+
+root_size() {
+  if command -v xwininfo >/dev/null 2>&1; then
+    xwininfo -display "$DISP" -root 2>/dev/null | awk '/Width:/{w=$2} /Height:/{h=$2} END{if (w && h) print w "x" h}'
+  elif command -v xdpyinfo >/dev/null 2>&1; then
+    xdpyinfo -display "$DISP" 2>/dev/null | awk '/dimensions:/{print $2; exit}'
+  fi
+}
+
+size_is() {
+  s=$(root_size)
+  [ -z "$s" ] || [ "$s" = "$1" ]
+}
+
+first_output() {
+  xrandr -d "$DISP" -q 2>/dev/null | awk '$2 == "connected" {print $1; exit}'
+}
+
+fit_fb() {
+  command -v xrandr >/dev/null 2>&1 || return 1
+  want="$1x$2"
+  [ "$(root_size)" = "$want" ] && return 0
+  out=$(first_output)
+  if [ -n "$out" ]; then
+    if ! xrandr -d "$DISP" -q 2>/dev/null | grep -q "^ *$want "; then
+      xrandr -d "$DISP" --newmode "$want" 60 "$1" $(($1 + 8)) $(($1 + 16)) $(($1 + 24)) \
+        "$2" $(($2 + 1)) $(($2 + 2)) $(($2 + 3)) >/dev/null 2>&1
+      xrandr -d "$DISP" --addmode "$out" "$want" >/dev/null 2>&1
+    fi
+    xrandr -d "$DISP" --output "$out" --mode "$want" --fb "$want" >/dev/null 2>&1 && size_is "$want" && return 0
+  fi
+  xrandr -d "$DISP" --fb "$want" >/dev/null 2>&1
+  rc=$?
+  s=$(root_size)
+  [ -n "$s" ] || return "$rc"
+  [ "$s" = "$want" ]
+}
+
+settle_fb() {
+  [ -n "$NORESIZE" ] && return 0
+  live "$XPID" || return 0
+  wait_socket "${DISP#:}" || return 0
+  if fit_fb "$GW" "$GH"; then
+    say "framebuffer ${GW}x${GH} на экране $SCREEN"
+    return 0
+  fi
+  say "xrandr не меняет размер $SCREEN -> $GEOMETRY ($(root_size))"
+  return 1
+}
+
+exact_display() {
+  say "geometry fallback rebuild $GEOMETRY"
+  NORESIZE=1
+  SCREEN="$GEOMETRY"
+  for p in "$VPID" "$XPID"; do
+    [ -n "$p" ] && kill -9 "$p" 2>/dev/null
+  done
+  sleep 0.5
+  start_display
+}
+
+bring_display() {
+  start_display
+  settle_fb || exact_display
+}
+
+pid_of() {
+  for d in /proc/[0-9]*; do
+    [ "$(cat "$d/comm" 2>/dev/null)" = "$1" ] && echo "${d#/proc/}" && return 0
+  done
+  return 1
+}
+
+running() {
+  pid_of "$1" >/dev/null
+}
+
+session_bus() {
+  p=$(pid_of xfce4-session) || return 0
+  tr '\0' '\n' < "/proc/$p/environ" 2>/dev/null | sed -n 's/^DBUS_SESSION_BUS_ADDRESS=//p' | head -1
+}
+
+fit_desktop() {
+  [ -n "$UP" ] || return 0
+  command -v xfconf-query >/dev/null 2>&1 || return 0
+  bus=$(session_bus)
+  (
+    [ -n "$bus" ] && export DBUS_SESSION_BUS_ADDRESS="$bus"
+    export DISPLAY="$DISP"
+    sleep 0.5
+    for id in $(xfconf-query -c xfce4-panel -p /panels 2>/dev/null | grep -E '^[0-9]+$'); do
+      p="/panels/panel-$id"
+      xfconf-query -c xfce4-panel -p "$p/length" -n -t uint -s 99 >/dev/null 2>&1
+      xfconf-query -c xfce4-panel -p "$p/length" -n -t uint -s 100 >/dev/null 2>&1
+    done
+    if running xfdesktop; then
+      xfdesktop --reload >/dev/null 2>&1 &
+    fi
+    m=$(xfconf-query -c xfwm4 -p /general/margin_top 2>/dev/null)
+    case "$m" in
+      ''|*[!0-9]*) m=0 ;;
+    esac
+    xfconf-query -c xfwm4 -p /general/margin_top -n -t int -s $((m + 1)) >/dev/null 2>&1
+    xfconf-query -c xfwm4 -p /general/margin_top -n -t int -s "$m" >/dev/null 2>&1
+    sleep 0.5
+    area=$(xprop -display "$DISP" -root _NET_WORKAREA 2>/dev/null | sed 's/.*= //')
+    say "стол подогнан под $GEOMETRY, рабочая область ${area:-нет}"
+  )
+}
+
+rebuild_desktop() {
+  kill_desktop
+  reset_layout
+  tune_speed
+  bring_display
+}
+
+apply_geometry() {
+  RW=${1%x*}
+  RH=${1#*x}
+  need=$(side_of "$RW" "$RH")
+  if [ -z "$NORESIZE" ] && [ "$need" -le "$SIDE" ] && fit_fb "$RW" "$RH"; then
+    GEOMETRY="$1"
+    GW=$RW
+    GH=$RH
+    say "geometry $GEOMETRY через xrandr, стол не перезапускаю"
+    fit_desktop
+    return 0
+  fi
+  GEOMETRY="$1"
+  GW=$RW
+  GH=$RH
+  if [ -z "$NORESIZE" ] && [ "$need" -gt "$SIDE" ]; then
+    SIDE=$need
+    SCREEN="${SIDE}x${SIDE}"
+  else
+    NORESIZE=1
+    SCREEN="$GEOMETRY"
+  fi
+  RESTARTS=0
+  UP=""
+  say "geometry fallback rebuild $GEOMETRY, экран $SCREEN"
+  rebuild_desktop
+  say "geometry $GEOMETRY готово"
+}
+
+tune_speed() {
+  home="${HOME:-/root}"
+  dst="$home/.config/autostart"
+  mkdir -p "$dst" 2>/dev/null
+  for n in xfce4-power-manager xfce4-notifyd xfce4-screensaver light-locker xscreensaver \
+           gvfs-gphoto2-volume-monitor gvfs-afc-volume-monitor gvfs-metadata gvfsd-fuse \
+           gnome-keyring-ssh gnome-keyring-secrets blueman-applet; do
+    printf '[Desktop Entry]\nType=Application\nName=%s\nHidden=true\n' "$n" > "$dst/$n.desktop" 2>/dev/null
+  done
+  rm -f "$home/.config/xfce4/xfconf/xfce-perchannel-xml/thunar.xml" 2>/dev/null
+}
+
+tune_xfce() {
+  command -v xfconf-query >/dev/null 2>&1 || return 0
+  q() { xfconf-query -c "$1" -p "$2" -n -t "$3" -s "$4" >/dev/null 2>&1; }
+  q xfwm4 /general/use_compositing bool false
+  q xfwm4 /general/show_frame_shadow bool false
+  q xfwm4 /general/show_popup_shadow bool false
+  q xfwm4 /general/box_move bool false
+  q xfwm4 /general/box_resize bool false
+  q xfwm4 /general/cycle_draw_frame bool false
+  q xfwm4 /general/snap_to_border bool false
+  q xfwm4 /general/snap_to_windows bool false
+  q xfwm4 /general/wrap_resistance bool false
+  q xfwm4 /general/frame_opacity int 100
+  q xfwm4 /general/move_opacity int 100
+  q xfwm4 /general/resize_opacity int 100
+  q xfce4-panel /panels/panel-1/enter-opacity int 100
+  q xfce4-panel /panels/panel-1/leave-opacity int 100
+  for p in $(xfconf-query -c xfdesktop -l 2>/dev/null | grep -E '/(image-style|color-style)$|/show-image-thumbnails$'); do
+    case "$p" in
+      *image-style) xfconf-query -c xfdesktop -p "$p" -n -t int -s 5 >/dev/null 2>&1 ;;
+      *color-style) xfconf-query -c xfdesktop -p "$p" -n -t int -s 0 >/dev/null 2>&1 ;;
+      *show-image-thumbnails) xfconf-query -c xfdesktop -p "$p" -n -t string -s never >/dev/null 2>&1 ;;
+    esac
+  done
+}
+
+reset_layout() {
+  home="${HOME:-/root}"
+  dst="$home/.config/xfce4/xfconf/xfce-perchannel-xml"
+  mark="$home/.config/palma-defaults"
+  [ -f "$mark" ] && return 0
+  rm -f "$dst/xfce4-panel.xml" "$dst/xfce4-desktop.xml"
+  rm -rf "$home/.config/xfce4/panel"
+  rm -f "$home/.local/share/applications/xfce4-terminal.desktop"
+  rm -f "$home/.config/xfce4/terminal/terminalrc"
+  mkdir -p "$home/.config" 2>/dev/null
+  : >"$mark" 2>/dev/null
+}
+
+clean_leftovers
+reset_layout
+tune_speed
+
+if [ "$mode" = "x11" ]; then
+  rm -f /tmp/xvfb-0.log
+  Xvfb ":0" -screen 0 "${SCREEN}x24" -nolisten tcp -ac >/tmp/xvfb-0.log 2>&1 &
+  XPID=$!
+  wait_socket 0 || true
+  export DISPLAY=:0
+  exec dbus-run-session -- xfce4-session
+fi
+
+for d in 0 1 2; do
+  DISP=":$d"
+  start_display
+  if live "$XPID" && wait_port; then
+    FOUND=1
+    break
+  fi
+  say "display :$d не поднялся (xvfb=$(alive "$XPID"))"
+  kill -9 "$XPID" 2>/dev/null
+  XPID=""
+  VPID=""
+done
+
+if [ -z "$FOUND" ]; then
+  say "no listener on $VPORT xvfb=$(alive "$XPID") x11vnc=$(alive "$VPID") started=${VSTARTED:-no}"
+  for n in 0 1 2; do
+    [ -s "/tmp/xvfb-${n}.log" ] && tail -3 "/tmp/xvfb-${n}.log"
+  done
+  grep -iE "error|fail|cannot|unable|refus|fatal|denied|invalid|no such|in use" /tmp/x11vnc.log 2>/dev/null | tail -3
+  exit 1
+fi
+
+settle_fb || exact_display
+say "vnc listening on $VPORT display $DISP geometry $GEOMETRY"
+
+export DISPLAY="$DISP"
+
+if command -v setxkbmap >/dev/null 2>&1; then
+  setxkbmap -layout us,ru -option grp:alt_shift_toggle -option grp_led:scroll >/dev/null 2>&1 || true
+fi
+
+if command -v xrdb >/dev/null 2>&1; then
+  printf 'Xft.dpi: 96\nXft.antialias: 1\nXft.hinting: 1\nXft.rgba: rgb\nXcursor.size: 24\n' > /root/.Xresources
+  xrdb -merge /root/.Xresources
+fi
+
+RESTARTS=0
+UP=""
+WAITED=0
+rm -f /tmp/geometry-request
+
+start_desktop
+
+while :; do
+  if ! live "$XPID"; then
+    if [ "$RESTARTS" -lt 4 ]; then
+      RESTARTS=$((RESTARTS + 1))
+      say "xvfb lost, restart $RESTARTS"
+      kill -9 "$VPID" 2>/dev/null
+      bring_display
+      UP=""
+      continue
+    fi
+    say "xvfb lost, exit"
+    exit 1
+  fi
+
+  if ! live "$VPID"; then
+    say "x11vnc lost, restart"
+    VPID=""
+    start_vnc "$DISP" ""
+    wait_port || true
+    UP=""
+    continue
+  fi
+
+  if live "$DESKPID"; then
+    if [ -z "$UP" ] && desktop_up; then
+      UP=1
+      say "desktop up pid=$DESKPID"
+      tune_panel
+      tune_xfce
+    fi
+  else
+    if [ -n "$UP" ]; then
+      say "desktop lost"
+      UP=""
+    fi
+    if [ "$RESTARTS" -lt 40 ]; then
+      RESTARTS=$((RESTARTS + 1))
+      say "desktop restart $RESTARTS"
+      sleep 1
+      start_desktop
+    else
+      say "desktop restart limit reached"
+      display_state
+    fi
+  fi
+
+  if [ -z "$UP" ]; then
+    WAITED=$((WAITED + 1))
+    if [ "$WAITED" -eq 45 ]; then
+      say "desktop not up after 45s"
+      display_state
+      tail -3 "/tmp/xvfb-${DISP#:}.log" 2>/dev/null
+    fi
+  fi
+
+  if [ -f /tmp/geometry-request ]; then
+    REQ=$(tr -d ' \n' < /tmp/geometry-request 2>/dev/null)
+    rm -f /tmp/geometry-request
+    case "$REQ" in
+      [0-9]*x[0-9]*)
+        if [ "$REQ" != "$GEOMETRY" ]; then
+          RW=${REQ%x*}
+          RH=${REQ#*x}
+          case "$RW$RH" in
+            *[!0-9]*) ;;
+            *) if [ "$RW" -ge 320 ] 2>/dev/null && [ "$RH" -ge 320 ] 2>/dev/null; then
+                 apply_geometry "$REQ"
+                 continue
+               fi ;;
+          esac
+        fi ;;
+    esac
+  fi
+
+  sleep 2
+done

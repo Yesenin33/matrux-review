@@ -1,0 +1,30 @@
+#!/bin/sh
+LOG=/tmp/bwrap.log
+{ echo "=== $(date +%H:%M:%S) argv: $*"; } >>"$LOG" 2>&1
+
+CMD=""
+ARGS_AFTER=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --setenv)
+      case "$2" in
+        XDG_RUNTIME_DIR) mkdir -p /tmp/runtime-root; export "$2=/tmp/runtime-root"; ;;
+        HOME) export HOME=/root; ;;
+        *) export "$2=$3" ;;
+      esac
+      shift 3 ;;
+    --chdir|--ro-bind|--ro-bind-try|--bind|--bind-try|--dev-bind|--dev-bind-try|--symlink|--file|--dir) shift 2 ;;
+    --tmpfs|--proc|--dev|--seccomp|--size|--perms|--mqueue) shift 1 ;;
+    --unshare-all|--unshare-user|--unshare-pid|--unshare-net|--unshare-ipc|--unshare-uts|--unshare-cgroup|--die-with-parent|--clearenv|--new-session|--as-pid-1) shift 1 ;;
+    --*)
+      if [ -f "$1" ] && [ -x "$1" ]; then CMD="$1"; else shift 1; fi ;;
+    *)
+      if [ -f "$1" ] && [ -x "$1" ]; then CMD="$1"; shift; ARGS_AFTER="$*"; else shift 1; fi ;;
+  esac
+  [ -n "$CMD" ] && break
+done
+
+[ -n "$CMD" ] || { echo "=== команда не найдена" >>"$LOG"; exit 127; }
+echo "=== запускаю: $CMD $ARGS_AFTER" >>"$LOG"
+[ -n "$ARGS_AFTER" ] && exec "$CMD" $ARGS_AFTER
+exec "$CMD"

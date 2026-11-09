@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Palma — админка</title>
+<link rel="preload" href="/admin/fonts/inter-cyrillic.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{
+  font-family:Inter;font-style:normal;font-weight:100 900;font-display:swap;
+  src:url(/admin/fonts/inter-cyrillic.woff2) format("woff2");
+  unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+@font-face{
+  font-family:Inter;font-style:normal;font-weight:100 900;font-display:swap;
+  src:url(/admin/fonts/inter-latin.woff2) format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+:root{
+  --canvas:#f5f5f7; --surface:#ffffff; --surface-alt:#fafafa;
+  --ink:#1d1d1f; --ink-soft:#515154; --muted:#6e6e73;
+  --accent:#0071e3; --accent-press:#0062c4; --accent-tint:#eaf2fd;
+  --success:#1d8a4e; --warning:#b25000; --hairline:#d2d2d7; --danger:#d70015;
+  --r-card:20px; --r-ctl:12px; --r-pill:999px;
+  --shadow:0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --t-fast:180ms; --t-mid:260ms;
+  --font:Inter,-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:var(--canvas)}
+body{
+  font:400 15px/22px var(--font);color:var(--ink);background:var(--canvas);
+  -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;
+  padding:48px 20px 72px;
+}
+main{max-width:640px;margin:0 auto}
+[hidden]{display:none !important}
+.view{animation:enter var(--t-mid) var(--ease) both}
+@keyframes enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+h1{font-size:32px;line-height:36px;font-weight:600;letter-spacing:-.02em}
+h2{font-size:20px;line-height:26px;font-weight:600;letter-spacing:-.01em}
+.lead{margin-top:8px;color:var(--muted)}
+.caption{font-size:12px;line-height:16px;color:var(--muted)}
+.ink-soft{color:var(--ink-soft)}
+.warn{color:var(--warning)}
+.error{color:var(--danger);font-size:12px;line-height:16px;margin-top:8px}
+.error:empty{display:none}
+code{font:inherit}
+
+.card{background:var(--surface);border-radius:var(--r-card);box-shadow:var(--shadow);padding:20px;margin-top:24px}
+
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.stats{margin-top:8px;color:var(--muted)}
+.stats span{white-space:nowrap}
+
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
+.fields .wide{grid-column:1 / -1}
+@media (max-width:520px){.fields{grid-template-columns:1fr}}
+.field label,.field .label{display:block;font-size:12px;line-height:16px;color:var(--ink-soft);margin-bottom:8px}
+.input{
+  -webkit-appearance:none;appearance:none;display:block;width:100%;height:56px;
+  border:0;border-radius:var(--r-ctl);background:var(--canvas);color:var(--ink);
+  padding:0 16px;font:400 15px/22px var(--font);outline:none;
+}
+.input::placeholder{color:var(--muted);opacity:1}
+.input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.input:-webkit-autofill{-webkit-box-shadow:0 0 0 56px var(--canvas) inset;-webkit-text-fill-color:var(--ink)}
+
+.file{position:relative}
+.file input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.file .face{
+  display:flex;align-items:center;gap:12px;height:56px;padding:0 16px;
+  border-radius:var(--r-ctl);background:var(--canvas);color:var(--ink-soft);
+}
+.file .face span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file .face.chosen{color:var(--ink)}
+.file input:focus-visible + .face{outline:2px solid var(--accent);outline-offset:2px}
+
+.field label.check{display:flex;align-items:center;gap:12px;min-height:56px;margin:0;cursor:pointer;position:relative;font-size:15px;line-height:22px;color:var(--ink)}
+.check input{position:absolute;opacity:0;width:24px;height:24px;margin:0}
+.check .box{
+  width:24px;height:24px;border-radius:var(--r-ctl);background:var(--canvas);
+  display:flex;align-items:center;justify-content:center;flex:0 0 auto;color:var(--surface);
+}
+.check .box svg{opacity:0;transform:scale(.6);transition:opacity var(--t-fast) var(--ease),transform var(--t-fast) var(--ease)}
+.check input:checked + .box{background:var(--ink)}
+.check input:checked + .box svg{opacity:1;transform:none}
+.check input:focus-visible + .box{outline:2px solid var(--accent);outline-offset:2px}
+
+.ico{width:20px;height:20px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+
+.btn{
+  -webkit-appearance:none;appearance:none;display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;height:56px;margin-top:24px;border:0;border-radius:var(--r-ctl);
+  background:var(--accent);color:var(--surface);font:600 15px/22px var(--font);letter-spacing:-.01em;
+  cursor:pointer;transition:transform var(--t-fast) var(--ease),opacity var(--t-fast) var(--ease);
+}
+.btn:active{background:var(--accent-press);transform:scale(.98)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn[disabled]{opacity:.48;cursor:default;transform:none}
+
+.text-btn{
+  -webkit-appearance:none;appearance:none;display:inline-flex;align-items:center;gap:8px;
+  min-height:48px;padding:0 12px;border:0;border-radius:var(--r-ctl);background:transparent;
+  color:var(--ink-soft);font:400 15px/22px var(--font);cursor:pointer;
+  transition:opacity var(--t-fast) var(--ease);
+}
+.text-btn:hover{opacity:.72}
+.text-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.text-btn.danger{color:var(--danger)}
+.head .text-btn{margin-right:-12px}
+
+.list{list-style:none;margin-top:24px;display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px;padding:8px 0}
+.item .meta{min-width:0}
+.item .name{font-weight:600}
+.item .caption{margin-top:4px}
+.item .actions{display:flex;align-items:center;gap:4px;flex:0 0 auto;margin-right:-12px}
+.item.off .name{color:var(--muted)}
+.empty{margin-top:24px;color:var(--muted)}
+
+.progress{margin-top:20px}
+.bar{height:8px;border-radius:var(--r-pill);background:var(--canvas);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:var(--r-pill);transform-origin:left;transform:scaleX(0);transition:transform var(--t-fast) var(--ease)}
+.progress .caption{margin-top:8px}
+
+@media (prefers-reduced-motion:reduce){
+  .view{animation:none}
+  .btn,.text-btn,.bar i,.check .box svg{transition:none}
+  .btn:active{transform:none}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></symbol>
+  <symbol id="i-log-out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></symbol>
+</svg>
+<main>
+
+<section id="login" class="view" hidden>
+  <h1>Вход</h1>
+  <p class="lead">Токен из переменной <code>PALMA_ADMIN_TOKEN</code> на сервере.</p>
+  <form id="login-form" class="card" novalidate>
+    <div class="field">
+      <label for="token">Токен</label>
+      <input class="input" id="token" name="token" type="password" autocomplete="current-password"
+             aria-describedby="token-error" required>
+      <p class="error" id="token-error" role="alert"></p>
+    </div>
+    <button class="btn" type="submit">Войти</button>
+  </form>
+</section>
+
+<section id="panel" class="view" hidden>
+  <div class="head">
+    <div>
+      <h1>Образы</h1>
+      <p class="stats" id="stats" aria-live="polite">Считаем подписчиков</p>
+    </div>
+    <button class="text-btn" id="logout" type="button">
+      <svg class="ico" aria-hidden="true"><use href="#i-log-out"/></svg>Выйти
+    </button>
+  </div>
+
+  <ul class="list" id="images" aria-live="polite"></ul>
+  <p class="empty" id="images-empty" hidden>Образов пока нет. Первый публикуется формой ниже.</p>
+  <p class="error" id="images-error" role="alert"></p>
+
+  <form id="publish" class="card" novalidate>
+    <h2>Новый образ</h2>
+    <div class="fields">
+      <div class="field">
+        <label for="f-id">Идентификатор</label>
+        <input class="input" id="f-id" name="id" placeholder="например, debian-xfce" autocomplete="off"
+               spellcheck="false" aria-describedby="e-id">
+        <p class="error" id="e-id"></p>
+      </div>
+      <div class="field">
+        <label for="f-name">Название</label>
+        <input class="input" id="f-name" name="name" placeholder="например, Debian 12" autocomplete="off" aria-describedby="e-name">
+        <p class="error" id="e-name"></p>
+      </div>
+      <div class="field">
+        <label for="f-distro">Дистрибутив</label>
+        <input class="input" id="f-distro" name="distro" placeholder="например, debian" autocomplete="off"
+               spellcheck="false" aria-describedby="e-distro">
+        <p class="error" id="e-distro"></p>
+      </div>
+      <div class="field">
+        <label for="f-desktop">Окружение</label>
+        <input class="input" id="f-desktop" name="desktop" placeholder="например, xfce" autocomplete="off"
+               spellcheck="false" aria-describedby="e-desktop">
+        <p class="error" id="e-desktop"></p>
+      </div>
+      <div class="field">
+        <label for="f-ram">Минимум памяти, МБ</label>
+        <input class="input" id="f-ram" name="min_ram_mb" inputmode="numeric" placeholder="например, 3072"
+               autocomplete="off" aria-describedby="e-min_ram_mb">
+        <p class="error" id="e-min_ram_mb"></p>
+      </div>
+      <div class="field">
+        <span class="label">Доступ</span>
+        <label class="check" for="f-pro">
+          <input type="checkbox" id="f-pro" name="pro">
+          <span class="box"><svg class="ico" aria-hidden="true"><use href="#i-check"/></svg></span>
+          <span>Только для Pro</span>
+        </label>
+      </div>
+      <div class="field wide">
+        <label for="f-file">Файл образа</label>
+        <div class="file">
+          <input type="file" id="f-file" name="file" aria-describedby="e-file">
+          <div class="face" id="file-face">
+            <svg class="ico" aria-hidden="true"><use href="#i-upload"/></svg>
+            <span id="file-label">Выбрать архив</span>
+          </div>
+        </div>
+        <p class="error" id="e-file"></p>
+      </div>
+    </div>
+    <div class="progress" id="progress" hidden>
+      <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Загрузка образа"><i id="bar"></i></div>
+      <p class="caption" id="progress-text"></p>
+    </div>
+    <p class="error" id="publish-error" role="alert"></p>
+    <button class="btn" id="publish-btn" type="submit">Опубликовать</button>
+  </form>
+</section>
+
+</main>
+<script>
+"use strict";
+const KEY = "palma-admin-token";
+const ID_PATTERN = /^[a-z0-9][a-z0-9._-]{0,63}$/;
+const MESSAGES = {
+  forbidden: "Токен не подошёл.",
+  duplicate_sha256: "Этот файл уже опубликован под другим идентификатором.",
+  duplicate_id: "Такой идентификатор уже занят.",
+  payload_too_large: "Файл больше допустимого размера.",
+  image_not_found: "Образ не найден, список обновлён.",
+  invalid_id: "Строчные латинские буквы, цифры, точка, дефис, подчёркивание.",
+  invalid_name: "Укажите название.",
+  invalid_distro: "Укажите дистрибутив.",
+  invalid_desktop: "Укажите окружение.",
+  invalid_min_ram_mb: "Только цифры.",
+  missing_file: "Выберите файл образа.",
+  network: "Сервер не ответил. Проверьте соединение.",
+};
+const FIELD_ERRORS = {
+  invalid_id: "id", duplicate_id: "id", invalid_name: "name", invalid_distro: "distro",
+  invalid_desktop: "desktop", invalid_min_ram_mb: "min_ram_mb", missing_file: "file",
+};
+const $ = (id) => document.getElementById(id);
+const number = new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 });
+
+function formatBytes(bytes) {
+  if (bytes >= 1024 ** 3) return `${number.format(bytes / 1024 ** 3)}\u00a0ГБ`;
+  if (bytes >= 1024 ** 2) return `${number.format(bytes / 1024 ** 2)}\u00a0МБ`;
+  if (bytes >= 1024) return `${number.format(bytes / 1024)}\u00a0КБ`;
+  return `${bytes}\u00a0Б`;
+}
+
+function message(code) {
+  return MESSAGES[code] || `Ошибка сервера: ${code}.`;
+}
+
+function token() {
+  return sessionStorage.getItem(KEY) || "";
+}
+
+function show(view) {
+  $("login").hidden = view !== "login";
+  $("panel").hidden = view !== "panel";
+}
+
+async function api(method, path) {
+  let response;
+  try {
+    response = await fetch(path, { method, headers: { "X-Admin-Token": token() } });
+  } catch {
+    throw new Error("network");
+  }
+  const body = await response.json().catch(() => ({ error: `http_${response.status}` }));
+  if (response.status === 403) {
+    logout("forbidden");
+    throw new Error("forbidden");
+  }
+  if (!response.ok) throw new Error(body.error || `http_${response.status}`);
+  return body;
+}
+
+function logout(reason) {
+  sessionStorage.removeItem(KEY);
+  $("token").value = "";
+  $("token-error").textContent = reason ? message(reason) : "";
+  $("token").setAttribute("aria-invalid", reason ? "true" : "false");
+  show("login");
+  $("token").focus();
+}
+
+async function login(event) {
+  event.preventDefault();
+  const value = $("token").value.trim();
+  if (!value) {
+    $("token-error").textContent = "Введите токен.";
+    $("token").setAttribute("aria-invalid", "true");
+    $("token").focus();
+    return;
+  }
+  sessionStorage.setItem(KEY, value);
+  try {
+    await refresh();
+    show("panel");
+  } catch (error) {
+    if (error.message !== "forbidden") {
+      $("token-error").textContent = message(error.message);
+    }
+  }
+}
+
+function plural(n, one, few, many) {
+  const mod10 = n % 10, mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  return many;
+}
+
+function renderStats(s) {
+  const parts = [
+    `${s.total} ${plural(s.total, "устройство", "устройства", "устройств")} с покупками`,
+    `Pro ${s.pro}`,
+    `Lifetime ${s.lifetime}`,
+    `истекают за 7 дней ${s.expiring_7d}`,
+  ];
+  const last = parts.length - 1;
+  $("stats").replaceChildren(...parts.flatMap((text, i) => [el("span", "", i < last ? `${text}\u00a0·` : text), " "]));
+}
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function renderImages(images) {
+  const list = $("images");
+  list.replaceChildren();
+  $("images-empty").hidden = images.length > 0;
+  for (const image of images) {
+    const item = el("li", image.active ? "item" : "item off");
+    const meta = el("div", "meta");
+    meta.append(el("p", "name", image.name));
+    const parts = [image.id, image.distro, image.desktop, formatBytes(image.size_bytes), `от\u00a0${image.min_ram_mb}\u00a0МБ`];
+    if (image.pro) parts.push("Pro");
+    const caption = el("p", "caption", parts.join(" · "));
+    meta.append(caption);
+    if (!image.active) meta.append(el("p", "caption", "Снят с выдачи, файл сохранён"));
+    else if (!image.file_present) meta.append(el("p", "caption warn", "Файла нет на диске, скачивание вернёт 503"));
+    item.append(meta);
+    if (image.active) item.append(actions(image));
+    list.append(item);
+  }
+}
+
+function actions(image) {
+  const box = el("div", "actions");
+  const remove = el("button", "text-btn danger", "Снять");
+  remove.type = "button";
+  remove.setAttribute("aria-label", `Снять с выдачи ${image.name}`);
+  remove.addEventListener("click", () => {
+    const confirm = el("button", "text-btn danger", "Да, снять");
+    const cancel = el("button", "text-btn", "Отмена");
+    confirm.type = cancel.type = "button";
+    cancel.addEventListener("click", () => { box.replaceWith(actions(image)); });
+    confirm.addEventListener("click", async () => {
+      confirm.disabled = cancel.disabled = true;
+      try {
+        await api("DELETE", `/api/admin/images/${encodeURIComponent(image.id)}`);
+        $("images-error").textContent = "";
+      } catch (error) {
+        if (error.message !== "forbidden") $("images-error").textContent = message(error.message);
+      }
+      refresh().catch(() => {});
+    });
+    box.replaceChildren(confirm, cancel);
+    cancel.focus();
+  });
+  box.append(remove);
+  return box;
+}
+
+async function refresh() {
+  const [images, stats] = await Promise.all([
+    api("GET", "/api/admin/images"),
+    api("GET", "/api/admin/subscribers"),
+  ]);
+  renderImages(images.images);
+  renderStats(stats);
+}
+
+function fieldInput(name) {
+  return document.querySelector(`#publish [name="${name}"]`);
+}
+
+function setFieldError(name, text) {
+  $(`e-${name}`).textContent = text || "";
+  fieldInput(name).setAttribute("aria-invalid", text ? "true" : "false");
+}
+
+function clearErrors() {
+  for (const name of ["id", "name", "distro", "desktop", "min_ram_mb", "file"]) setFieldError(name, "");
+  $("publish-error").textContent = "";
+}
+
+function validate(form) {
+  const errors = {};
+  const id = form.id.value.trim();
+  if (!ID_PATTERN.test(id)) errors.id = message("invalid_id");
+  if (!form.name.value.trim()) errors.name = message("invalid_name");
+  if (!form.distro.value.trim()) errors.distro = message("invalid_distro");
+  if (!form.desktop.value.trim()) errors.desktop = message("invalid_desktop");
+  if (!/^\d{1,7}$/.test(form.min_ram_mb.value.trim())) errors.min_ram_mb = message("invalid_min_ram_mb");
+  if (!form.file.files.length) errors.file = message("missing_file");
+  return errors;
+}
+
+function setProgress(loaded, total) {
+  const share = total ? loaded / total : 0;
+  $("bar").style.transform = `scaleX(${share})`;
+  $("bar").parentElement.setAttribute("aria-valuenow", String(Math.round(share * 100)));
+  $("progress-text").textContent =
+    `Загружено ${Math.round(share * 100)} %, ${formatBytes(loaded)} из ${formatBytes(total)}`;
+}
+
+function upload(form) {
+  return new Promise((resolve, reject) => {
+    const data = new FormData();
+    for (const name of ["id", "name", "distro", "desktop", "min_ram_mb"]) data.append(name, form[name].value.trim());
+    data.append("pro", form.pro.checked ? "true" : "false");
+    data.append("file", form.file.files[0]);
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/admin/images");
+    xhr.setRequestHeader("X-Admin-Token", token());
+    xhr.responseType = "json";
+    xhr.upload.addEventListener("progress", (e) => { if (e.lengthComputable) setProgress(e.loaded, e.total); });
+    xhr.addEventListener("load", () => {
+      if (xhr.status === 201) resolve(xhr.response);
+      else reject(new Error((xhr.response && xhr.response.error) || `http_${xhr.status}`));
+    });
+    xhr.addEventListener("error", () => reject(new Error("network")));
+    xhr.send(data);
+  });
+}
+
+async function publish(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  clearErrors();
+  const errors = validate(form);
+  const names = Object.keys(errors);
+  if (names.length) {
+    for (const name of names) setFieldError(name, errors[name]);
+    fieldInput(names[0]).focus();
+    return;
+  }
+  const button = $("publish-btn");
+  button.disabled = true;
+  button.textContent = "Загружаем";
+  $("progress").hidden = false;
+  setProgress(0, form.file.files[0].size);
+  try {
+    await upload(form);
+    form.reset();
+    syncFileLabel();
+    $("progress").hidden = true;
+    await refresh();
+  } catch (error) {
+    $("progress").hidden = true;
+    if (error.message === "forbidden") logout("forbidden");
+    else if (FIELD_ERRORS[error.message]) {
+      setFieldError(FIELD_ERRORS[error.message], message(error.message));
+      fieldInput(FIELD_ERRORS[error.message]).focus();
+    } else $("publish-error").textContent = message(error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = "Опубликовать";
+  }
+}
+
+function syncFileLabel() {
+  const file = $("f-file").files[0];
+  $("file-label").textContent = file ? `${file.name} · ${formatBytes(file.size)}` : "Выбрать архив";
+  $("file-face").classList.toggle("chosen", Boolean(file));
+}
+
+$("login-form").addEventListener("submit", login);
+$("publish").addEventListener("submit", publish);
+$("logout").addEventListener("click", () => logout());
+$("f-file").addEventListener("change", () => { syncFileLabel(); setFieldError("file", ""); });
+$("publish").addEventListener("input", (e) => {
+  if (e.target.name && $(`e-${e.target.name}`)) setFieldError(e.target.name, "");
+});
+$("token").addEventListener("input", () => {
+  $("token-error").textContent = "";
+  $("token").setAttribute("aria-invalid", "false");
+});
+
+if (token()) {
+  refresh().then(() => show("panel")).catch((error) => {
+    if (error.message !== "forbidden") { show("login"); $("token-error").textContent = message(error.message); }
+  });
+} else {
+  show("login");
+}
+</script>
+</body>
+</html>

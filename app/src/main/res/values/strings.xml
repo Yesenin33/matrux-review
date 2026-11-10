@@ -10,9 +10,6 @@
     <string name="home_installing_state">Готово %1$d%%</string>
     <string name="home_launch">Запустить систему</string>
     <string name="home_open_catalog">Открыть каталог</string>
-    <string name="home_revoked_title">Нет доступа</string>
-    <string name="home_revoked_detail">Сервер больше не принимает ключ этого устройства. Установленная система на месте.</string>
-    <string name="home_reregister">Зарегистрировать заново</string>
 
     <string name="sub_unknown">Подписка ещё не проверена</string>
     <string name="sub_free">Бесплатный доступ</string>
@@ -228,19 +225,8 @@
 
     <string name="tab_knowledge">Знания</string>
     <string name="knowledge_title">Знания</string>
-    <string name="home_buy">Приобрести подписку Pro</string>
-    <string name="home_inside">Что внутри</string>
-    <plurals name="home_systems">
-        <item quantity="one">%d система в каталоге</item>
-        <item quantity="few">%d системы в каталоге</item>
-        <item quantity="many">%d систем в каталоге</item>
-        <item quantity="other">%d систем в каталоге</item>
-    </plurals>
-    <string name="home_feature_linux">Живой Linux</string>
-    <string name="home_feature_linux_detail">Терминал и запуск кода прямо в системе</string>
-    <string name="home_feature_offline">Без интернета</string>
-    <string name="home_feature_offline_detail">Установленная система работает офлайн</string>
-    <string name="home_locked">Что откроется в Pro</string>
+    <string name="home_basics">Базовые знания</string>
+    <string name="home_advanced">Команды и расширенные базовые знания</string>
     <string name="offer_title">В Pro</string>
     <string name="offer_systems">Все системы каталога</string>
     <string name="price_rub">%1$s ₽</string>
@@ -254,9 +240,6 @@
     <string name="catalog_subscribe">Оформить Pro</string>
     <string name="catalog_running">Запущена</string>
     <string name="pro_open_systems">Все системы каталога</string>
-    <string name="knowledge_courses">Курсы</string>
-    <string name="knowledge_sheets">Шпаргалки</string>
-    <string name="knowledge_sources">Об источниках</string>
     <plurals name="course_lessons">
         <item quantity="one">%d урок</item>
         <item quantity="few">%d урока</item>
@@ -302,18 +285,6 @@
     </plurals>
     <string name="offer_offline">Работа офлайн</string>
     <string name="offer_offline_detail">Системы Pro запускаются без сети</string>
-    <plurals name="home_courses">
-        <item quantity="one">%d курс</item>
-        <item quantity="few">%d курса</item>
-        <item quantity="many">%d курсов</item>
-        <item quantity="other">%d курса</item>
-    </plurals>
-    <plurals name="home_sheets">
-        <item quantity="one">и %d шпаргалка</item>
-        <item quantity="few">и %d шпаргалки</item>
-        <item quantity="many">и %d шпаргалок</item>
-        <item quantity="other">и %d шпаргалки</item>
-    </plurals>
     <string name="pad_right">ПКМ</string>
     <string name="pad_left">ЛКМ</string>
     <string name="onboard_desk_title">Твой Linux-стол в телефоне</string>
@@ -327,15 +298,5 @@
     <string name="onboard_next">Дальше</string>
     <string name="onboard_start">Начать</string>
     <string name="onboard_position">%1$d из %2$d</string>
-    <string name="subs_onboarding">Знакомство с %1$s</string>
     <string name="offer_sheets">Шпаргалки целиком</string>
-    <string name="locked_courses">курсы целиком</string>
-    <string name="locked_sheets">шпаргалки целиком</string>
-    <string name="locked_offline">работа офлайн</string>
-    <plurals name="locked_systems">
-        <item quantity="one">%d система</item>
-        <item quantity="few">%d системы</item>
-        <item quantity="many">%d систем</item>
-        <item quantity="other">%d системы</item>
-    </plurals>
 </resources>

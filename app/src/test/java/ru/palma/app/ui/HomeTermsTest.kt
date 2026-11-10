@@ -2,7 +2,6 @@ package ru.palma.app.ui
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.palma.app.billing.Offers
@@ -10,21 +9,15 @@ import ru.palma.app.billing.Plan
 import ru.palma.app.billing.PlanChoice
 import ru.palma.app.billing.PlanOffer
 import ru.palma.app.billing.ServerPlan
-import ru.palma.app.data.Catalog
 import ru.palma.app.data.ImageInfo
-import ru.palma.app.data.Manifest
 import ru.palma.app.data.SubscriptionStatus
 import ru.palma.app.data.Tier
 import ru.palma.app.learn.AssetLibrary
-import ru.palma.app.learn.Progress
 import ru.palma.app.ui.screens.HomeActions
-import ru.palma.app.ui.state.HomeBlock
-import ru.palma.app.ui.state.Load
+import ru.palma.app.ui.screens.KnowledgeActions
 import ru.palma.app.ui.state.LockedItem
 import ru.palma.app.ui.state.SubscriptionUi
-import ru.palma.app.ui.state.homeBlocks
-import ru.palma.app.ui.state.homeUi
-import ru.palma.app.ui.state.knowledgeUi
+import ru.palma.app.ui.state.homeSections
 import ru.palma.app.ui.state.proOffer
 import ru.palma.app.ui.state.subLine
 import java.io.File
@@ -37,7 +30,6 @@ class HomeTermsTest {
     private val zone = ZoneOffset.UTC
     private val alpine = ImageInfo("alpine", "Alpine", "alpine", "none", 25_000_000, "a".repeat(64), 512, false, "/a")
     private val debian = ImageInfo("debian-12", "Debian 12", "debian", "xfce", 300_000_000, "b".repeat(64), 2048, true, "/d")
-    private val catalog = Load.Ready(Catalog(Manifest(1, "t", listOf(alpine, debian)), offline = false))
     private val pro = SubscriptionStatus(Tier.PRO, Instant.parse("2026-12-15T10:00:00Z"), null)
     private val local = listOf(
         PlanOffer(Plan.PRO_MONTH, "palma_pro_month", null, 0),
@@ -49,38 +41,73 @@ class HomeTermsTest {
         ServerPlan("palma_pro_quarter", 3, 890, 15),
         ServerPlan("palma_pro_half_year", 6, 1466, 30),
     )
+    private val screens = File("src/main/java/ru/palma/app/ui/screens")
 
     private fun subs(choice: PlanChoice, status: SubscriptionStatus = SubscriptionStatus.FREE) =
         SubscriptionUi(status, subLine(status, null, zone), choice.terms.value, false, null)
 
-    private fun home(choice: PlanChoice, status: SubscriptionStatus = SubscriptionStatus.FREE) =
-        homeUi(catalog, status, null, choice.terms.value, courses, sheets, zone)
-
     @Test
-    fun homeAndSubscriptionShareOneTermValue() {
-        val choice = PlanChoice(local)
-        choice.applyServer(server)
-        assertSame(home(choice).terms, subs(choice).terms)
-        choice.select(Plan.PRO_QUARTER)
-        assertEquals(Plan.PRO_QUARTER, home(choice).terms.selected)
-        assertEquals(Plan.PRO_QUARTER, subs(choice).terms.selected)
-        assertEquals(890L, subs(choice).selectedOffer?.priceRub)
-        assertEquals(297L, home(choice).terms.selectedOffer?.perMonthRub)
-        choice.select(Plan.PRO_HALF_YEAR)
-        assertEquals(home(choice).terms, subs(choice).terms)
-        assertEquals(244L, subs(choice).selectedOffer?.perMonthRub)
+    fun homeHasTwoSectionsInOrder() {
+        val free = homeSections(sheets, paid = false)
+        assertEquals(listOf("basics", "advanced"), free.map { it.id })
+        assertEquals(listOf("start", "linux", "terms"), free[0].rows.map { it.section.id })
+        assertFalse(free[0].locked)
+        assertTrue(free[0].rows.none { it.locked })
+        assertEquals(
+            listOf("files", "git", "hardware", "packages", "users", "services", "network", "disks", "logs", "scripts", "languages"),
+            free[1].rows.map { it.section.id },
+        )
+        assertTrue(free[1].locked)
+        assertTrue(free[1].rows.all { it.locked })
     }
 
     @Test
-    fun bothScreensDrawTheSameTermComponent() {
-        val screens = File("src/main/java/ru/palma/app/ui/screens")
-        listOf("HomeScreen.kt", "SubscriptionScreen.kt").forEach { name ->
-            val source = File(screens, name).readText()
-            assertTrue(name, source.contains("TermPicker(ui.terms"))
+    fun advancedSectionOpensWithPro() {
+        val paid = homeSections(sheets, paid = true)
+        assertFalse(paid[1].locked)
+        assertTrue(paid[1].rows.none { it.locked })
+        assertFalse(paid[0].locked)
+        assertTrue(paid[0].rows.none { it.locked })
+    }
+
+    @Test
+    fun sectionsKeepSheetTitlesFromAssets() {
+        val rows = homeSections(sheets, paid = false).flatMap { it.rows }
+        assertEquals(sheets.size, rows.size)
+        assertTrue(rows.all { it.section.title.isNotBlank() })
+    }
+
+    @Test
+    fun homeScreenHasNoSubscriptionControls() {
+        val source = File(screens, "HomeScreen.kt").readText()
+        listOf("home_buy", "TermPicker", "home_locked", "home_inside", "home_revoked", "catalog_launch").forEach {
+            assertFalse(it, source.contains(it))
         }
-        val all = listOf("HomeScreen.kt", "SubscriptionScreen.kt").joinToString("\n") { File(screens, it).readText() }
-        assertFalse(all.contains("fun ProTerm"))
-        assertFalse(all.contains("Role.RadioButton"))
+        val actions = HomeActions::class.java.declaredFields.map { it.name }.filterNot { it.startsWith("$") }.toSet()
+        assertEquals(setOf("onSection", "onSubscribe", "onTab"), actions)
+    }
+
+    @Test
+    fun knowledgeScreenIsEmpty() {
+        val source = File(screens, "KnowledgeScreen.kt").readText()
+        listOf("knowledge_courses", "knowledge_sheets").forEach { assertFalse(it, source.contains(it)) }
+        val actions = KnowledgeActions::class.java.declaredFields.map { it.name }.filterNot { it.startsWith("$") }.toSet()
+        assertEquals(setOf("onTab"), actions)
+    }
+
+    @Test
+    fun catalogShowsLockInsteadOfProBadge() {
+        val source = File(screens, "CatalogScreen.kt").readText()
+        assertFalse(source.contains("BadgeCheck"))
+        assertTrue(source.contains("Lucide.Lock"))
+    }
+
+    @Test
+    fun subscriptionHasNoOnboardingEntry() {
+        val source = File(screens, "SubscriptionScreen.kt").readText()
+        assertFalse(source.contains("subs_onboarding"))
+        assertFalse(source.contains("onOnboarding"))
+        assertTrue(source.contains("TermPicker(ui.terms"))
     }
 
     @Test
@@ -96,57 +123,30 @@ class HomeTermsTest {
     }
 
     @Test
+    fun subscriptionKeepsTermValue() {
+        val choice = PlanChoice(local)
+        choice.applyServer(server)
+        choice.select(Plan.PRO_QUARTER)
+        assertEquals(Plan.PRO_QUARTER, subs(choice).terms.selected)
+        assertEquals(890L, subs(choice).selectedOffer?.priceRub)
+        assertEquals(297L, subs(choice).terms.selectedOffer?.perMonthRub)
+    }
+
+    @Test
     fun rublesGroupThousands() {
         assertEquals("349", Format.rubles(349))
-        assertEquals("1 466", Format.rubles(1466))
-    }
-
-    @Test
-    fun homeHasNoSystemControls() {
-        val free = home(PlanChoice(local))
-        assertEquals(listOf(HomeBlock.BUY, HomeBlock.TERMS, HomeBlock.INSIDE, HomeBlock.LOCKED), homeBlocks(free))
-        val paid = home(PlanChoice(local), pro)
-        assertEquals(listOf(HomeBlock.STATUS, HomeBlock.INSIDE), homeBlocks(paid))
-        val actions = HomeActions::class.java.declaredFields.map { it.name }.filterNot { it.startsWith("$") }.toSet()
-        assertEquals(setOf("onBuy", "onSelect", "onLocked", "onReRegister", "onTab"), actions)
-        val source = File("src/main/java/ru/palma/app/ui/screens/HomeScreen.kt").readText()
-        listOf("catalog_launch", "catalog_stop", "catalog_switch", "catalog_reinstall", "home_launch", "home_return").forEach {
-            assertFalse(it, source.contains(it))
-        }
-    }
-
-    @Test
-    fun homeInsideUsesLiveCatalogAndKnowledge() {
-        val ui = home(PlanChoice(local))
-        assertEquals(listOf("Alpine", "Debian 12"), ui.systems.map { it.name })
-        assertEquals(courses.size, ui.courses.size)
-        assertEquals(courses.sumOf { it.lessonCount }, ui.lessons)
-        assertEquals(sheets.size, ui.sheets)
-        assertEquals(emptyList<ImageInfo>(), homeUi(Load.Loading, null, null, PlanChoice(local).terms.value, courses, sheets, zone).systems)
-    }
-
-    @Test
-    fun knowledgeLocksCoursesButNotSheetsWithoutPro() {
-        val free = knowledgeUi(courses, sheets, paid = false, progress = Progress())
-        assertTrue(free.courses.all { it.locked })
-        assertTrue(free.rows.none { it.locked })
-        assertTrue(free.offerOnEnter)
-        assertFalse(knowledgeUi(courses, sheets, paid = false, progress = Progress(offerSeen = true)).offerOnEnter)
-        val paid = knowledgeUi(courses, sheets, paid = true, progress = Progress())
-        assertTrue(paid.courses.none { it.locked })
-        assertTrue(paid.rows.none { it.locked })
-        assertFalse(paid.offerOnEnter)
+        assertEquals("1\u00A0466", Format.rubles(1466))
     }
 
     @Test
     fun lockedWindowListsLiveContent() {
-        val offer = proOffer(listOf(alpine, debian), courses)
+        val offer = proOffer(listOf(alpine, debian), courses, sheets)
         assertEquals(listOf(LockedItem.SYSTEMS, LockedItem.COURSES, LockedItem.OFFLINE), offer.items)
         assertEquals(listOf("Debian 12"), offer.systems)
         assertEquals(courses.map { it.title }, offer.courses)
         val closed = courses.sumOf { it.lessonCount - it.modules.first().lessons.size }
         assertEquals(closed, offer.lessons)
-        assertEquals(listOf(LockedItem.COURSES, LockedItem.OFFLINE), proOffer(listOf(alpine), courses).items)
+        assertEquals(listOf(LockedItem.COURSES, LockedItem.OFFLINE), proOffer(listOf(alpine), courses, sheets).items)
         assertTrue(offer.items.size in 1..6)
     }
 }

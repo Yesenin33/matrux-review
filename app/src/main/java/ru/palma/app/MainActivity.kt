@@ -94,7 +94,7 @@ import ru.palma.app.ui.state.knowledgeUi
 import ru.palma.app.ui.state.onboardUi
 import ru.palma.app.ui.state.proOffer
 import ru.palma.app.ui.state.catalogUi
-import ru.palma.app.ui.state.homeUi
+import ru.palma.app.ui.state.homeSections
 import ru.palma.app.ui.state.paidSub
 import ru.palma.app.ui.state.subLine
 import ru.palma.app.ui.theme.Palma
@@ -235,6 +235,7 @@ class MainActivity : ComponentActivity() {
         }.collectAsStateWithLifecycle(false)
         val purchase by graph.purchase.collectAsStateWithLifecycle()
         val account by graph.account.collectAsStateWithLifecycle()
+        val signedIn = !account?.id.isNullOrBlank()
         val signIn by graph.signIn.collectAsStateWithLifecycle()
         val blank by graph.session.blank.collectAsStateWithLifecycle()
         val scope = rememberCoroutineScope()
@@ -323,7 +324,7 @@ class MainActivity : ComponentActivity() {
         BackHandler(route != Route.HOME) {
             route = when (route) {
                 Route.INSTALL -> Route.CATALOG
-                Route.SECTION, Route.COURSE, Route.SOURCES -> Route.KNOWLEDGE
+                Route.SECTION, Route.COURSE, Route.SOURCES -> Route.HOME
                 Route.LESSON -> Route.COURSE
                 else -> Route.HOME
             }
@@ -372,7 +373,6 @@ class MainActivity : ComponentActivity() {
         )
 
         val motion = Palma.motion
-        val gateOpen by graph.gate.open.collectAsStateWithLifecycle()
         val installedSystem = graph.local.installed
         val installNow = install
         val signInSystem: GateSystem = when {
@@ -392,17 +392,13 @@ class MainActivity : ComponentActivity() {
             },
             label = "route",
         ) { current ->
+            if (!signedIn) return@AnimatedContent
             when (current) {
                 Route.HOME -> HomeScreen(
-                    homeUi(catalog, status, statusFailure, terms, courses, sheets, zone),
+                    homeSections(sheets, paid),
                     HomeActions(
-                        onBuy = { offer ->
-                            graph.buy(offer)
-                            route = Route.SUBSCRIPTION
-                        },
-                        onSelect = graph::select,
-                        onLocked = { offerOpen = true },
-                        onReRegister = graph::reRegister,
+                        onSection = openSection,
+                        onSubscribe = { route = Route.SUBSCRIPTION },
                         onTab = onTab,
                     ),
                 )
@@ -430,27 +426,7 @@ class MainActivity : ComponentActivity() {
                     onRetry = graph::refresh,
                     onTab = onTab,
                 )
-                Route.KNOWLEDGE -> {
-                    val ui = knowledgeUi(courses, sheets, paid, progress)
-                    LaunchedEffect(ui.offerOnEnter) {
-                        if (ui.offerOnEnter) {
-                            graph.progress.seeOffer()
-                            offerOpen = true
-                        }
-                    }
-                    KnowledgeScreen(
-                        ui,
-                        KnowledgeActions(
-                            onCourse = { card ->
-                                courseId = card.course.id
-                                route = Route.COURSE
-                            },
-                            onSection = openSection,
-                            onSources = { route = Route.SOURCES },
-                            onTab = onTab,
-                        ),
-                    )
-                }
+                Route.KNOWLEDGE -> KnowledgeScreen(KnowledgeActions(onTab = onTab))
                 Route.COURSE -> {
                     val course = graph.courses.course(courseId) ?: courses.first()
                     CourseScreen(
@@ -526,14 +502,13 @@ class MainActivity : ComponentActivity() {
                         onTab = onTab,
                         onSignIn = graph.gate::show,
                         onSignOut = graph::signOut,
-                        onOnboarding = graph.onboarding::replay,
                     ),
                 )
                 Route.SECTION -> {
                     val section = graph.courses.sheet(sectionId) ?: sheets.first()
                     SectionScreen(
                         section = section,
-                        actions = SectionActions(onBack = { route = Route.KNOWLEDGE }),
+                        actions = SectionActions(onBack = { route = Route.HOME }),
                     )
                 }
                 Route.LAUNCH -> {
@@ -630,18 +605,16 @@ class MainActivity : ComponentActivity() {
             },
             onClose = { offerOpen = false },
         )
-        val signedIn = !account?.id.isNullOrBlank()
         OnboardingOverlay(
-            visible = onboardFlags.visible(signedIn),
+            visible = onboardFlags.visible,
             ui = onboardUi(catalog, sheets, courses, terms),
             onFinish = {
-                if (!onboardFlags.replay) route = Route.HOME
+                route = Route.HOME
                 offerOpen = false
                 graph.onboarding.finish()
             },
-            onLeave = if (onboardFlags.replay) graph.onboarding::finish else null,
+            onLeave = null,
         )
-        BackHandler(enabled = gateOpen) { graph.gate.dismiss() }
         if (BuildConfig.DEBUG) {
             LaunchedEffect(Unit) {
                 if (intent.getBooleanExtra(AUTOTEST_LOGIN_EXTRA, false)) {
@@ -652,7 +625,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         SignInOverlay(
-            visible = gateOpen,
+            visible = !signedIn && !onboardFlags.visible,
             ui = SignInUi(
                 system = signInSystem,
                 signedIn = signedIn,

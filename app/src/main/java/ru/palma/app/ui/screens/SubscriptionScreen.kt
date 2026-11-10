@@ -43,7 +43,6 @@ data class SubscriptionActions(
     val onTab: (Tab) -> Unit = {},
     val onSignIn: () -> Unit = {},
     val onSignOut: () -> Unit = {},
-    val onOnboarding: () -> Unit = {},
 )
 
 @Composable
@@ -65,7 +64,6 @@ fun SubscriptionScreen(ui: SubscriptionUi, actions: SubscriptionActions) {
             ProTier(ui, actions.onSelect)
         }
         Spacer(Modifier.height(Palma.space.block))
-        OnboardingLine(actions.onOnboarding)
         ui.account?.let {
             Spacer(Modifier.height(Palma.space.unit))
             AccountLine(it, actions)
@@ -138,19 +136,6 @@ private fun ProBuy(ui: SubscriptionUi, actions: SubscriptionActions) {
         else -> stringResource(R.string.pro_buy)
     }
     PrimaryButton(label, { actions.onBuy(offer) }, enabled = !ui.busy && ui.canBuy)
-}
-
-@Composable
-private fun OnboardingLine(onOpen: () -> Unit) {
-    Tappable(onOpen, Modifier.fillMaxWidth()) {
-        Text(
-            stringResource(R.string.subs_onboarding, stringResource(R.string.app_name)),
-            style = Palma.type.body,
-            color = Palma.colors.ink,
-            modifier = Modifier.weight(1f),
-        )
-        LucideIcon(Lucide.ChevronRight, Palma.colors.muted, size = Palma.space.iconSmall)
-    }
 }
 
 @Composable

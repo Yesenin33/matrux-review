@@ -88,44 +88,16 @@ fun courseIcon(id: String): Lucide = when (id) {
 }
 
 data class KnowledgeActions(
-    val onCourse: (CourseCard) -> Unit = {},
-    val onSection: (SectionRow) -> Unit = {},
-    val onSources: () -> Unit = {},
     val onTab: (Tab) -> Unit = {},
 )
 
 @Composable
-fun KnowledgeScreen(ui: KnowledgeUi, actions: KnowledgeActions) {
+fun KnowledgeScreen(actions: KnowledgeActions) {
     TabScreen(Tab.KNOWLEDGE, actions.onTab, scroll = true) {
         Spacer(Modifier.height(Palma.space.unit))
         ScreenTitle(stringResource(R.string.knowledge_title), null)
         Spacer(Modifier.height(Palma.space.block))
-        if (ui.courses.isNotEmpty()) {
-            BlockTitle(stringResource(R.string.knowledge_courses))
-            Column(verticalArrangement = Arrangement.spacedBy(Palma.space.unit + Palma.space.unit / 2)) {
-                ui.courses.forEach { card -> CourseCardView(card, ui.paid) { actions.onCourse(card) } }
-            }
-            Spacer(Modifier.height(Palma.space.block))
-        }
-        if (ui.rows.isNotEmpty()) {
-            BlockTitle(stringResource(R.string.knowledge_sheets))
-            Column(verticalArrangement = Arrangement.spacedBy(Palma.space.unit + Palma.space.unit / 2)) {
-                ui.rows.forEach { row -> SectionCard(row, ui.paid) { actions.onSection(row) } }
-            }
-            Spacer(Modifier.height(Palma.space.block))
-        }
-        Tappable(actions.onSources, Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.knowledge_sources), style = Palma.type.body, color = Palma.colors.ink, modifier = Modifier.weight(1f))
-            LucideIcon(Lucide.ChevronRight, Palma.colors.muted, size = Palma.space.iconSmall)
-        }
-        Spacer(Modifier.height(Palma.space.block))
     }
-}
-
-@Composable
-private fun BlockTitle(text: String) {
-    Text(text, style = Palma.type.bodyStrong, color = Palma.colors.muted)
-    Spacer(Modifier.height(Palma.space.unit + Palma.space.unit / 2))
 }
 
 @Composable
@@ -138,7 +110,7 @@ fun AccessMark(locked: Boolean, paid: Boolean) {
 }
 
 @Composable
-private fun IconTile(icon: Lucide) {
+fun IconTile(icon: Lucide) {
     Box(
         Modifier
             .size(Palma.space.logoTile)
@@ -151,34 +123,13 @@ private fun IconTile(icon: Lucide) {
 }
 
 @Composable
-private fun CourseCardView(card: CourseCard, paid: Boolean, onOpen: () -> Unit) {
-    val colors = Palma.colors
-    val course = card.course
-    Card(Modifier.clickable(role = Role.Button, onClick = onOpen)) {
-        Row(verticalAlignment = Alignment.Top) {
-            IconTile(courseIcon(course.id))
-            Spacer(Modifier.width(Palma.space.unit + Palma.space.unit / 2))
-            Column(Modifier.weight(1f)) {
-                Text(course.title, style = Palma.type.bodyStrong, color = colors.ink)
-                Spacer(Modifier.height(Palma.space.unit / 2))
-                Text(course.outcome, style = Palma.type.body, color = colors.inkSoft, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Spacer(Modifier.height(Palma.space.unit / 2))
-                Text(lessonsLine(card.total, card.done), style = Palma.type.caption, color = colors.muted)
-            }
-            Spacer(Modifier.width(Palma.space.unit))
-            AccessMark(card.locked, paid)
-        }
-    }
-}
-
-@Composable
 fun lessonsLine(total: Int, done: Int): String {
     val count = pluralStringResource(R.plurals.course_lessons, total, total)
     return if (done > 0) count + " · " + stringResource(R.string.course_progress, done, total) else count
 }
 
 @Composable
-private fun SectionCard(row: SectionRow, paid: Boolean, onOpen: () -> Unit) {
+fun SectionCard(row: SectionRow, paid: Boolean, onOpen: () -> Unit) {
     val colors = Palma.colors
     val section = row.section
     Card(Modifier.clickable(role = Role.Button, onClick = onOpen)) {

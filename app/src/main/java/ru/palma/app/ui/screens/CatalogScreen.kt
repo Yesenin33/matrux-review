@@ -162,9 +162,9 @@ private fun CardAction(text: String, main: Boolean, modifier: Modifier = Modifie
 private fun Tag(row: CatalogRow) {
     when {
         row.running -> Pill(stringResource(R.string.catalog_running), Palma.colors.success, Palma.colors.successTint)
-        row.installed -> Pill(stringResource(R.string.catalog_installed), Palma.colors.success, Palma.colors.successTint)
         row.locked -> LucideIcon(Lucide.Lock, Palma.colors.muted, size = Palma.space.iconSmall)
-        row.image.pro -> LucideIcon(Lucide.BadgeCheck, Palma.colors.success, size = Palma.space.iconSmall)
+        row.installed -> Pill(stringResource(R.string.catalog_installed), Palma.colors.success, Palma.colors.successTint)
+        row.image.pro -> Unit
         else -> Pill(stringResource(R.string.catalog_free), Palma.colors.success, Palma.colors.successTint)
     }
 }

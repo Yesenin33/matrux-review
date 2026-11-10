@@ -26,7 +26,7 @@ interface LocalState {
     var manifestCache: Pair<ByteArray, String>?
     var account: AccountInfo?
     var storeCheckedAt: Long?
-    var onboarded: Boolean
+    var onboardVersion: Int
 }
 
 class InMemoryLocalState : LocalState {
@@ -40,7 +40,7 @@ class InMemoryLocalState : LocalState {
     override var manifestCache: Pair<ByteArray, String>? = null
     override var account: AccountInfo? = null
     override var storeCheckedAt: Long? = null
-    override var onboarded: Boolean = false
+    override var onboardVersion: Int = 0
 }
 
 class PrefsLocalState(context: Context) : LocalState {
@@ -56,9 +56,9 @@ class PrefsLocalState(context: Context) : LocalState {
         get() = prefs.getLong("store_checked_at", 0L).takeIf { it > 0 }
         set(value) = prefs.edit().putLong("store_checked_at", value ?: 0L).apply()
 
-    override var onboarded: Boolean
-        get() = prefs.getBoolean("onboarded", false)
-        set(value) = prefs.edit().putBoolean("onboarded", value).apply()
+    override var onboardVersion: Int
+        get() = prefs.getInt("onboard_version", 0)
+        set(value) = prefs.edit().putInt("onboard_version", value).apply()
 
     override var account: AccountInfo?
         get() = prefs.getString("account", null)?.let { raw ->

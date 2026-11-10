@@ -1,5 +1,6 @@
 package ru.palma.app.ui.state
 
+import ru.palma.app.R
 import ru.palma.app.billing.Terms
 import ru.palma.app.billing.PlanOffer
 import ru.palma.app.data.Catalog
@@ -46,53 +47,26 @@ fun subLine(status: SubscriptionStatus?, failure: Failure?, zone: ZoneId): SubLi
 
 fun SubLine.paidSub(): Boolean = this is SubLine.ProUntil || this is SubLine.Lifetime
 
-data class HomeUi(
-    val sub: SubLine,
-    val terms: Terms,
-    val systems: List<ImageInfo>,
-    val courses: List<Course>,
-    val sheets: Int,
-    val locked: ProOfferUi = ProOfferUi(emptyList(), emptyList(), 0),
-) {
-    val paid: Boolean get() = sub.paidSub()
-    val revoked: Boolean get() = sub == SubLine.Revoked
-    val lessons: Int get() = courses.sumOf { it.lessonCount }
-}
+data class HomeSection(
+    val id: String,
+    val title: Int,
+    val rows: List<SectionRow>,
+    val locked: Boolean,
+)
 
-enum class HomeBlock { REVOKED, BUY, STATUS, TERMS, INSIDE, LOCKED }
+private val BASICS_SHEETS = listOf("start", "linux", "terms")
+private val ADVANCED_SHEETS = listOf(
+    "files", "git", "hardware", "packages", "users", "services",
+    "network", "disks", "logs", "scripts", "languages",
+)
 
-fun homeBlocks(ui: HomeUi): List<HomeBlock> = buildList {
-    if (ui.revoked) add(HomeBlock.REVOKED)
-    if (ui.paid) {
-        add(HomeBlock.STATUS)
-        add(HomeBlock.INSIDE)
-    } else {
-        add(HomeBlock.BUY)
-        add(HomeBlock.TERMS)
-        add(HomeBlock.INSIDE)
-        add(HomeBlock.LOCKED)
-    }
-}
+private fun sheetRows(sections: List<KnowledgeSection>, ids: List<String>, locked: Boolean): List<SectionRow> =
+    ids.mapNotNull { id -> sections.firstOrNull { it.id == id }?.let { SectionRow(it, locked) } }
 
-fun homeUi(
-    catalog: Load<Catalog>,
-    status: SubscriptionStatus?,
-    statusFailure: Failure?,
-    terms: Terms,
-    courses: List<Course>,
-    sections: List<KnowledgeSection>,
-    zone: ZoneId,
-): HomeUi {
-    val images = (catalog as? Load.Ready)?.value?.manifest?.images.orEmpty()
-    return HomeUi(
-        sub = subLine(status, statusFailure, zone),
-        terms = terms,
-        systems = images,
-        courses = courses,
-        sheets = sections.size,
-        locked = proOffer(images, courses, sections),
-    )
-}
+fun homeSections(sections: List<KnowledgeSection>, paid: Boolean): List<HomeSection> = listOf(
+    HomeSection("basics", R.string.home_basics, sheetRows(sections, BASICS_SHEETS, locked = false), locked = false),
+    HomeSection("advanced", R.string.home_advanced, sheetRows(sections, ADVANCED_SHEETS, locked = !paid), locked = !paid),
+)
 
 enum class LockedItem { COURSES, SYSTEMS, SHEETS, OFFLINE }
 
@@ -103,8 +77,8 @@ data class ProOfferUi(
     val sheets: List<String> = emptyList(),
 ) {
     val items: List<LockedItem> get() = buildList {
-        if (courses.isNotEmpty() && lessons > 0) add(LockedItem.COURSES)
         if (systems.isNotEmpty()) add(LockedItem.SYSTEMS)
+        if (courses.isNotEmpty() && lessons > 0) add(LockedItem.COURSES)
         if (sheets.isNotEmpty()) add(LockedItem.SHEETS)
         add(LockedItem.OFFLINE)
     }

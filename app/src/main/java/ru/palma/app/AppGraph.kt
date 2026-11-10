@@ -121,7 +121,7 @@ class AppGraph(context: Context) {
     }
 
     val plans = PlanChoice(Offers.fromBuildConfig())
-    val onboarding = Onboarding(local)
+    val onboarding = Onboarding(local, ru.palma.app.BuildConfig.VERSION_CODE)
 
     val courses = CourseLibrary { name ->
         app.assets.open(name).bufferedReader().use { it.readText() }

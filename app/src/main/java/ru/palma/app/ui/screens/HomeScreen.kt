@@ -22,11 +22,13 @@ import ru.palma.app.ui.components.StatePanel
 import ru.palma.app.ui.components.StatusDot
 import ru.palma.app.ui.components.Tab
 import ru.palma.app.ui.components.TabScreen
+import ru.palma.app.ui.knowledge.knowledge
 import ru.palma.app.ui.failureBody
 import ru.palma.app.ui.failureTitle
 import ru.palma.app.ui.roughDurationText
 import ru.palma.app.ui.sizeText
 import ru.palma.app.ui.state.HomeUi
+import ru.palma.app.ui.state.paidSub
 import ru.palma.app.ui.subLineText
 import ru.palma.app.ui.theme.Palma
 
@@ -39,12 +41,13 @@ data class HomeActions(
     val onCatalog: () -> Unit = {},
     val onRetry: () -> Unit = {},
     val onReRegister: () -> Unit = {},
+    val onSection: (ru.palma.app.ui.knowledge.KnowledgeSection) -> Unit = {},
     val onTab: (Tab) -> Unit = {},
 )
 
 @Composable
 fun HomeScreen(ui: HomeUi, actions: HomeActions) {
-    TabScreen(Tab.HOME, actions.onTab) {
+    TabScreen(Tab.HOME, actions.onTab, scroll = true) {
         Spacer(Modifier.height(Palma.space.block))
         when (ui) {
             is HomeUi.Ready -> Ready(ui, actions)
@@ -54,6 +57,8 @@ fun HomeScreen(ui: HomeUi, actions: HomeActions) {
             is HomeUi.NoCatalog -> NoCatalog(ui, actions)
             is HomeUi.Revoked -> Revoked(actions)
         }
+        Spacer(Modifier.height(Palma.space.block))
+        SectionsBlock(knowledge, ui.sub.paidSub(), actions.onSection)
         Spacer(Modifier.height(Palma.space.unit * 2))
         CenterCaption(subLineText(ui.sub))
         Spacer(Modifier.height(Palma.space.unit * 2))
@@ -61,10 +66,8 @@ fun HomeScreen(ui: HomeUi, actions: HomeActions) {
 }
 
 @Composable
-private fun Hero(kicker: String, title: String?, sub: String?) {
-    Text(kicker, style = Palma.type.body, color = Palma.colors.muted)
+private fun Hero(title: String?, sub: String?) {
     if (title != null) {
-        Spacer(Modifier.height(Palma.space.unit))
         Text(title, style = Palma.type.display, color = Palma.colors.ink)
     }
     if (sub != null) {
@@ -90,7 +93,7 @@ private fun StateLine(title: String, detail: String?, running: Boolean?) {
 
 @Composable
 private fun ColumnScope.Actions(primary: String, onPrimary: () -> Unit, ghost: String?, onGhost: () -> Unit) {
-    Spacer(Modifier.weight(1f))
+    Spacer(Modifier.height(Palma.space.block))
     Column(verticalArrangement = Arrangement.spacedBy(Palma.space.unit)) {
         PrimaryButton(primary, onPrimary)
         if (ghost != null) GhostButton(ghost, onGhost)
@@ -105,18 +108,12 @@ private fun desktopLabel(desktop: String): String =
 private fun ColumnScope.Ready(ui: HomeUi.Ready, actions: HomeActions) {
     val system = ui.system
     Hero(
-        kicker = stringResource(if (ui.running) R.string.home_running_kicker else R.string.home_ready_kicker),
         title = system.name,
         sub = stringResource(R.string.home_sub_line, desktopLabel(system.desktop), sizeText(system.sizeBytes), sizeText(ui.freeBytes)),
     )
     if (ui.running) {
-        StateLine(stringResource(R.string.home_running), stringResource(R.string.home_running_detail), running = true)
         Actions(stringResource(R.string.home_return), actions.onReturn, stringResource(R.string.home_stop), actions.onStop)
     } else {
-        val detail = system.lastLaunchMillis
-            ?.let { stringResource(R.string.home_stopped_detail_timed, roughDurationText((it + 999) / 1000)) }
-            ?: stringResource(R.string.home_stopped_detail)
-        StateLine(stringResource(R.string.home_stopped), detail, running = false)
         Actions(stringResource(R.string.home_launch), actions.onLaunch, stringResource(R.string.home_change), actions.onCatalog)
     }
 }
@@ -125,7 +122,6 @@ private fun ColumnScope.Ready(ui: HomeUi.Ready, actions: HomeActions) {
 private fun ColumnScope.Empty(ui: HomeUi.Empty, actions: HomeActions) {
     val image = ui.suggestion
     Hero(
-        kicker = stringResource(R.string.home_empty_kicker),
         title = image.name,
         sub = stringResource(R.string.home_sub_line, desktopLabel(image.desktop), sizeText(image.sizeBytes), sizeText(ui.freeBytes)),
     )
@@ -141,7 +137,7 @@ private fun ColumnScope.Empty(ui: HomeUi.Empty, actions: HomeActions) {
 @Composable
 private fun ColumnScope.Installing(ui: HomeUi.Installing, actions: HomeActions) {
     val progress = ui.progress
-    Hero(stringResource(R.string.home_installing_kicker), progress.image.name, null)
+    Hero(progress.image.name, null)
     StateLine(
         stringResource(R.string.home_installing_state, progress.percent),
         stringResource(R.string.install_downloaded, sizeText(progress.downloaded), sizeText(progress.total)),
@@ -152,13 +148,13 @@ private fun ColumnScope.Installing(ui: HomeUi.Installing, actions: HomeActions) 
 
 @Composable
 private fun ColumnScope.Loading() {
-    Hero(stringResource(R.string.home_loading_kicker), null, null)
+    Hero(null, null)
     Spacer(Modifier.weight(1f))
 }
 
 @Composable
 private fun ColumnScope.NoCatalog(ui: HomeUi.NoCatalog, actions: HomeActions) {
-    Hero(stringResource(R.string.home_empty_kicker), null, null)
+    Hero(null, null)
     ErrorWords(failureTitle(ui.failure), failureBody(ui.failure), Modifier.padding(top = Palma.space.unit))
     Actions(stringResource(R.string.install_retry), actions.onRetry, stringResource(R.string.home_open_catalog), actions.onCatalog)
 }

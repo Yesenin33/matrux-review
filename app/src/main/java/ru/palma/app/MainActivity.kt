@@ -57,8 +57,12 @@ import ru.palma.app.ui.screens.HomeScreen
 import ru.palma.app.ui.screens.InstallActions
 import ru.palma.app.ui.screens.InstallScreen
 import ru.palma.app.ui.screens.LaunchScreen
+import ru.palma.app.ui.screens.ProScreen
+import ru.palma.app.ui.screens.SectionActions
+import ru.palma.app.ui.screens.SectionScreen
 import ru.palma.app.ui.screens.SubscriptionActions
 import ru.palma.app.ui.screens.SubscriptionScreen
+import ru.palma.app.ui.knowledge.knowledge
 import ru.palma.app.ui.state.CatalogAction
 import ru.palma.app.ui.state.Load
 import ru.palma.app.ui.state.SubscriptionUi
@@ -66,16 +70,19 @@ import ru.palma.app.ui.state.action
 import ru.palma.app.ui.state.catalogImageSha
 import ru.palma.app.ui.state.catalogUi
 import ru.palma.app.ui.state.homeUi
+import ru.palma.app.ui.state.paidSub
 import ru.palma.app.ui.state.subLine
 import ru.palma.app.ui.theme.Palma
 import ru.palma.app.ui.theme.PalmaTheme
 import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-enum class Route { HOME, CATALOG, INSTALL, SUBSCRIPTION, LAUNCH, DESKTOP }
+enum class Route { HOME, CATALOG, INSTALL, SUBSCRIPTION, LAUNCH, DESKTOP, SECTION, PRO }
 
 private const val STUCK_MS = 25_000L
 private const val AUTOTEST_EXTRA = "palma_autotest"
@@ -83,6 +90,7 @@ private const val AUTOTEST_TAG = "palma-autotest"
 private const val AUTOTEST_IMAGE = "alpine-xfce"
 private const val AUTOTEST_IMAGE_EXTRA = "palma_image"
 private const val AUTOTEST_ROTATION_EXTRA = "palma_rotation"
+private const val AUTOTEST_SHADE_EXTRA = "palma_shade"
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -158,12 +166,15 @@ class MainActivity : ComponentActivity() {
         val graph = graph
         val zone = remember { ZoneId.systemDefault() }
         var route by rememberSaveable { mutableStateOf(Route.HOME) }
+        var sectionId by rememberSaveable { mutableStateOf("") }
         val catalog by graph.catalog.collectAsStateWithLifecycle()
         val status by graph.status.collectAsStateWithLifecycle()
         val statusFailure by graph.statusFailure.collectAsStateWithLifecycle()
         val install by graph.installs.state.collectAsStateWithLifecycle()
         val session by graph.session.state.collectAsStateWithLifecycle()
-        val frame by graph.session.frame.collectAsStateWithLifecycle()
+        val hasFrame by remember(graph) {
+            graph.session.frame.map { it != null }.distinctUntilChanged()
+        }.collectAsStateWithLifecycle(false)
         val purchase by graph.purchase.collectAsStateWithLifecycle()
         val blank by graph.session.blank.collectAsStateWithLifecycle()
         val scope = rememberCoroutineScope()
@@ -253,6 +264,16 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        val paid = subLine(status, statusFailure, zone).paidSub()
+        val openSection: (ru.palma.app.ui.knowledge.KnowledgeSection) -> Unit = { section ->
+            if (section.pro && !paid) {
+                route = Route.PRO
+            } else {
+                sectionId = section.id
+                route = Route.SECTION
+            }
+        }
+
         val motion = Palma.motion
         AnimatedContent(
             targetState = route,
@@ -293,6 +314,7 @@ class MainActivity : ComponentActivity() {
                             onCatalog = { route = Route.CATALOG },
                             onRetry = graph::refresh,
                             onReRegister = graph::reRegister,
+                            onSection = openSection,
                             onTab = onTab,
                         ),
                     )
@@ -363,6 +385,33 @@ class MainActivity : ComponentActivity() {
                         onTab = onTab,
                     ),
                 )
+                Route.SECTION -> {
+                    val section = knowledge.firstOrNull { it.id == sectionId } ?: knowledge.first()
+                    SectionScreen(
+                        section = section,
+                        paid = paid,
+                        actions = SectionActions(
+                            onBack = { route = Route.HOME },
+                            onPro = { route = Route.PRO },
+                        ),
+                    )
+                }
+                Route.PRO -> ProScreen(
+                    SubscriptionUi(
+                        status = status,
+                        sub = subLine(status, statusFailure, zone),
+                        offers = graph.offers,
+                        selected = plan,
+                        busy = purchase.first,
+                        failure = purchase.second,
+                    ),
+                    SubscriptionActions(
+                        onSelect = graph::select,
+                        onBuy = graph::buy,
+                        onManage = ::manageSubscription,
+                    ),
+                    onBack = { route = Route.HOME },
+                )
                 Route.LAUNCH -> {
                     val launching = session as? SessionState.Launching
                     LaunchScreen(
@@ -376,25 +425,7 @@ class MainActivity : ComponentActivity() {
                     val lost = session as? SessionState.Lost
                     val orientation = LocalConfiguration.current.orientation
                     LaunchedEffect(orientation) { graph.session.syncGeometry() }
-                    val bitmap = frame?.first?.frameBitmap()
-                    DesktopScreen(
-                        DesktopUi(
-                            title = listOfNotNull(
-                                live?.name ?: lost?.name ?: graph.local.installed?.name,
-                                live?.desktop?.takeIf { !it.equals("none", true) }?.uppercase(),
-                            ).joinToString(" · "),
-                            mode = live?.mode ?: ru.palma.app.shell.DisplayMode.VNC,
-                            offline = live?.offline == true,
-                            frame = bitmap,
-                            frameStamp = frame?.second ?: 0L,
-                            lost = lost?.failure,
-                            stuck = stuck,
-                            report = report,
-                            input = input,
-                            pad = pad,
-                            keyboard = keyboard,
-                            russian = russian,
-                        ),
+                    val actions = remember(graph) {
                         DesktopActions(
                             onClose = {
                                 graph.session.stop()
@@ -410,6 +441,7 @@ class MainActivity : ComponentActivity() {
                                 scope.launch { report = withContext(Dispatchers.IO) { graph.session.diagnostics() } }
                             },
                             onPointer = { x, y, buttons -> graph.session.pointer(x, y, buttons) },
+                            onTap = { x, y -> graph.session.tap(x, y) },
                             onMoveCursor = { dx, dy -> graph.session.moveCursor(dx, dy) },
                             onClick = { button -> graph.session.click(button) },
                             onScroll = { steps -> graph.session.scroll(steps) },
@@ -425,7 +457,28 @@ class MainActivity : ComponentActivity() {
                             onConsole = { graph.session.tap(139, 20) },
                             onSettings = { graph.session.combo(Keys.SUPER, 's'.code) },
                             onRotate = ::rotate,
+                        )
+                    }
+                    DesktopScreen(
+                        DesktopUi(
+                            title = listOfNotNull(
+                                live?.name ?: lost?.name ?: graph.local.installed?.name,
+                                live?.desktop?.takeIf { !it.equals("none", true) }?.uppercase(),
+                            ).joinToString(" · "),
+                            mode = live?.mode ?: ru.palma.app.shell.DisplayMode.VNC,
+                            offline = live?.offline == true,
+                            frame = graph.session.frame,
+                            lost = lost?.failure,
+                            hasFrame = hasFrame,
+                            stuck = stuck,
+                            report = report,
+                            input = input,
+                            pad = pad,
+                            keyboard = keyboard,
+                            russian = russian,
                         ),
+                        actions,
+                        openShade = BuildConfig.DEBUG && intent.getBooleanExtra(AUTOTEST_SHADE_EXTRA, false),
                     )
                 }
             }

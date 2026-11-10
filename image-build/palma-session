@@ -1,7 +1,5 @@
 #!/bin/sh
 mode="${1:-vnc}"
-LOG=/tmp/palma-session.log
-: > "$LOG"
 : > /tmp/trace.log
 exec >>/tmp/trace.log 2>&1
 echo "BOOT $(date +%H:%M:%S 2>/dev/null) mode=$mode args=$*"
@@ -37,9 +35,7 @@ MAXH=$GH
 [ -n "$MAXH" ] || MAXH=800
 
 say() {
-  line="matrux $(date +%H:%M:%S 2>/dev/null): $*"
-  echo "$line"
-  echo "$line" >> /tmp/trace.log
+  echo "matrux $(date +%H:%M:%S 2>/dev/null): $*"
 }
 
 live() {
@@ -50,14 +46,10 @@ alive() {
   live "$1" && echo "pid=$1" || echo none
 }
 
-
-
-
 lock_pid() {
   [ -f "/tmp/.X$1-lock" ] || return 1
   tr -d ' \n' < "/tmp/.X$1-lock" 2>/dev/null
 }
-
 
 own_display() {
   pid=$(lock_pid "$1") || return 1
@@ -76,10 +68,6 @@ desktop_up() {
   return 0
 }
 
-tune_panel() {
-  return 0
-}
-
 display_state() {
   say "state desktop=$(desktop_up && echo yes || echo no) pid=$DESKPID alive=$(live "$DESKPID" && echo yes || echo no) display=$DISP"
 }
@@ -91,6 +79,7 @@ DESKPID=""
 DISP=""
 FOUND=""
 VSTARTED=""
+NORANDR=""
 
 track() {
   [ -n "$1" ] && echo "$1" >> "$PIDS_FILE" 2>/dev/null
@@ -141,23 +130,6 @@ start_vnc() {
   VPID=$!
 }
 
-try_vnc() {
-  start_vnc "$1" ""
-  i=0
-  while [ "$i" -lt 10 ]; do
-    live "$VPID" || break
-    sleep 0.3
-    i=$((i + 1))
-  done
-  if ! live "$VPID"; then
-    say "x11vnc died on $1, retry"
-    start_vnc "$1" ""
-    sleep 1
-  fi
-  live "$VPID" || return 1
-  return 0
-}
-
 start_desktop() {
   say "desktop start dbus-run-session xfce4-session (display $DISP)"
   dbus-run-session -- xfce4-session >/tmp/xfce.log 2>&1 &
@@ -166,22 +138,47 @@ start_desktop() {
 }
 
 kill_desktop() {
+  [ -n "$DESKPID" ] && kill -TERM "$DESKPID" 2>/dev/null && sleep 0.5
   for p in "$VPID" "$DESKPID" "$XPID"; do
     [ -n "$p" ] && kill -9 "$p" 2>/dev/null
   done
   for d in /proc/[0-9]*; do
     case "$(cat "$d/comm" 2>/dev/null)" in
-      xfwm4|xfdesktop|xfce4-panel|xfce4-session|xfsettingsd|xfconfd|xfce4-notifyd|xfce4-power-man*) kill -9 "${d#/proc/}" 2>/dev/null ;;
+      xfwm4|xfdesktop|xfce4-panel|xfce4-session|xfsettingsd|xfconfd|xfce4-notifyd|xfce4-power-man*|dbus-daemon|dbus-run-session) kill -9 "${d#/proc/}" 2>/dev/null ;;
     esac
   done
   sleep 0.5
+}
+
+fb_size() {
+  xrandr -d "$DISP" -q 2>/dev/null | sed -n 's/.*current \([0-9]*\) x \([0-9]*\),.*/\1x\2/p' | head -1
+}
+
+resize_fb() {
+  i=0
+  while [ "$i" -lt 15 ]; do
+    xrandr -d "$DISP" --fb "$1" >/dev/null 2>&1
+    [ "$(fb_size)" = "$1" ] && return 0
+    i=$((i + 1))
+    sleep 0.2
+  done
+  return 1
+}
+
+prepare_x() {
+  command -v setxkbmap >/dev/null 2>&1 && \
+    DISPLAY="$DISP" setxkbmap -layout us,ru -option grp:alt_shift_toggle -option grp_led:scroll >/dev/null 2>&1
+  command -v xrdb >/dev/null 2>&1 && DISPLAY="$DISP" xrdb -merge /root/.Xresources >/dev/null 2>&1
+  return 0
 }
 
 start_display() {
   rm -f "/tmp/.X${DISP#:}-lock" "/tmp/.X11-unix/X${DISP#:}" "/tmp/xvfb-${DISP#:}.log" "/tmp/xvnc.log"
   if command -v Xvnc >/dev/null 2>&1; then
     say "Xvnc ${GEOMETRY} на $DISP"
-    Xvnc "$DISP" -geometry "$GEOMETRY" -depth 24 -rfbport "$VPORT" \
+    # PALMA_XVNC_EXTRA — доп. ключи Xvnc (напр. -depth 16 -CompareFB 2) из окружения вызывающего
+    Xvnc "$DISP" -geometry "$GEOMETRY" -depth "${PALMA_XVNC_DEPTH:-24}" ${PALMA_XVNC_EXTRA:-} \
+      -rfbport "$VPORT" \
       -SecurityTypes None -AlwaysShared -AcceptSetDesktopSize=1 -localhost=1 \
       -nolisten tcp -desktop Matrux -noreset >/tmp/xvnc.log 2>&1 &
     XPID=$!
@@ -191,12 +188,25 @@ start_display() {
     wait_port || true
     return 0
   fi
-  Xvfb "$DISP" -screen 0 "${GEOMETRY}x24" -nolisten tcp -ac >"/tmp/xvfb-${DISP#:}.log" 2>&1 &
+  SIZE="${MAXW}x${MAXH}"
+  [ -n "$NORANDR" ] && SIZE="$GEOMETRY"
+  Xvfb "$DISP" -screen 0 "${SIZE}x24" -nolisten tcp -ac >"/tmp/xvfb-${DISP#:}.log" 2>&1 &
   XPID=$!
   track "$XPID"
   wait_socket "${DISP#:}" || true
   start_vnc "$DISP" ""
   wait_port || true
+  if [ "$SIZE" = "$GEOMETRY" ] || resize_fb "$GEOMETRY"; then
+    say "framebuffer $GEOMETRY в экране $SIZE"
+    prepare_x
+    return 0
+  fi
+  live "$XPID" || return 0
+  NORANDR=1
+  say "xrandr не меняет размер Xvfb, запуск в $GEOMETRY"
+  kill -9 "$VPID" "$XPID" 2>/dev/null
+  sleep 0.3
+  start_display
 }
 
 rebuild_desktop() {
@@ -210,10 +220,19 @@ apply_geometry() {
   GEOMETRY="$1"
   GW=${GEOMETRY%x*}
   GH=${GEOMETRY#*x}
-  RESTARTS=0
+  if [ -z "$NORANDR" ] && [ "$GW" -le "$MAXW" ] && [ "$GH" -le "$MAXH" ] && resize_fb "$GEOMETRY"; then
+    say "geometry $GEOMETRY через xrandr"
+    return 0
+  fi
+  [ "$GW" -gt "$MAXW" ] && MAXW=$GW
+  [ "$GH" -gt "$MAXW" ] && MAXW=$GH
+  MAXH=$MAXW
+  XRESTARTS=0
+  DRESTARTS=0
   UP=""
-  say "geometry $GEOMETRY, пересобираю рабочий стол"
+  say "geometry $GEOMETRY, xrandr не сработал, пересобираю рабочий стол"
   rebuild_desktop
+  start_desktop
   say "geometry $GEOMETRY готово"
 }
 
@@ -271,6 +290,7 @@ reset_layout() {
 clean_leftovers
 reset_layout
 tune_speed
+printf 'Xft.dpi: 96\nXft.antialias: 1\nXft.hinting: 1\nXft.rgba: rgb\nXcursor.size: 24\n' > /root/.Xresources
 
 if [ "$mode" = "x11" ]; then
   rm -f /tmp/xvfb-0.log
@@ -303,21 +323,13 @@ if [ -z "$FOUND" ]; then
   exit 1
 fi
 
-xrandr -d "$DISP" --fb "${GW}x${GH}" >/dev/null 2>&1 && say "framebuffer ${GW}x${GH}"
-say "vnc listening on $VPORT display $DISP geometry $GEOMETRY"
+say "vnc started on $VPORT display $DISP geometry $GEOMETRY"
 
 export DISPLAY="$DISP"
 
-if command -v setxkbmap >/dev/null 2>&1; then
-  setxkbmap -layout us,ru -option grp:alt_shift_toggle -option grp_led:scroll >/dev/null 2>&1 || true
-fi
-
-if command -v xrdb >/dev/null 2>&1; then
-  printf 'Xft.dpi: 96\nXft.antialias: 1\nXft.hinting: 1\nXft.rgba: rgb\nXcursor.size: 24\n' > /root/.Xresources
-  xrdb -merge /root/.Xresources
-fi
-
-RESTARTS=0
+XRESTARTS=0
+DRESTARTS=0
+STABLE=0
 UP=""
 WAITED=0
 rm -f /tmp/geometry-request
@@ -326,9 +338,9 @@ start_desktop
 
 while :; do
   if ! live "$XPID"; then
-    if [ "$RESTARTS" -lt 4 ]; then
-      RESTARTS=$((RESTARTS + 1))
-      say "xvfb lost, restart $RESTARTS"
+    if [ "$XRESTARTS" -lt 4 ]; then
+      XRESTARTS=$((XRESTARTS + 1))
+      say "xvfb lost, restart $XRESTARTS"
       kill -9 "$VPID" 2>/dev/null
       start_display
       UP=""
@@ -351,7 +363,6 @@ while :; do
     if [ -z "$UP" ] && desktop_up; then
       UP=1
       say "desktop up pid=$DESKPID"
-      tune_panel
       tune_xfce
     fi
   else
@@ -359,9 +370,9 @@ while :; do
       say "desktop lost"
       UP=""
     fi
-    if [ "$RESTARTS" -lt 40 ]; then
-      RESTARTS=$((RESTARTS + 1))
-      say "desktop restart $RESTARTS"
+    if [ "$DRESTARTS" -lt 40 ]; then
+      DRESTARTS=$((DRESTARTS + 1))
+      say "desktop restart $DRESTARTS"
       sleep 1
       start_desktop
     else
@@ -379,8 +390,16 @@ while :; do
     fi
   fi
 
+  if [ -n "$UP" ]; then
+    STABLE=$((STABLE + 2))
+    [ "$STABLE" -ge 300 ] && { XRESTARTS=0; DRESTARTS=0; }
+  else
+    STABLE=0
+  fi
+
   if [ -f /tmp/geometry-request ]; then
     REQ=$(tr -d ' \n' < /tmp/geometry-request 2>/dev/null)
+    rm -f /tmp/geometry-request
     case "$REQ" in
       [0-9]*x[0-9]*)
         if [ "$REQ" != "$GEOMETRY" ]; then
@@ -389,7 +408,6 @@ while :; do
           case "$RW$RH" in
             *[!0-9]*) ;;
             *) if [ "$RW" -ge 320 ] 2>/dev/null && [ "$RH" -ge 320 ] 2>/dev/null; then
-                 rm -f /tmp/geometry-request
                  apply_geometry "$REQ"
                  continue
                fi ;;
@@ -398,5 +416,9 @@ while :; do
     esac
   fi
 
-  sleep 2
+  n=0
+  while [ "$n" -lt 10 ] && [ ! -f /tmp/geometry-request ]; do
+    sleep 0.2
+    n=$((n + 1))
+  done
 done

@@ -1,13 +1,16 @@
 package ru.palma.app.session
 
+import android.graphics.Bitmap
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,6 +34,7 @@ import ru.palma.app.shell.X11Server
 import ru.palma.app.ui.Keys
 import java.io.File
 import java.net.Socket
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.math.abs
 
 sealed interface SessionState {
@@ -40,6 +44,13 @@ sealed interface SessionState {
     data class Lost(val name: String, val failure: Failure) : SessionState
 }
 
+data class Frame(val bitmap: Bitmap, val seq: Long)
+
+private sealed interface Input {
+    data class Move(val x: Int, val y: Int, val buttons: Int) : Input
+    class Script(val block: suspend (VncClient) -> Unit) : Input
+}
+
 class SessionController(
     private val repository: PalmaRepository,
     private val local: LocalState,
@@ -47,14 +58,18 @@ class SessionController(
     private val engine: Engine,
     private val x11: X11Server,
     private val tmpDir: File,
+    private val guestTmp: File,
     private val scope: CoroutineScope,
     private val geometry: () -> String = { DEFAULT_GEOMETRY },
     private val clock: () -> Long = System::currentTimeMillis,
 ) {
     private val mutable = MutableStateFlow<SessionState>(SessionState.Stopped)
     val state: StateFlow<SessionState> = mutable.asStateFlow()
-    private val frames = MutableStateFlow<Pair<Framebuffer, Long>?>(null)
-    val frame: StateFlow<Pair<Framebuffer, Long>?> = frames.asStateFlow()
+    private val frames = MutableStateFlow<Frame?>(null)
+    val frame: StateFlow<Frame?> = frames.asStateFlow()
+    private val seq = AtomicLong()
+    private val surfaces = arrayOfNulls<Bitmap>(2)
+    private var back = 0
     private var vncPort: Int = ProotCommand.VNC_PORT
     private val blankState = MutableStateFlow(false)
     val blank: StateFlow<Boolean> = blankState.asStateFlow()
@@ -63,17 +78,17 @@ class SessionController(
 
     private var job: Job? = null
     private var inputJob: Job? = null
-    private var process: Process? = null
-    private var socket: Socket? = null
-    private var vnc: VncClient? = null
-    private var cursorX = 0
-    private var cursorY = 0
-    private var cursorPlaced = false
+    private var geometryJob: Job? = null
+    private var inputs = Channel<Input>(INPUT_CAPACITY)
+    @Volatile private var process: Process? = null
+    @Volatile private var socket: Socket? = null
+    @Volatile private var vnc: VncClient? = null
+    @Volatile private var cursorX = 0
+    @Volatile private var cursorY = 0
+    @Volatile private var cursorPlaced = false
     private val engineOutput = StringBuilder()
-    private var startedGeometry = ""
-    private var lastGeometryAt = 0L
-    private val GEOMETRY_COOLDOWN_MS = 12_000L
-    private var restarting = false
+    @Volatile private var startedGeometry = ""
+    @Volatile private var restarting = false
     private var loggedFrame = ""
 
     fun start() {
@@ -86,6 +101,7 @@ class SessionController(
         val started = clock()
         restarting = false
         startedGeometry = geometry()
+        startInput()
         job = scope.launch {
             val sequence = LaunchSequence(
                 checkSubscription = ::checkSubscription,
@@ -112,49 +128,37 @@ class SessionController(
 
     fun stop() {
         restarting = false
+        geometryJob?.cancel()
+        geometryJob = null
         job?.cancel()
         job = null
+        stopInput()
         teardown()
-        GuestProcesses.killLeftovers()
+        scope.launch(Dispatchers.IO) { GuestProcesses.killLeftovers() }
         mutable.value = SessionState.Stopped
     }
 
     fun syncGeometry() {
-        val state = mutable.value
-        if (state !is SessionState.Live && state !is SessionState.Launching) return
-        val want = geometry()
-        val frame = frames.value?.first
-        android.util.Log.i("palma-geo", "want=" + want + " actual=" + (frame?.let { "" + it.width + "x" + it.height }))
-        val actual = frame?.let { "${it.width}x${it.height}" }
-        val mismatch = actual != null && actual != want
-        if (want == startedGeometry && !mismatch) return
-        val now = System.currentTimeMillis()
-        if (now - lastGeometryAt < GEOMETRY_COOLDOWN_MS) return
-        lastGeometryAt = now
-        if (requestGeometry(want)) {
+        if (mutable.value !is SessionState.Live) return
+        geometryJob?.cancel()
+        geometryJob = scope.launch {
+            delay(GEOMETRY_DEBOUNCE_MS)
+            val want = geometry()
+            if (want == startedGeometry) return@launch
+            if (!requestGeometry(want)) return@launch restartGeometry()
             startedGeometry = want
-            frames.value = null
-            scope.launch {
-                delay(GEOMETRY_SETTLE_MS)
-                reconnectDisplay()
-                delay(GEOMETRY_WAIT_MS)
-                val frame = frames.value?.first
-                if (frame != null && "${frame.width}x${frame.height}" != want) restartGeometry()
+            val reached = withTimeoutOrNull(GEOMETRY_WAIT_MS) {
+                frames.first { it != null && "${it.bitmap.width}x${it.bitmap.height}" == want }
             }
-            return
+            if (reached == null) restartGeometry()
         }
-        restartGeometry()
-    }
-
-    private fun reconnectDisplay() {
-        runCatching { socket?.close() }
     }
 
     private fun requestGeometry(size: String): Boolean = runCatching {
-        val file = File(tmpDir.parentFile, "proot/geometry-request")
-        file.parentFile?.mkdirs()
-        file.writeText(size)
-        true
+        guestTmp.mkdirs()
+        val part = File(guestTmp, "geometry-request.part")
+        part.writeText(size)
+        part.renameTo(File(guestTmp, "geometry-request"))
     }.getOrDefault(false)
 
     private fun restartGeometry() {
@@ -168,18 +172,15 @@ class SessionController(
     }
 
     fun pointer(x: Int, y: Int, buttons: Int) {
-        val client = vnc ?: return
-        scope.launch(Dispatchers.IO) { runCatching { client.pointer(x, y, buttons) } }
+        if (vnc == null) return
+        inputs.trySend(Input.Move(x, y, buttons))
     }
 
     fun tap(x: Int, y: Int) {
-        val client = vnc ?: return
-        scope.launch(Dispatchers.IO) {
-            runCatching {
-                client.pointer(x, y, 1)
-                delay(CLICK_MS)
-                client.pointer(x, y, 0)
-            }
+        enqueue { client ->
+            client.pointer(x, y, 1)
+            delay(CLICK_MS)
+            client.pointer(x, y, 0)
         }
     }
 
@@ -227,11 +228,45 @@ class SessionController(
     }
 
     private fun enqueue(block: suspend (VncClient) -> Unit) {
-        val client = vnc ?: return
-        val previous = inputJob
+        if (vnc == null) return
+        inputs.trySend(Input.Script(block))
+    }
+
+    private fun startInput() {
+        inputJob?.cancel()
+        inputs.close()
+        val queue = Channel<Input>(INPUT_CAPACITY)
+        inputs = queue
         inputJob = scope.launch(Dispatchers.IO) {
-            withTimeoutOrNull(QUEUE_WAIT_MS) { previous?.join() }
-            runCatching { block(client) }
+            for (first in queue) {
+                var next: Input = first
+                while (next is Input.Move) {
+                    val more = queue.tryReceive().getOrNull()
+                    if (more !is Input.Move || more.buttons != next.buttons) {
+                        send(next)
+                        next = more ?: break
+                        continue
+                    }
+                    next = more
+                }
+                if (next is Input.Script) send(next)
+            }
+        }
+    }
+
+    private fun stopInput() {
+        inputJob?.cancel()
+        inputJob = null
+        inputs.close()
+    }
+
+    private suspend fun send(input: Input) {
+        val client = vnc ?: return
+        runCatching {
+            when (input) {
+                is Input.Move -> client.pointer(input.x, input.y, input.buttons)
+                is Input.Script -> input.block(client)
+            }
         }
     }
 
@@ -270,7 +305,7 @@ class SessionController(
     }
 
     fun scroll(steps: Int) {
-        val client = vnc ?: return
+        if (vnc == null) return
         if (steps == 0) return
         if (!cursorPlaced) return
         val button = if (steps < 0) WHEEL_UP else WHEEL_DOWN
@@ -302,21 +337,24 @@ class SessionController(
         if (!engine.hasSessionScript(rootfs)) throw FailureException(Failure.SessionMissing)
         val mode = if (x11.available()) DisplayMode.X11 else DisplayMode.VNC
         vncPort = GuestPorts.free(ProotCommand.VNC_PORT)
-        val started = engine.start(rootfs, mode, geometry(), vncPort)
+        val started = engine.start(rootfs, mode, startedGeometry, vncPort)
         process = started
         scope.launch(Dispatchers.IO) {
             runCatching {
                 started.inputStream.bufferedReader().forEachLine { line ->
                     synchronized(engineOutput) {
-                        if (engineOutput.length < MAX_ENGINE_OUTPUT) engineOutput.append(line).append('\n')
+                        engineOutput.append(line).append('\n')
+                        if (engineOutput.length > MAX_ENGINE_OUTPUT * 2) {
+                            engineOutput.delete(0, engineOutput.length - MAX_ENGINE_OUTPUT)
+                        }
                     }
                 }
             }
         }
         delay(ENGINE_SETTLE_MS)
         if (!started.isAlive) {
-            val output = runCatching { started.inputStream.bufferedReader().use { it.readText() } }
-                .getOrNull().orEmpty().trim().take(MAX_ENGINE_OUTPUT)
+            delay(OUTPUT_DRAIN_MS)
+            val output = synchronized(engineOutput) { engineOutput.toString().trim().takeLast(MAX_ENGINE_OUTPUT) }
             throw FailureException(Failure.Engine(output), output.ifEmpty { null })
         }
     }
@@ -333,7 +371,6 @@ class SessionController(
                     client.handshake()
                     socket = sock
                     vnc = client
-                    frames.value = client.framebuffer to clock()
                     return@withContext DisplayMode.VNC
                 } catch (error: Exception) {
                     runCatching { sock.close() }
@@ -348,7 +385,7 @@ class SessionController(
     fun diagnostics(): String {
         val engine = synchronized(engineOutput) { engineOutput.toString().trim().takeLast(LOG_TAIL) }
         val logs = DIAGNOSTIC_LOGS.mapNotNull { name ->
-            val file = File(tmpDir, name)
+            val file = File(guestTmp, name)
             if (!file.isFile) return@mapNotNull null
             val text = runCatching { file.readText().trim().takeLast(LOG_TAIL) }.getOrNull().orEmpty()
             text.takeIf { it.isNotBlank() }?.let { "$name\n$it" }
@@ -365,7 +402,7 @@ class SessionController(
     private fun displayReport(): String {
         val engine = synchronized(engineOutput) { engineOutput.toString().trim().takeLast(MAX_ENGINE_OUTPUT) }
         val logs = DISPLAY_LOGS.mapNotNull { name ->
-            val file = File(tmpDir, name)
+            val file = File(guestTmp, name)
             if (!file.isFile) return@mapNotNull null
             val text = runCatching { file.readText().trim().takeLast(LOG_TAIL) }.getOrNull().orEmpty()
             text.takeIf { it.isNotBlank() }?.let { "$name\n$it" }
@@ -376,21 +413,25 @@ class SessionController(
     private suspend fun pump(name: String) = withContext(Dispatchers.IO) {
         while (isActive) {
             val client = vnc ?: return@withContext
+            var fresh = true
             try {
                 while (isActive) {
                     if (client.readMessage()) {
-                        frames.value = client.framebuffer to clock()
-                        blankState.value = client.framebuffer.blank()
-                        val size = "${client.framebuffer.width}x${client.framebuffer.height}"
+                        val fb = client.framebuffer
+                        publish(client, fb)
+                        if (fresh || blankState.value) blankState.value = fb.blank()
+                        fresh = false
+                        val size = "${fb.width}x${fb.height}"
                         if (size != loggedFrame) {
                             loggedFrame = size
-                            Log.i(FRAME_TAG, "кадр $size пусто=${client.framebuffer.blank()}")
+                            Log.i(FRAME_TAG, "кадр $size пусто=${blankState.value}")
                         }
                     }
                 }
                 return@withContext
             } catch (error: Exception) {
                 if (!isActive) return@withContext
+                blankState.value = true
                 runCatching { socket?.close() }
                 socket = null
                 vnc = null
@@ -414,7 +455,6 @@ class SessionController(
                 if (runCatching { client.handshake() }.isSuccess) {
                     socket = sock
                     vnc = client
-                    frames.value = client.framebuffer to clock()
                     return true
                 }
                 runCatching { sock.close() }
@@ -425,6 +465,24 @@ class SessionController(
         return false
     }
 
+    private fun publish(client: VncClient, fb: Framebuffer) {
+        val bitmap = surface(back, fb.width, fb.height)
+        bitmap.copyPixelsFromBuffer(fb.source())
+        back = 1 - back
+        if (vnc === client) frames.value = Frame(bitmap, seq.incrementAndGet())
+    }
+
+    private fun surface(slot: Int, width: Int, height: Int): Bitmap {
+        val current = surfaces[slot]
+        if (current != null && current.allocationByteCount >= width * height * 4) {
+            if (current.width != width || current.height != height) {
+                current.reconfigure(width, height, Bitmap.Config.ARGB_8888)
+            }
+            return current
+        }
+        return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { surfaces[slot] = it }
+    }
+
     private fun teardown() {
         runCatching { socket?.close() }
         socket = null
@@ -433,6 +491,7 @@ class SessionController(
         cursorY = 0
         cursorPlaced = false
         frames.value = null
+        surfaces.fill(null)
         blankState.value = false
         process?.destroy()
         process = null
@@ -447,22 +506,23 @@ class SessionController(
         const val REATTACH_TIMEOUT_MS = 60_000L
         const val RETRY_MS = 500L
         const val RESTART_PAUSE_MS = 800L
-        const val GEOMETRY_WAIT_MS = 20_000L
+        const val GEOMETRY_WAIT_MS = 30_000L
+        const val GEOMETRY_DEBOUNCE_MS = 400L
         const val FRAME_TAG = "palma-vnc"
-        const val GEOMETRY_SETTLE_MS = 9_000L
         const val MAX_ENGINE_OUTPUT = 1200
+        const val OUTPUT_DRAIN_MS = 200L
+        const val INPUT_CAPACITY = 256
         const val CLICK_MS = 40L
         const val TYPE_KEY_MS = 12L
         const val GROUP_SWITCH_MS = 30L
         const val GROUP_SETTLE_MS = 90L
-        const val QUEUE_WAIT_MS = 2_000L
         const val CYRILLIC_FIRST = 0x0400
         const val CYRILLIC_LAST = 0x04FF
         const val WHEEL_UP = 4
         const val WHEEL_DOWN = 5
         const val LOG_TAIL = 500
         const val DEFAULT_GEOMETRY = "1280x800"
-        val DISPLAY_LOGS = listOf("xvfb.log", "x11vnc.log")
-        val DIAGNOSTIC_LOGS = listOf("palma-session.log", "xvfb-0.log", "x11vnc.log")
+        val DISPLAY_LOGS = listOf("trace.log", "xvfb-0.log", "xvfb-1.log", "x11vnc.log")
+        val DIAGNOSTIC_LOGS = listOf("trace.log", "xvfb-0.log", "x11vnc.log", "xfce.log")
     }
 }

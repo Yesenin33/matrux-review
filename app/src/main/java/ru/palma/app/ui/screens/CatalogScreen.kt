@@ -25,6 +25,7 @@ import ru.palma.app.ui.components.ScreenTitle
 import ru.palma.app.ui.components.Tab
 import ru.palma.app.ui.components.TabScreen
 import ru.palma.app.ui.distroLogo
+import ru.palma.app.ui.imageLogo
 import ru.palma.app.ui.failureBody
 import ru.palma.app.ui.failureTitle
 import ru.palma.app.ui.imageDescription
@@ -85,7 +86,7 @@ private fun DistroCard(row: CatalogRow, onClick: () -> Unit) {
     val reinstall = row.action() == CatalogAction.REINSTALL
     Card(if (reinstall) Modifier else Modifier.clickable(role = Role.Button, onClick = onClick)) {
         Row(horizontalArrangement = Arrangement.spacedBy(Palma.space.unit * 2), verticalAlignment = Alignment.Top) {
-            DistroLogo(distroLogo(image.distro))
+            DistroLogo(imageLogo(image))
             Column(Modifier.weight(1f)) {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(image.name, style = Palma.type.title, color = Palma.colors.ink, modifier = Modifier.weight(1f))

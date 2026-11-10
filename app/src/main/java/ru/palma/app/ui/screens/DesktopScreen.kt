@@ -1,9 +1,18 @@
 package ru.palma.app.ui.screens
 
 import android.graphics.Bitmap
-import androidx.compose.foundation.Image
+import android.graphics.Paint
+import android.graphics.RectF
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,40 +24,48 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.min
-import kotlin.math.roundToInt
 import ru.palma.app.R
 import ru.palma.app.data.Failure
+import ru.palma.app.session.Frame
 import ru.palma.app.shell.DisplayMode
 import ru.palma.app.ui.Keys
 import ru.palma.app.ui.components.Lucide
@@ -64,9 +81,9 @@ data class DesktopUi(
     val title: String,
     val mode: DisplayMode,
     val offline: Boolean,
-    val frame: Bitmap?,
-    val frameStamp: Long = 0L,
+    val frame: StateFlow<Frame?>?,
     val lost: Failure?,
+    val hasFrame: Boolean = false,
     val stuck: Boolean = false,
     val report: String = "",
     val input: InputMode = InputMode.Touch,
@@ -82,6 +99,7 @@ data class DesktopActions(
     val onRestart: () -> Unit = {},
     val onReport: () -> Unit = {},
     val onPointer: (x: Int, y: Int, buttons: Int) -> Unit = { _, _, _ -> },
+    val onTap: (x: Int, y: Int) -> Unit = { _, _ -> },
     val onMoveCursor: (dx: Int, dy: Int) -> Unit = { _, _ -> },
     val onClick: (button: Int) -> Unit = {},
     val onScroll: (steps: Int) -> Unit = {},
@@ -98,7 +116,8 @@ data class DesktopActions(
 )
 
 @Composable
-fun DesktopScreen(ui: DesktopUi, actions: DesktopActions) {
+fun DesktopScreen(ui: DesktopUi, actions: DesktopActions, openShade: Boolean = false) {
+    var shadeOpen by remember { mutableStateOf(openShade) }
     Box(
         Modifier
             .fillMaxSize()
@@ -106,7 +125,7 @@ fun DesktopScreen(ui: DesktopUi, actions: DesktopActions) {
     ) {
         when {
             ui.lost != null -> Lost(ui.lost, actions)
-            ui.frame != null -> Stage(ui.frame, ui.frameStamp, ui.input, actions)
+            ui.frame != null && ui.hasFrame -> Stage(ui.frame, ui.input, actions)
             ui.mode == DisplayMode.X11 -> Waiting(stringResource(R.string.desktop_x11_native))
             else -> Waiting(stringResource(R.string.desktop_waiting))
         }
@@ -116,7 +135,14 @@ fun DesktopScreen(ui: DesktopUi, actions: DesktopActions) {
             return@Box
         }
         KeyboardSink(ui.keyboard, actions.onKey, actions.onChar)
-        ControlBar(ui, actions, Modifier.align(Alignment.TopCenter))
+        if (shadeOpen) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) { detectTapGestures { shadeOpen = false } },
+            )
+        }
+        TopShade(ui, actions, shadeOpen, { shadeOpen = it }, Modifier.align(Alignment.TopCenter))
         if (ui.pad) {
             Column(
                 Modifier
@@ -130,31 +156,135 @@ fun DesktopScreen(ui: DesktopUi, actions: DesktopActions) {
 }
 
 @Composable
-private fun ControlBar(ui: DesktopUi, actions: DesktopActions, modifier: Modifier = Modifier) {
-    Row(
+private fun TopShade(
+    ui: DesktopUi,
+    actions: DesktopActions,
+    open: Boolean,
+    onOpen: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var travel by remember { mutableStateOf(0f) }
+    Column(
         modifier
-            .padding(horizontal = Palma.space.unit / 2, vertical = Palma.space.unit / 2)
             .fillMaxWidth()
-            .clip(Palma.shapes.pill)
-            .background(Color.Black.copy(alpha = 0.80f))
-            .padding(horizontal = 4.dp, vertical = 3.dp),
-        horizontalArrangement = Arrangement.spacedBy(Palma.space.unit / 3),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(top = SHADE_INSET),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        BarButton(Lucide.Keyboard, ui.keyboard, actions.onToggleKeyboard)
-        BarButton(
-            if (ui.input == InputMode.Touch) Lucide.Hand else Lucide.Mouse,
-            ui.input == InputMode.Mouse,
-            actions.onToggleInput,
-        )
-        BarButton(Lucide.Joystick, ui.pad, actions.onTogglePad)
-        BarButton(Lucide.Terminal, false, actions.onConsole)
-        BarButton(Lucide.Sliders, false, actions.onSettings)
-        BarButton(Lucide.Globe, ui.russian, actions.onToggleLayout)
-        BarButton(Lucide.RotateCw, false, actions.onRotate)
-        Box(Modifier.weight(1f))
-        BarButton(Lucide.ChevronDown, false, actions.onMinimize)
-        BarButton(Lucide.X, false, actions.onClose)
+        Box(
+            Modifier
+                .size(width = SHADE_GRAB_WIDTH, height = SHADE_GRAB_HEIGHT)
+                .clip(Palma.shapes.pill)
+                .background(Color.Black.copy(alpha = 0.62f))
+                .border(1.dp, Color.White.copy(alpha = 0.22f), Palma.shapes.pill)
+                .pointerInput(Unit) { detectTapGestures { onOpen(!open) } }
+                .pointerInput(Unit) {
+                    detectDragGestures(
+                        onDragStart = { travel = 0f },
+                        onDragEnd = { travel = 0f },
+                        onDragCancel = { travel = 0f },
+                    ) { change, delta ->
+                        travel += delta.y
+                        if (travel > SHADE_SNAP && !open) onOpen(true)
+                        if (travel < -SHADE_SNAP && open) onOpen(false)
+                        change.consume()
+                    }
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            LucideIcon(
+                if (open) Lucide.ChevronUp else Lucide.ChevronDown,
+                Color.White.copy(alpha = 0.85f),
+                size = 18.dp,
+            )
+        }
+        AnimatedVisibility(
+            visible = open,
+            enter = expandVertically(tween(Palma.motion.duration(Palma.motion.short), easing = Palma.motion.easing)) + fadeIn(),
+            exit = shrinkVertically(tween(Palma.motion.duration(Palma.motion.short), easing = Palma.motion.easing)) + fadeOut(),
+        ) {
+            ShadePanel(ui, actions, Modifier.padding(top = Palma.space.unit))
+        }
+    }
+}
+
+@Composable
+private fun ShadePanel(ui: DesktopUi, actions: DesktopActions, modifier: Modifier = Modifier) {
+    Column(
+        modifier
+            .fillMaxWidth()
+            .padding(horizontal = Palma.space.unit / 2)
+            .clip(Palma.shapes.card)
+            .background(Color.Black.copy(alpha = 0.86f))
+            .border(1.dp, Color.White.copy(alpha = 0.16f), Palma.shapes.card)
+            .padding(Palma.space.unit),
+        verticalArrangement = Arrangement.spacedBy(Palma.space.unit / 2),
+    ) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Palma.space.unit / 2),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ShadeAction(
+                Lucide.Terminal,
+                stringResource(R.string.shade_console),
+                false,
+                Modifier.weight(1f),
+                actions.onConsole,
+            )
+            ShadeAction(
+                Lucide.Keyboard,
+                stringResource(R.string.shade_keyboard),
+                ui.keyboard,
+                Modifier.weight(1f),
+                actions.onToggleKeyboard,
+            )
+            ShadeAction(
+                if (ui.input == InputMode.Touch) Lucide.Hand else Lucide.Mouse,
+                stringResource(R.string.shade_mouse),
+                ui.input == InputMode.Mouse,
+                Modifier.weight(1f),
+                actions.onToggleInput,
+            )
+        }
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Palma.space.unit / 3),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BarButton(Lucide.Joystick, ui.pad, actions.onTogglePad)
+            BarButton(Lucide.Globe, ui.russian, actions.onToggleLayout)
+            BarButton(Lucide.Sliders, false, actions.onSettings)
+            BarButton(Lucide.RotateCw, false, actions.onRotate)
+            Box(Modifier.weight(1f))
+            BarButton(Lucide.ChevronDown, false, actions.onMinimize)
+            BarButton(Lucide.X, false, actions.onClose)
+        }
+    }
+}
+
+@Composable
+private fun ShadeAction(
+    icon: Lucide,
+    label: String,
+    active: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    Tappable(onClick, modifier) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .height(SHADE_ACTION_HEIGHT)
+                .clip(Palma.shapes.pill)
+                .background(if (active) Color.White.copy(alpha = 0.92f) else Color.White.copy(alpha = 0.12f))
+                .border(1.dp, Color.White.copy(alpha = if (active) 0.92f else 0.22f), Palma.shapes.pill),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            LucideIcon(icon, if (active) Color.Black else Color.White, size = 20.dp)
+            Spacer(Modifier.width(Palma.space.unit / 2))
+            Text(label, style = Palma.type.caption, color = if (active) Color.Black else Color.White, maxLines = 1)
+        }
     }
 }
 
@@ -220,6 +350,7 @@ private fun PadButton(text: String, modifier: Modifier = Modifier, onClick: () -
 
 @Composable
 private fun Trackpad(modifier: Modifier = Modifier, actions: DesktopActions) {
+    val current by rememberUpdatedState(actions)
     Box(
         modifier
             .height(Palma.space.touch * 2)
@@ -228,38 +359,8 @@ private fun Trackpad(modifier: Modifier = Modifier, actions: DesktopActions) {
             .border(1.dp, Color.White.copy(alpha = 0.25f), Palma.shapes.control)
             .pointerInput(Unit) {
                 awaitPointerEventScope {
-                    var drag = 0f
-                    var scroll = 0f
-                    var two = false
-                    while (true) {
-                        val event = awaitPointerEvent()
-                        val change = event.changes.firstOrNull() ?: continue
-                        if (event.changes.count { it.pressed } >= 2) two = true
-                        val delta = change.position - change.previousPosition
-                        if (change.pressed && delta.getDistance() > 0f) {
-                            if (two) {
-                                scroll += delta.y
-                                val steps = (scroll / SCROLL_STEP).toInt()
-                                if (steps != 0) {
-                                    actions.onScroll(steps)
-                                    scroll -= steps * SCROLL_STEP
-                                }
-                            } else {
-                                actions.onMoveCursor(
-                                    (delta.x * PAD_SPEED).roundToInt(),
-                                    (delta.y * PAD_SPEED).roundToInt(),
-                                )
-                                drag += delta.getDistance()
-                            }
-                        }
-                        if (!change.pressed && change.previousPressed) {
-                            if (drag < TAP_SLOP) actions.onClick(if (two) 2 else 1)
-                            drag = 0f
-                            scroll = 0f
-                            two = false
-                        }
-                        change.consume()
-                    }
+                    val mouse = MouseGesture { current }
+                    while (true) mouse.handle(awaitPointerEvent().changes)
                 }
             },
         contentAlignment = Alignment.Center,
@@ -268,63 +369,128 @@ private fun Trackpad(modifier: Modifier = Modifier, actions: DesktopActions) {
     }
 }
 
-@Composable
-private fun Stage(frame: Bitmap, stamp: Long, input: InputMode, actions: DesktopActions) {
-    var box by remember { mutableStateOf(IntSize.Zero) }
-    val gesture = Modifier.pointerInput(input, frame.width, frame.height) {
-        awaitPointerEventScope {
-            var drag = TAP_SLOP
-            var scroll = 0f
-            var two = false
-            if (input == InputMode.Mouse) actions.onMoveCursor(0, 0)
-            while (true) {
-                val event = awaitPointerEvent()
-                val change = event.changes.firstOrNull() ?: continue
-                if (event.changes.count { it.pressed } >= 2) two = true
-                val delta = change.position - change.previousPosition
-                if (input == InputMode.Touch) {
-                    val point = guestPoint(change.position, box, frame)
-                    if (point != null) {
-                        actions.onPointer(point.first, point.second, if (change.pressed) 1 else 0)
-                    }
-                } else {
-                    if (change.pressed && delta.getDistance() > 0f) {
-                        if (two) {
-                            scroll += delta.y
-                            val steps = (scroll / SCROLL_STEP).toInt()
-                            if (steps != 0) {
-                                actions.onScroll(steps)
-                                scroll -= steps * SCROLL_STEP
-                            }
-                        } else {
-                            actions.onMoveCursor(
-                                (delta.x * PAD_SPEED).roundToInt(),
-                                (delta.y * PAD_SPEED).roundToInt(),
-                            )
-                            drag += delta.getDistance()
-                        }
-                    }
-                    if (!change.pressed && change.previousPressed) {
-                        if (drag < TAP_SLOP) actions.onClick(if (two) 2 else 1)
-                        drag = 0f
-                        scroll = 0f
-                        two = false
-                    }
+private class MouseGesture(private val actions: () -> DesktopActions) {
+    private var drag = 0f
+    private var scroll = 0f
+    private var restX = 0f
+    private var restY = 0f
+    private var two = false
+
+    fun handle(changes: List<PointerInputChange>) {
+        val change = changes.firstOrNull { it.pressed } ?: changes.firstOrNull() ?: return
+        if (changes.count { it.pressed } >= 2) two = true
+        val delta = change.position - change.previousPosition
+        if (change.pressed && delta.getDistance() > 0f) {
+            if (two) {
+                scroll += delta.y
+                val steps = (scroll / SCROLL_STEP).toInt()
+                if (steps != 0) {
+                    actions().onScroll(steps)
+                    scroll -= steps * SCROLL_STEP
                 }
-                change.consume()
+            } else {
+                restX += delta.x * PAD_SPEED
+                restY += delta.y * PAD_SPEED
+                val dx = restX.toInt()
+                val dy = restY.toInt()
+                restX -= dx
+                restY -= dy
+                if (dx != 0 || dy != 0) actions().onMoveCursor(dx, dy)
+                drag += delta.getDistance()
+            }
+        }
+        if (changes.none { it.pressed } && changes.any { it.previousPressed }) {
+            if (drag < TAP_SLOP) actions().onClick(if (two) 2 else 1)
+            drag = 0f
+            scroll = 0f
+            restX = 0f
+            restY = 0f
+            two = false
+        }
+        changes.forEach { it.consume() }
+    }
+}
+
+private class TouchGesture(
+    private val actions: () -> DesktopActions,
+    private val point: (Offset) -> Pair<Int, Int>?,
+) {
+    private var downAt = Offset.Zero
+    private var downPoint: Pair<Int, Int>? = null
+    private var dragging = false
+
+    fun handle(changes: List<PointerInputChange>) {
+        val change = changes.firstOrNull() ?: return
+        val now = point(change.position)
+        when {
+            change.pressed && !change.previousPressed -> {
+                downAt = change.position
+                downPoint = now
+                dragging = false
+            }
+            change.pressed && !dragging && (change.position - downAt).getDistance() > TAP_SLOP -> {
+                val start = downPoint
+                if (start != null && now != null) {
+                    dragging = true
+                    actions().onPointer(start.first, start.second, 1)
+                    actions().onPointer(now.first, now.second, 1)
+                }
+            }
+            change.pressed && dragging -> if (now != null) actions().onPointer(now.first, now.second, 1)
+            !change.pressed && change.previousPressed -> {
+                val start = downPoint
+                when {
+                    dragging -> {
+                        val end = now ?: start
+                        if (end != null) actions().onPointer(end.first, end.second, 0)
+                    }
+                    start != null -> actions().onTap(start.first, start.second)
+                }
+                dragging = false
+                downPoint = null
+            }
+        }
+        changes.forEach { it.consume() }
+    }
+}
+
+@Composable
+private fun Stage(frames: StateFlow<Frame?>, input: InputMode, actions: DesktopActions) {
+    val frame = frames.collectAsState()
+    val current by rememberUpdatedState(actions)
+    var box by remember { mutableStateOf(IntSize.Zero) }
+    val target = remember { RectF() }
+    val gesture = Modifier.pointerInput(input) {
+        awaitPointerEventScope {
+            if (input == InputMode.Mouse) {
+                current.onMoveCursor(0, 0)
+                val mouse = MouseGesture { current }
+                while (true) mouse.handle(awaitPointerEvent().changes)
+            } else {
+                val touch = TouchGesture({ current }) { offset ->
+                    frame.value?.bitmap?.let { guestPoint(offset, box, it) }
+                }
+                while (true) touch.handle(awaitPointerEvent().changes)
             }
         }
     }
-    Image(
-        bitmap = remember(stamp) { frame.asImageBitmap() },
-        contentDescription = null,
-        contentScale = ContentScale.Fit,
-        modifier = Modifier
+    Box(
+        Modifier
             .fillMaxSize()
             .onSizeChanged { box = it }
-            .then(gesture),
+            .then(gesture)
+            .drawBehind {
+                val bitmap = frame.value?.bitmap ?: return@drawBehind
+                val scale = min(size.width / bitmap.width, size.height / bitmap.height)
+                val left = (size.width - bitmap.width * scale) / 2
+                val top = (size.height - bitmap.height * scale) / 2
+                target.set(left, top, left + bitmap.width * scale, top + bitmap.height * scale)
+                drawIntoCanvas { it.nativeCanvas.drawBitmap(bitmap, null, target, framePaint) }
+            },
     )
 }
+
+private val framePaint = Paint(Paint.FILTER_BITMAP_FLAG)
 
 private fun guestPoint(offset: Offset, box: IntSize, frame: Bitmap): Pair<Int, Int>? {
     if (box.width == 0 || box.height == 0) return null
@@ -342,7 +508,8 @@ private fun guestPoint(offset: Offset, box: IntSize, frame: Bitmap): Pair<Int, I
 private fun KeyboardSink(on: Boolean, onKey: (Int) -> Unit, onLetter: (Char) -> Unit) {
     val focus = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
-    var field by remember { mutableStateOf("") }
+    val reset = remember { TextFieldValue(SENTINEL, TextRange(SENTINEL.length)) }
+    var field by remember { mutableStateOf(reset) }
     LaunchedEffect(on) {
         if (on) {
             focus.requestFocus()
@@ -356,12 +523,14 @@ private fun KeyboardSink(on: Boolean, onKey: (Int) -> Unit, onLetter: (Char) -> 
         BasicTextField(
             value = field,
             onValueChange = { value ->
-                val added = value.length - field.length
-                when {
-                    added < 0 -> repeat(-added) { onKey(Keys.BACKSPACE) }
-                    added > 0 -> value.takeLast(added).forEach { letter -> onLetter(letter) }
+                if (value.composition != null) {
+                    field = value
+                    return@BasicTextField
                 }
-                field = ""
+                val text = value.text
+                repeat(SENTINEL.length - text.count { it == SPACER }) { onKey(Keys.BACKSPACE) }
+                text.filter { it != SPACER }.forEach(onLetter)
+                field = reset
             },
             keyboardOptions = KeyboardOptions(autoCorrect = false, keyboardType = KeyboardType.Text),
             keyboardActions = KeyboardActions(),
@@ -441,5 +610,12 @@ private fun Ghost(text: String, onClick: () -> Unit) {
 }
 
 private const val PAD_SPEED = 1.8f
+private const val SHADE_SNAP = 26f
+private val SHADE_INSET = 14.dp
+private val SHADE_GRAB_WIDTH = 132.dp
+private val SHADE_GRAB_HEIGHT = 30.dp
+private val SHADE_ACTION_HEIGHT = 38.dp
 private const val SCROLL_STEP = 28f
 private const val TAP_SLOP = 14f
+private const val SPACER = '\u200B'
+private val SENTINEL = SPACER.toString().repeat(4)

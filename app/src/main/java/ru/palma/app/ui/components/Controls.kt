@@ -92,13 +92,17 @@ fun GhostButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier
 }
 
 @Composable
-fun Card(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
+fun Card(
+    modifier: Modifier = Modifier,
+    tint: Color = Palma.colors.surface,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Column(
         modifier = modifier
             .fillMaxWidth()
             .cardShadow()
             .clip(Palma.shapes.card)
-            .background(Palma.colors.surface)
+            .background(tint)
             .padding(Palma.space.card),
         content = content,
     )

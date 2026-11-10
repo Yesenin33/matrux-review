@@ -1,0 +1,137 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><style>
+@font-face{font-family:Manrope;src:url("file:///root/palma/tmp-assets/Manrope");font-weight:200 800;font-display:block}
+@font-face{font-family:Mono;src:url("file:///root/palma/tmp-assets/JetBrainsMono-Medium.ttf");font-weight:500;font-display:block}
+:root{--canvas:#f5f5f7;--surface:#fff;--alt:#fafafa;--ink:#1d1d1f;--ink-soft:#515154;--muted:#6e6e73;
+--accent:#0071e3;--tint:#eaf2fd;--success:#1d8a4e;--hair:#d2d2d7}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#e9e9ee;font-family:Manrope,system-ui;color:var(--ink);padding:40px;display:block}
+.wrap{width:414px}
+.phone{zoom:1.5;width:276px;height:592px;background:var(--canvas);border-radius:32px;overflow:hidden;position:relative;
+box-shadow:0 2px 6px rgba(0,0,0,.06),0 18px 40px rgba(0,0,0,.10)}
+.status{height:26px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:9px;color:var(--muted)}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column}
+.body{padding:0 14px;flex:1;overflow:hidden}
+.display{font-size:22px;line-height:25px;font-weight:600;letter-spacing:-.02em}
+.title{font-size:14px;line-height:18px;font-weight:600;letter-spacing:-.01em}
+.body-t{font-size:10.5px;line-height:15px}
+.strong{font-weight:600}
+.cap{font-size:8.5px;line-height:11px;color:var(--muted)}
+.muted{color:var(--muted)}.soft{color:var(--ink-soft)}
+.card{background:var(--surface);border-radius:14px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 5px 16px rgba(0,0,0,.055)}
+.row{display:flex;align-items:center;gap:11px}
+.tile{width:32px;height:32px;border-radius:9px;background:var(--tint);display:flex;align-items:center;justify-content:center;flex:none}
+.tile img{width:16px;height:16px;object-fit:contain}
+.tile svg{width:15px;height:15px;stroke:var(--accent);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.grow{flex:1;min-width:0}
+.chev{width:13px;height:13px;stroke:var(--muted);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.lock{width:12px;height:12px;stroke:var(--muted);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.bar{display:flex;align-items:center;gap:6px;height:30px;padding:0 12px;background:var(--alt);border-radius:9px}
+.bar svg{width:12px;height:12px;stroke:var(--muted);fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.code{font-family:Mono;font-size:9px;line-height:13px;color:var(--accent);background:var(--tint);border-radius:8px;padding:6px 8px;margin-top:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmd{font-family:Mono;font-size:10px;font-weight:500}
+.copy{width:12px;height:12px;stroke:var(--muted);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ok{color:var(--success);font-size:8.5px;font-weight:600}
+.entry+.entry{margin-top:11px}
+.nav{position:absolute;z-index:9;left:0;right:0;bottom:0;height:52px;display:flex;align-items:flex-end;justify-content:space-around;padding-bottom:8px;background:var(--surface);box-shadow:0 -1px 0 rgba(0,0,0,.04)}
+.nav div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:8px;color:var(--muted)}
+.nav .on{color:var(--accent)}
+.nav svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.pill{display:inline-block;font-size:8px;font-weight:600;padding:2px 7px;border-radius:99px;background:#e7f4ec;color:var(--success);white-space:nowrap}
+.pill.pro{background:#ececef;color:var(--muted)}
+.subrow{background:var(--alt);border-radius:9px;padding:8px 11px;margin-top:6px}
+.subrow.on{background:var(--tint)}
+.btn{height:44px;border-radius:10px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600}
+.back{display:flex;align-items:center;gap:6px;height:34px;color:var(--accent);font-size:10.5px}
+.back svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.term{display:flex;align-items:center;gap:9px}
+.term .t{font-size:11.5px;font-weight:600}
+.price{font-size:11px;font-weight:600}
+.peng{width:58px;height:58px;border-radius:99px;background:var(--tint);display:flex;align-items:center;justify-content:center;flex:none}
+.peng svg{width:34px;height:34px}
+.stack>*+*{margin-top:9px}
+.aurora{position:absolute;inset:0;overflow:hidden;z-index:0}
+.aurora i{position:absolute;border-radius:50%}
+.aurora .a{width:290px;height:290px;left:-70px;top:-140px;background:radial-gradient(circle,rgba(185,210,244,.42),rgba(185,210,244,0) 70%)}
+.aurora .b{width:240px;height:240px;right:-90px;top:120px;background:radial-gradient(circle,rgba(228,231,237,.85),rgba(228,231,237,0) 70%)}
+.screen>*{position:relative;z-index:1}
+.cluster{font-size:10.5px;line-height:15px;font-weight:600;color:var(--muted)}
+</style></head><body><div class="wrap" data-name="01-home"><div class="phone"><div class="aurora"><i class="a"></i><i class="b"></i></div>
+    <div class="screen"><div class="status"><span>22:41</span><span>LTE · 84 %</span></div>
+    <div class="body">
+      <div class="display">Ubuntu + XFCE</div>
+      <div class="body-t muted" style="margin-top:4px">XFCE · образ 277,9 МБ · 8,3 ГБ свободно</div>
+      <div class="stack" style="margin-top:12px"><div class="btn">Запустить систему</div>
+        <div class="body-t" style="text-align:center;color:var(--accent)">Сменить систему</div></div>
+      <div class="title" style="margin-top:16px">Разделы</div>
+      <div class="cluster" style="margin-top:10px">Начало</div>
+      <div class="stack" style="margin-top:8px"><div class="card row"><span class="tile"><svg viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09"/><path d="M9 12a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.4 22.4 0 0 1-4 2z"/></svg></span><div class="grow"><div class="body-t strong">Первые шаги</div><div class="cap" style="margin-top:2px">26 записей</div></div><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></div><div class="card row"><span class="tile"><svg viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg></span><div class="grow"><div class="body-t strong">Файлы и каталоги</div><div class="cap" style="margin-top:2px">32 записи</div></div><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></div><div class="card row"><span class="tile"><svg viewBox="0 0 24 24"><path d="M4 17l6-6-6-6"/><path d="M12 19h8"/></svg></span><div class="grow"><div class="body-t strong">Команды Linux</div><div class="cap" style="margin-top:2px">104 записи</div></div><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></div><div class="card row"><span class="tile"><svg viewBox="0 0 24 24"><path d="M12 5v16"/><path d="M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg></span><div class="grow"><div class="body-t strong">Основные термины</div><div class="cap" style="margin-top:2px">45 записей</div></div><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></div></div>
+    </div></div><div class="nav"><div class="on"><svg viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Главная</div><div class=""><svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h10"/></svg>Каталог</div><div class=""><svg viewBox="0 0 24 24"><path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M2 10h20"/></svg>Подписка</div></div></div></div><div class="wrap" data-name="02-sections"><div class="phone"><div class="screen"><div class="status"><span>22:42</span><span>LTE · 84 %</span></div>
+    <div class="body">
+      <div class="display">Разделы</div>
+      <div class="cluster" style="margin-top:12px">Начало</div>
+      <div class="stack" style="margin-top:8px"><div class="card row"><span class="tile"><svg viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09"/><path d="M9 12a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.4 22.4 0 0 1-4 2z"/></svg></span><div class="grow"><div class="body-t strong">Первые шаги</div><div class="cap" style="margin-top:2px">26 записей</div></div><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></div><div class="card row"><span class="tile"><svg viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg></span><div class="grow"><div class="body-t strong">Файлы и каталоги</div><div class="cap" style="margin-top:2px">32 записи</div></div><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></div><div class="card row"><span class="tile"><svg viewBox="0 0 24 24"><path d="M4 17l6-6-6-6"/><path d="M12 19h8"/></svg></span><div class="grow"><div class="body-t strong">Команды Linux</div><div class="cap" style="margin-top:2px">104 записи</div></div><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></div><div class="card row"><span class="tile"><svg viewBox="0 0 24 24"><path d="M12 5v16"/><path d="M20.001 19A2 2 0 0 0 22 17V5a2 2 0 0 0-1.999-2L16 3.002A5 5 0 0 0 12 5a5 5 0 0 0-4-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 1.999 2H8a5 5 0 0 1 4 2 5 5 0 0 1 4-2z"/></svg></span><div class="grow"><div class="body-t strong">Основные термины</div><div class="cap" style="margin-top:2px">45 записей</div></div><svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></div></div>
+      <div class="cluster" style="margin-top:13px">Дальше</div>
+      <div class="stack" style="margin-top:8px"><div class="card row"><span class="tile"><svg viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/></svg></span><div class="grow"><div class="body-t strong">Пакеты и обновления</div><div class="cap" style="margin-top:2px">31 запись</div></div><svg class="lock" viewBox="0 0 24 24"><path d="M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="card row"><span class="tile"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z"/></svg></span><div class="grow"><div class="body-t strong">Права и пользователи</div><div class="cap" style="margin-top:2px">29 записей</div></div><svg class="lock" viewBox="0 0 24 24"><path d="M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="card row"><span class="tile"><svg viewBox="0 0 24 24"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg></span><div class="grow"><div class="body-t strong">Службы и процессы</div><div class="cap" style="margin-top:2px">32 записи</div></div><svg class="lock" viewBox="0 0 24 24"><path d="M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><div class="card row"><span class="tile"><svg viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg></span><div class="grow"><div class="body-t strong">Сеть и ssh</div><div class="cap" style="margin-top:2px">31 запись</div></div><svg class="lock" viewBox="0 0 24 24"><path d="M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div></div>
+    </div></div></div></div><div class="wrap" data-name="03-files"><div class="phone"><div class="screen"><div class="status"><span>22:43</span><span>LTE · 84 %</span></div>
+    <div class="body">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>Назад</div>
+      <div class="display">Файлы и каталоги</div>
+      <div class="bar" style="margin-top:10px"><svg viewBox="0 0 24 24"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/><path d="m21 21-4.34-4.34"/></svg><span class="body-t muted">Поиск по командам и терминам</span></div>
+      <div class="row" style="justify-content:space-between;margin-top:13px">
+        <div class="body-t strong">Навигация</div><div class="cap">6 записей</div></div>
+      <div class="card" style="margin-top:8px">
+        <div class="entry"><div class="row"><div class="grow"><span class="cmd">pwd</span></div><svg class="copy" viewBox="0 0 24 24"><path d="M10 8h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></div>
+          <div class="body-t soft" style="margin-top:5px">Показывает полный путь текущего каталога.</div>
+          <div class="code">pwd</div></div>
+        <div class="entry"><div class="row"><div class="grow"><span class="cmd">cd -</span></div><span class="ok">Скопировано</span></div>
+          <div class="body-t soft" style="margin-top:5px">Возвращает в предыдущий каталог.</div>
+          <div class="code">cd -</div></div>
+        <div class="entry"><div class="row"><div class="grow"><span class="cmd">ls -la</span></div><svg class="copy" viewBox="0 0 24 24"><path d="M10 8h10a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg></div>
+          <div class="body-t soft" style="margin-top:5px">Все файлы, включая скрытые, с правами и датой.</div>
+          <div class="code">ls -la ~</div></div>
+      </div>
+    </div></div></div></div><div class="wrap" data-name="04-pro"><div class="phone"><div class="screen"><div class="status"><span>22:44</span><span>LTE · 84 %</span></div>
+    <div class="body">
+      <div class="back"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>Назад</div>
+      <div class="row"><div class="peng"><svg viewBox="0 0 36 36">
+        <path fill="#1d1d1f" d="M28.068 31.355c-2.229 0-8.468.785-10.068 1.832-1.601-1.047-7.84-1.832-10.069-1.832-2.564 0-1.161 1.039-1.161 2.322C6.77 34.96 5.367 36 7.931 36c2.229 0 8.468-.785 10.069-1.832C19.601 35.215 25.84 36 28.068 36c2.565 0 1.161-1.04 1.161-2.322 0-1.283 1.405-2.323-1.161-2.323z"/><path fill="#1d1d1f" d="M31.73 15.866c-1.25-2.499-3.152-4.995-4.942-6.723C24.337 3.711 20.759 0 18 0s-6.337 3.71-8.788 9.143c-1.791 1.729-3.693 4.224-4.943 6.724-2.438 4.876-3.116 11.426-2.078 11.944.873.437 2.324-1.552 4.208-5.082C6.667 33.604 13.446 33.678 18 33.678c4.553 0 11.333-.073 11.601-10.947 1.884 3.528 3.335 5.517 4.207 5.08 1.038-.519.361-7.069-2.078-11.945z"/>
+        <path fill="#ffffff" d="M21.675 6.943c-.85.607-2.172 1.186-3.675 1.186s-2.825-.578-3.675-1.185c-3.302 2.137-5.615 7.06-5.615 12.798 0 7.695 4.159 13.936 9.29 13.936 5.132 0 9.291-6.24 9.291-13.936 0-5.738-2.313-10.662-5.616-12.799z"/></svg></div>
+        <div class="display">Pro</div></div>
+      <div class="card" style="margin-top:14px">
+        <div class="term subrow on"><div class="body-t">1 месяц</div><div class="grow"></div>
+          <svg class="copy" style="stroke:var(--accent)" viewBox="0 0 24 24"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76z"/><path d="m16 9-5.5 5.5L8 12"/></svg><div class="price" style="margin-left:6px">349 ₽</div></div>
+        <div class="term subrow"><div class="body-t">3 месяца</div><div class="grow"></div>
+          <span class="pill">−15 %</span><div class="price" style="margin-left:6px">890 ₽</div></div>
+        <div class="term subrow"><div class="body-t">6 месяцев</div><div class="grow"></div>
+          <span class="pill">−30 %</span><div class="price" style="margin-left:6px">1 466 ₽</div></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="body-t soft">Базовые знания языков: Python, Go, Node.js</div>
+        <div class="body-t soft" style="margin-top:7px">Основные команды git — от первого коммита до rebase</div>
+        <div class="body-t soft" style="margin-top:7px">Устройство компьютера: процессор, память, шины, питание</div>
+        <div class="body-t soft" style="margin-top:7px">Разделы: пакеты, права, службы, сеть, диски, логи, скрипты</div>
+      </div>
+    </div>
+    <div style="padding:0 14px 14px"><div class="btn">Оформить Pro</div></div></div></div></div><div class="wrap" data-name="05-subscription"><div class="phone"><div class="screen"><div class="status"><span>22:45</span><span>LTE · 84 %</span></div>
+    <div class="body">
+      <div class="display">Подписка</div>
+      <div class="card" style="margin-top:12px">
+        <div class="row" style="justify-content:space-between">
+          <div class="title">Free</div><div class="cap">текущий</div></div>
+        <div class="title" style="margin-top:8px">0 ₽</div>
+        <div class="body-t soft" style="margin-top:9px">Alpine и терминал</div>
+        <div class="body-t soft" style="margin-top:8px">Работа без интернета</div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="row" style="justify-content:space-between">
+          <div class="title">Pro</div><div class="cap">244 ₽ в месяц</div></div>
+        <div style="margin-top:11px"><div class="term subrow"><div class="body-t">1 месяц</div><div class="grow"></div><div class="price" style="margin-left:6px">349 ₽</div></div><div class="term subrow"><div class="body-t">3 месяца</div><div class="grow"></div><span class="pill">−15 %</span><div class="price" style="margin-left:6px">890 ₽</div></div><div class="term subrow on"><div class="body-t">6 месяцев</div><div class="grow"></div><span class="pill">−30 %</span><div class="price" style="margin-left:6px">1 466 ₽</div></div></div>
+        <div style="height:1px;background:var(--hair);margin-top:11px"></div>
+        <div style="margin-top:11px"><div class="body-t soft" style="margin-top:7px">Базовые знания языков: Python, Go, Node.js</div><div class="body-t soft" style="margin-top:7px">Основные команды git — от первого коммита до rebase</div><div class="body-t soft" style="margin-top:7px">Устройство компьютера: процессор, память, шины, питание</div><div class="body-t soft" style="margin-top:7px">Разделы: пакеты, права, службы, сеть, диски, логи, скрипты</div></div>
+      </div>
+    </div>
+    <div style="padding:0 14px 14px"><div class="btn">Оформить Pro</div></div></div></div></div><div class="wrap" data-name="06-catalog"><div class="phone"><div class="screen"><div class="status"><span>22:46</span><span>LTE · 84 %</span></div>
+    <div class="body">
+      <div class="display">Системы</div>
+      <div class="card row" style="margin-top:9px;align-items:flex-start"><span class="tile" style="background:var(--alt)"><img src="file:///root/palma/app/src/main/res/drawable-xxxhdpi/logo_dev.png" alt=""/></span><div class="grow"><div class="body-t strong">Matrux Dev</div><div class="cap" style="margin-top:3px">Debian 13 + VS Code · 1,1 ГБ</div></div><span class="pill pro">Подписка Pro</span></div><div class="card row" style="margin-top:9px;align-items:flex-start"><span class="tile" style="background:var(--alt)"><img src="file:///root/palma/app/src/main/res/drawable-xxxhdpi/logo_alpine.png" alt=""/></span><div class="grow"><div class="body-t strong">Alpine + XFCE</div><div class="cap" style="margin-top:3px">Alpine · 271 МБ</div></div><span class="pill">Бесплатно</span></div><div class="card row" style="margin-top:9px;align-items:flex-start"><span class="tile" style="background:var(--alt)"><img src="file:///root/palma/app/src/main/res/drawable-xxxhdpi/logo_debian.png" alt=""/></span><div class="grow"><div class="body-t strong">Debian 13 + XFCE</div><div class="cap" style="margin-top:3px">Debian 13 · 311 МБ</div></div><span class="pill pro">Подписка Pro</span></div><div class="card row" style="margin-top:9px;align-items:flex-start"><span class="tile" style="background:var(--alt)"><img src="file:///root/palma/app/src/main/res/drawable-xxxhdpi/logo_ubuntu.png" alt=""/></span><div class="grow"><div class="body-t strong">Ubuntu + XFCE</div><div class="cap" style="margin-top:3px">Ubuntu · 265 МБ</div></div><span class="pill pro">Подписка Pro</span></div><div class="card row" style="margin-top:9px;align-items:flex-start"><span class="tile" style="background:var(--alt)"><img src="file:///root/palma/app/src/main/res/drawable-xxxhdpi/logo_arch.png" alt=""/></span><div class="grow"><div class="body-t strong">Arch Linux + XFCE</div><div class="cap" style="margin-top:3px">Arch · 973 МБ</div></div><span class="pill pro">Подписка Pro</span></div>
+    </div></div><div class="nav"><div class=""><svg viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Главная</div><div class="on"><svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h10"/></svg>Каталог</div><div class=""><svg viewBox="0 0 24 24"><path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M2 10h20"/></svg>Подписка</div></div></div></div></body></html>

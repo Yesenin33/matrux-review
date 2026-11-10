@@ -43,6 +43,8 @@ fun subLine(status: SubscriptionStatus?, failure: Failure?, zone: ZoneId): SubLi
     else -> SubLine.Free
 }
 
+fun SubLine.paidSub(): Boolean = this is SubLine.ProUntil || this is SubLine.Lifetime
+
 sealed interface HomeUi {
     val sub: SubLine
 
@@ -188,7 +190,7 @@ data class SubscriptionUi(
     val selectedOffer: PlanOffer? get() = offers.firstOrNull { it.plan == selected }
     val canBuy: Boolean get() = selectedOffer?.let { it.productId.isNotBlank() } == true &&
         !(status?.tier == Tier.LIFETIME) &&
-        !(paid && selected != Plan.LIFETIME)
+        !paid
 }
 
 fun Instant.localDate(zone: ZoneId): LocalDate = atZone(zone).toLocalDate()

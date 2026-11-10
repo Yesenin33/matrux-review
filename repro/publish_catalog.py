@@ -6,11 +6,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 TITLES = {
-    "alpine-xfce": ("Alpine + XFCE", "Alpine", "XFCE", 1024, 0),
-    "debian-xfce": ("Debian 13 + XFCE", "Debian 13", "XFCE", 1536, 0),
-    "arch-xfce": ("Arch Linux + XFCE", "Arch", "XFCE", 1536, 0),
-    "ubuntu-xfce": ("Ubuntu + XFCE", "Ubuntu", "XFCE", 2048, 0),
-    "dev-xfce": ("Matrux Dev — для кодинга", "Debian 13 + VS Code", "XFCE", 4096, 0),
+    "alpine-xfce": ("Alpine + XFCE", "Alpine", "XFCE", 1024, 0, 0),
+    "debian-xfce": ("Debian 13 + XFCE", "Debian 13", "XFCE", 1536, 0, 1),
+    "arch-xfce": ("Arch Linux + XFCE", "Arch", "XFCE", 1536, 0, 3),
+    "ubuntu-xfce": ("Ubuntu + XFCE", "Ubuntu", "XFCE", 2048, 0, 2),
+    "dev-xfce": ("Matrux Dev", "Debian 13 + VS Code", "XFCE", 4096, 0, 9),
 }
 
 if len(sys.argv) < 3:
@@ -26,7 +26,7 @@ if not src.is_file():
     print("нет файла:", src)
     raise SystemExit(1)
 
-name, distro, desktop, ram, pro = TITLES[image_id]
+name, distro, desktop, ram, pro, order = TITLES[image_id]
 backend = Path("/root/palma/backend")
 images_dir = backend / "data" / "images"
 db = backend / "data" / "palma.sqlite3"
@@ -43,15 +43,15 @@ shutil.copy2(src, images_dir / digest)
 
 if row is None:
     conn.execute(
-        "insert into images (id, name, distro, desktop, size_bytes, sha256, min_ram_mb, pro, active, created_at)"
-        " values (?, ?, ?, ?, ?, ?, ?, ?, 1, ?)",
-        (image_id, name, distro, desktop, size, digest, ram, pro, now),
+        "insert into images (id, name, distro, desktop, size_bytes, sha256, min_ram_mb, pro, active, created_at, sort)"
+        " values (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
+        (image_id, name, distro, desktop, size, digest, ram, pro, now, order),
     )
     print("добавлен образ", image_id)
 else:
     conn.execute(
-        "update images set name = ?, distro = ?, desktop = ?, size_bytes = ?, sha256 = ?, created_at = ? where id = ?",
-        (name, distro, desktop, size, digest, now, image_id),
+        "update images set name = ?, distro = ?, desktop = ?, size_bytes = ?, sha256 = ?, created_at = ?, sort = ? where id = ?",
+        (name, distro, desktop, size, digest, now, order, image_id),
     )
     print("обновлён образ", image_id)
 

@@ -94,11 +94,17 @@ fun stepBusy(step: LaunchStep): Int = when (step) {
     LaunchStep.DISPLAY -> R.string.launch_busy_display
 }
 
-fun distroLogo(distro: String): Int? = when (distro.lowercase()) {
-    "alpine" -> R.drawable.logo_alpine
-    "debian" -> R.drawable.logo_debian
-    "ubuntu" -> R.drawable.logo_ubuntu
+fun distroLogo(distro: String): Int? = when {
+    distro.lowercase().startsWith("alpine") -> R.drawable.logo_alpine
+    distro.lowercase().startsWith("debian") -> R.drawable.logo_debian
+    distro.lowercase().startsWith("ubuntu") -> R.drawable.logo_ubuntu
+    distro.lowercase().startsWith("arch") -> R.drawable.logo_arch
     else -> null
+}
+
+fun imageLogo(image: ru.palma.app.data.ImageInfo): Int? = when (image.id) {
+    "dev-xfce", "dev", "debian-dev", "razrabotka" -> R.drawable.logo_dev
+    else -> distroLogo(image.distro)
 }
 
 fun imageDescription(image: ru.palma.app.data.ImageInfo): Int? = when (image.id) {

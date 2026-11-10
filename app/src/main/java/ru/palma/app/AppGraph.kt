@@ -60,6 +60,7 @@ class AppGraph(context: Context) {
         engine = ProotEngine(File(app.applicationInfo.nativeLibraryDir), File(app.cacheDir, "proot")),
         x11 = NativeX11Server(File(app.applicationInfo.nativeLibraryDir)),
         tmpDir = File(app.cacheDir, "x11"),
+        guestTmp = File(app.cacheDir, "proot"),
         scope = scope,
         geometry = ::geometry,
     )

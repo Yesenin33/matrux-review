@@ -1,0 +1,29 @@
+== распаковка ==
+== base: depth=24 extra='' формат клиента=0 ==
+Traceback (most recent call last):
+  File "/root/palma/repro/vnc_flow.py", line 96, in <module>
+    main()
+    ~~~~^^
+  File "/root/palma/repro/vnc_flow.py", line 89, in main
+    raise RuntimeError("encoding %d" % enc)
+RuntimeError: encoding 255
+== depth16: depth=16 extra='' формат клиента=0 ==
+Traceback (most recent call last):
+  File "/root/palma/repro/vnc_flow.py", line 96, in <module>
+    main()
+    ~~~~^^
+  File "/root/palma/repro/vnc_flow.py", line 89, in main
+    raise RuntimeError("encoding %d" % enc)
+RuntimeError: encoding 1298877803
+== base_c16: depth=24 extra='' формат клиента=16 ==
+  framebuffer 900x2000, формат 16 бит, обновлений 0, прямоугольников 0, байт данных 0 (0 КБ/с)
+== depth16_c16: depth=16 extra='' формат клиента=16 ==
+  framebuffer 900x2000, формат 16 бит, обновлений 0, прямоугольников 0, байт данных 0 (0 КБ/с)
+== depth16_cmp: depth=16 extra='-CompareFB=2' формат клиента=16 ==
+  framebuffer 900x2000, формат 16 бит, обновлений 0, прямоугольников 0, байт данных 0 (0 КБ/с)
+== уборка ==
+rm: cannot remove '/root/palma/repro/pa/dev/mqueue': Device or resource busy
+rm: cannot remove '/root/palma/repro/pa/dev/hugepages': Device or resource busy
+rm: cannot remove '/root/palma/repro/pa/dev/pts': Device or resource busy
+rm: cannot remove '/root/palma/repro/pa/dev/shm': Device or resource busy
+ok

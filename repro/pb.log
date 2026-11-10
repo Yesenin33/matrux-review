@@ -1,0 +1,37 @@
+matrux 23:14:46: Xvnc 900x2000 на :0
+matrux 23:14:46: desktop up pid=57565
+ver b'RFB 003.008\n'
+sec [1]
+secres b'\x00\x00\x00\x00'
+fb 900 2000 pf [16, 16, 0, 1, 0, 31, 0, 63, 0, 31, 11, 5, 0, 0, 0, 0]
+name b'Matrux'
+--- msg type 0
+   padding 0 rects 31
+   rect 0 0 900 72 enc 0
+   raw bytes 259200 first16 00000000000000000000000000000000
+   rect 0 0 0 0 enc 0
+   raw bytes 0 first16 
+   rect 0 144 900 72 enc 0
+   raw bytes 259200 first16 00000000000000000000000000000000
+   rect 0 0 0 0 enc 0
+   raw bytes 0 first16 
+   rect 0 288 900 72 enc 0
+   raw bytes 259200 first16 00000000000000000000000000000000
+   rect 0 0 0 0 enc 0
+   raw bytes 0 first16 
+   rect 0 432 900 72 enc 0
+   raw bytes 259200 first16 00000000000000000000000000000000
+   rect 0 0 0 0 enc 0
+   raw bytes 0 first16 
+   rect 0 576 900 72 enc 0
+   raw bytes 259200 first16 00000000000000000000000000000000
+   rect 0 0 0 0 enc 0
+   raw bytes 0 first16 
+   rect 0 720 900 72 enc 0
+   raw bytes 259200 first16 00000000000000000000000000000000
+   rect 0 0 0 0 enc 0
+   raw bytes 0 first16 
+   rect 0 864 900 72 enc 0
+   raw bytes 259200 first16 00000000000000000000000000000000
+   rect 65535 65535 65535 65535 enc -1
+   hex around: ffffffffffffffffffffffff

@@ -5,18 +5,7 @@
     <string name="tab_home">Главная</string>
     <string name="tab_catalog">Каталог</string>
     <string name="tab_subscription">Подписка</string>
-
-    <string name="home_ready_kicker">Готово к запуску</string>
-    <string name="home_running_kicker">Система работает</string>
-    <string name="home_empty_kicker">Ничего не установлено</string>
-    <string name="home_installing_kicker">Устанавливается</string>
-    <string name="home_loading_kicker">Загружаем каталог</string>
     <string name="home_sub_line">%1$s · образ %2$s · %3$s свободно</string>
-    <string name="home_stopped">Окружение остановлено</string>
-    <string name="home_running">Окружение работает</string>
-    <string name="home_stopped_detail">Данные и настройки на месте.</string>
-    <string name="home_stopped_detail_timed">Прошлый запуск занял %1$s. Данные и настройки на месте.</string>
-    <string name="home_running_detail">Система открыта в фоне. Остановите её, когда закончите.</string>
     <string name="home_empty_state">Система не установлена</string>
     <string name="home_installing_state">Готово %1$d%%</string>
     <string name="home_launch">Запустить систему</string>
@@ -42,7 +31,7 @@
     <string name="catalog_sub">Три системы. Больше не нужно.</string>
     <string name="catalog_sub_count">Систем в каталоге: %1$d</string>
     <string name="catalog_free">Бесплатно</string>
-    <string name="catalog_pro">Pro</string>
+    <string name="catalog_pro">Подписка Pro</string>
     <string name="catalog_reinstall">Переустановить</string>
     <string name="catalog_installed">Установлено</string>
     <string name="catalog_meta">%1$s · %2$s</string>
@@ -99,6 +88,9 @@
     <string name="desktop_stuck_title">Система запущена, но рабочий стол не появился</string>
     <string name="desktop_stuck_empty">Данных нет</string>
     <string name="desktop_report_refresh">Обновить</string>
+    <string name="shade_console">Консоль</string>
+    <string name="shade_keyboard">Клавиатура</string>
+    <string name="shade_mouse">Мышь</string>
 
     <string name="subs_title">Подписка</string>
     <string name="subs_sub">Один раз настроил — работает всегда.</string>
@@ -190,4 +182,38 @@
     <string name="notify_installing">Установка %1$s</string>
     <string name="notify_session">%1$s работает</string>
     <string name="notify_session_detail">Нажмите, чтобы вернуться в систему.</string>
+
+    <string name="sections_title">Разделы</string>
+    <string name="sections_start">Начало</string>
+    <string name="sections_deeper">Дальше</string>
+    <string name="section_pro">Pro</string>
+    <string name="section_search">Поиск по командам и терминам</string>
+    <string name="section_search_empty">Ничего не найдено</string>
+    <string name="section_copied">Скопировано</string>
+    <string name="section_back">Назад</string>
+    <plurals name="section_count">
+        <item quantity="one">%1$d запись</item>
+        <item quantity="few">%1$d записи</item>
+        <item quantity="many">%1$d записей</item>
+        <item quantity="other">%1$d записи</item>
+    </plurals>
+    <plurals name="section_groups">
+        <item quantity="one">%1$d группа</item>
+        <item quantity="few">%1$d группы</item>
+        <item quantity="many">%1$d групп</item>
+        <item quantity="other">%1$d группы</item>
+    </plurals>
+
+    <string name="pro_title">Pro</string>
+    <string name="pro_open_1">Базовые знания языков: Python, Go, Node.js</string>
+    <string name="pro_open_2">Основные команды git — от первого коммита до rebase</string>
+    <string name="pro_open_3">Устройство компьютера: процессор, память, шины, питание</string>
+    <string name="pro_open_4">Разделы: пакеты, права, службы, сеть, диски, логи, скрипты</string>
+    <string name="pro_term_1">1 месяц</string>
+    <string name="pro_term_3">3 месяца</string>
+    <string name="pro_term_6">6 месяцев</string>
+    <string name="pro_per_month">%1$s в месяц</string>
+    <string name="pro_off_15">−15 %</string>
+    <string name="pro_off_30">−30 %</string>
+    <string name="pro_buy">Оформить Pro</string>
 </resources>

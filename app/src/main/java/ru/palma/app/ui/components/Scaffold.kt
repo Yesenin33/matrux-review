@@ -3,6 +3,7 @@ package ru.palma.app.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -41,32 +42,37 @@ fun TabScreen(
     bottom: (@Composable ColumnScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Column(
+    Box(
         Modifier
             .fillMaxSize()
-            .background(Palma.colors.surface)
-            .statusBarsPadding(),
+            .background(Palma.colors.canvas),
     ) {
+        AppBackdrop()
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .then(if (scroll) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                .padding(horizontal = Palma.space.page)
-                .padding(top = Palma.space.unit),
-            content = content,
-        )
-        if (bottom != null) {
+            Modifier
+                .fillMaxSize()
+                .statusBarsPadding(),
+        ) {
             Column(
-                Modifier
+                modifier = Modifier
+                    .weight(1f)
                     .fillMaxWidth()
-                    .background(Palma.colors.surface)
+                    .then(if (scroll) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                     .padding(horizontal = Palma.space.page)
-                    .padding(top = Palma.space.unit * 2),
-                content = bottom,
+                    .padding(top = Palma.space.unit),
+                content = content,
             )
+            if (bottom != null) {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Palma.space.page)
+                        .padding(top = Palma.space.unit * 2),
+                    content = bottom,
+                )
+            }
+            if (tab != null) NavBar(tab, onTab)
         }
-        if (tab != null) NavBar(tab, onTab)
     }
 }
 

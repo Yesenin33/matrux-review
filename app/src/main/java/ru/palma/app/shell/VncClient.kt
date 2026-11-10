@@ -1,6 +1,5 @@
 package ru.palma.app.shell
 
-import android.graphics.Bitmap
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.DataInputStream
@@ -17,18 +16,10 @@ class VncException(message: String) : IOException(message)
 class Framebuffer(val width: Int, val height: Int) {
     val buffer: ByteBuffer = ByteBuffer.allocateDirect(width * height * 4).order(ByteOrder.nativeOrder())
     val pixels: IntBuffer = buffer.asIntBuffer()
-    private var image: Bitmap? = null
 
-    fun frameBitmap(): Bitmap {
-        val current = image ?: Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { image = it }
-        val source = buffer.duplicate()
-        source.rewind()
-        current.copyPixelsFromBuffer(source)
-        return current
-    }
+    fun source(): ByteBuffer = buffer.duplicate().also { it.rewind() }
 
     fun blank(): Boolean {
-        if (pixels.capacity() == 0) return true
         var i = 0
         while (i < pixels.capacity()) {
             if (pixels.get(i) and 0x00FFFFFF != 0) return false
@@ -45,7 +36,7 @@ class Framebuffer(val width: Int, val height: Int) {
         return raw
     }
 
-    fun packRow(size: Int): ByteArray {
+    private fun packRow(size: Int): ByteArray {
         if (packed.size < size) packed = ByteArray(size)
         return packed
     }
@@ -82,9 +73,14 @@ class Framebuffer(val width: Int, val height: Int) {
     }
 }
 
-class VncClient(private val input: DataInputStream, private val output: DataOutputStream) {
-    lateinit var framebuffer: Framebuffer
-        private set
+class VncClient(
+    private val input: DataInputStream,
+    private val output: DataOutputStream,
+    private val socket: Socket? = null,
+) {
+    @Volatile
+    private var current: Framebuffer? = null
+    val framebuffer: Framebuffer get() = current ?: throw VncException("no_framebuffer")
     var name: String = ""
         private set
     private var sizeChanged = false
@@ -117,12 +113,15 @@ class VncClient(private val input: DataInputStream, private val output: DataOutp
         output.flush()
         val width = input.readUnsignedShort()
         val height = input.readUnsignedShort()
-        input.skipBytes(16)
-        name = String(ByteArray(input.readInt()).also { input.readFully(it) }, Charsets.UTF_8)
-        framebuffer = Framebuffer(width, height)
+        skipFully(16)
+        val length = input.readInt()
+        if (length !in 0..MAX_TEXT) throw VncException("bad_name")
+        name = String(ByteArray(length).also { input.readFully(it) }, Charsets.UTF_8)
+        current = Framebuffer(width, height)
         setPixelFormat()
         setEncodings()
         requestUpdate(incremental = false)
+        socket?.soTimeout = 0
     }
 
     fun readMessage(): Boolean {
@@ -138,12 +137,12 @@ class VncClient(private val input: DataInputStream, private val output: DataOutp
             1 -> {
                 input.readUnsignedByte()
                 input.readUnsignedShort()
-                input.skipBytes(input.readUnsignedShort() * 6)
+                skipFully(input.readUnsignedShort() * 6L)
             }
             2 -> Unit
             3 -> {
-                input.skipBytes(3)
-                input.skipBytes(input.readInt())
+                skipFully(3)
+                skipFully(input.readInt().toLong() and 0xFFFFFFFFL)
             }
             else -> throw VncException("unknown_message_$type")
         }
@@ -151,10 +150,11 @@ class VncClient(private val input: DataInputStream, private val output: DataOutp
     }
 
     fun pointer(x: Int, y: Int, buttons: Int) = synchronized(output) {
+        val fb = framebuffer
         output.writeByte(5)
         output.writeByte(buttons)
-        output.writeShort(x.coerceIn(0, framebuffer.width - 1))
-        output.writeShort(y.coerceIn(0, framebuffer.height - 1))
+        output.writeShort(x.coerceIn(0, fb.width - 1))
+        output.writeShort(y.coerceIn(0, fb.height - 1))
         output.flush()
     }
 
@@ -166,12 +166,11 @@ class VncClient(private val input: DataInputStream, private val output: DataOutp
         output.flush()
     }
 
-    private fun resize(w: Int, h: Int): Framebuffer {
-        if (w == framebuffer.width && h == framebuffer.height) return framebuffer
+    private fun resize(w: Int, h: Int) {
+        val fb = framebuffer
+        if (w == fb.width && h == fb.height) return
         sizeChanged = true
-        val next = Framebuffer(w, h)
-        framebuffer = next
-        return next
+        current = Framebuffer(w, h)
     }
 
     private fun readRect() {
@@ -182,15 +181,10 @@ class VncClient(private val input: DataInputStream, private val output: DataOutp
         when (val encoding = input.readInt()) {
             ENCODING_RAW -> {
                 val fb = framebuffer
-                val size = w * 4
                 if (x + w > fb.width || y + h > fb.height) {
-                    var left = w.toLong() * h * 4
-                    while (left > 0) {
-                        val moved = input.skip(left)
-                        if (moved <= 0L) throw java.io.EOFException()
-                        left -= moved
-                    }
+                    skipFully(w.toLong() * h * 4)
                 } else {
+                    val size = w * 4
                     val row = fb.rawRow(size)
                     for (line in 0 until h) {
                         input.readFully(row, 0, size)
@@ -200,12 +194,21 @@ class VncClient(private val input: DataInputStream, private val output: DataOutp
             }
             ENCODING_COPYRECT -> framebuffer.copyRect(input.readUnsignedShort(), input.readUnsignedShort(), x, y, w, h)
             ENCODING_DESKTOP_SIZE -> resize(w, h)
-            ENCODING_EXT_DESKTOP_SIZE -> {
-                val screens = input.readUnsignedByte()
-                input.skipBytes(3 + SCREEN_BYTES * screens)
-                resize(w, h)
-            }
             else -> throw VncException("unsupported_encoding_$encoding")
+        }
+    }
+
+    private fun skipFully(count: Long) {
+        if (count < 0) throw VncException("bad_length")
+        var left = count
+        while (left > 0) {
+            val skipped = input.skip(left)
+            if (skipped <= 0) {
+                input.readByte()
+                left--
+            } else {
+                left -= skipped
+            }
         }
     }
 
@@ -237,18 +240,19 @@ class VncClient(private val input: DataInputStream, private val output: DataOutp
     }
 
     private fun requestUpdate(incremental: Boolean) = synchronized(output) {
+        val fb = framebuffer
         output.writeByte(3)
         output.writeByte(if (incremental) 1 else 0)
         output.writeShort(0)
         output.writeShort(0)
-        output.writeShort(framebuffer.width)
-        output.writeShort(framebuffer.height)
+        output.writeShort(fb.width)
+        output.writeShort(fb.height)
         output.flush()
     }
 
     private fun readReason(): String {
         val length = input.readInt()
-        if (length !in 0..4096) return "rejected"
+        if (length !in 0..MAX_TEXT) return "rejected"
         return String(ByteArray(length).also { input.readFully(it) }, Charsets.UTF_8)
     }
 
@@ -257,16 +261,18 @@ class VncClient(private val input: DataInputStream, private val output: DataOutp
         private const val ENCODING_RAW = 0
         private const val ENCODING_COPYRECT = 1
         private const val ENCODING_DESKTOP_SIZE = -223
-        private const val ENCODING_EXT_DESKTOP_SIZE = -308
-        private const val SCREEN_BYTES = 16
+        private const val MAX_TEXT = 4096
+        private const val HANDSHAKE_TIMEOUT_MS = 5_000
 
         fun connect(host: String, port: Int, timeoutMs: Int): Pair<Socket, VncClient> {
             val socket = Socket()
             socket.connect(InetSocketAddress(host, port), timeoutMs)
             socket.tcpNoDelay = true
+            socket.soTimeout = HANDSHAKE_TIMEOUT_MS
             val client = VncClient(
                 DataInputStream(BufferedInputStream(socket.getInputStream())),
                 DataOutputStream(BufferedOutputStream(socket.getOutputStream())),
+                socket,
             )
             return socket to client
         }

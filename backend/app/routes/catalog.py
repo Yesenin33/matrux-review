@@ -52,7 +52,7 @@ def pubkey(ctx: Ctx) -> JsonUtf8Response:
 def manifest(ctx: Ctx, if_none_match: Annotated[str | None, Header()] = None) -> Response:
     with ctx.db.connect() as conn:
         catalog = conn.execute("SELECT version, updated_at FROM catalog WHERE key = 1").fetchone()
-        rows = conn.execute("SELECT * FROM images WHERE active = 1 ORDER BY created_at, id").fetchall()
+        rows = conn.execute("SELECT * FROM images WHERE active = 1 ORDER BY sort, created_at, id").fetchall()
     document = {
         "version": catalog["version"],
         "generated_at": catalog["updated_at"],

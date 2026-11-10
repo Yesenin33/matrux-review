@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <long name="bytes_per_second" value="3473114" />
+    <string name="installed">{"image_id":"debian-xfce","name":"Debian + XFCE","distro":"Debian","desktop":"XFCE","size_bytes":290655617,"sha256":"df1929e8aa13822687df4e190e351fe0648681faf8968c8e92df9fefee4a5d6f","last_launch_ms":0}</string>
+    <string name="signing_key">NY9cb1IrDJeMY0DY5j0zKE6yfWSx5DMfN5sXvBmPBiY=</string>
+    <string name="manifest_etag">"887c73c7fd014b9289310ee45d0bdf11"</string>
+    <string name="manifest_signature">F5vmwooToj+sksLs5xo6Dkm5Q7yIEUbkbfPUPn1r2qWuuwFtzvpdPwacj6uQiHGCwmAIH5MEtS+HPlmdF6OMDA==</string>
+    <string name="status">{"tier":"lifetime","expires_at":null,"checked_at":"2026-11-09T19:25:32.561118Z"}</string>
+</map>

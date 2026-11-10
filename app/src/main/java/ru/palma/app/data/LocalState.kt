@@ -2,6 +2,7 @@ package ru.palma.app.data
 
 import android.content.Context
 import org.json.JSONObject
+import ru.palma.app.account.AccountInfo
 import java.io.File
 
 data class InstalledSystem(
@@ -23,6 +24,9 @@ interface LocalState {
     var installed: InstalledSystem?
     var bytesPerSecond: Long?
     var manifestCache: Pair<ByteArray, String>?
+    var account: AccountInfo?
+    var storeCheckedAt: Long?
+    var onboarded: Boolean
 }
 
 class InMemoryLocalState : LocalState {
@@ -34,6 +38,9 @@ class InMemoryLocalState : LocalState {
     override var installed: InstalledSystem? = null
     override var bytesPerSecond: Long? = null
     override var manifestCache: Pair<ByteArray, String>? = null
+    override var account: AccountInfo? = null
+    override var storeCheckedAt: Long? = null
+    override var onboarded: Boolean = false
 }
 
 class PrefsLocalState(context: Context) : LocalState {
@@ -44,6 +51,26 @@ class PrefsLocalState(context: Context) : LocalState {
     override var signingKey by stringPref("signing_key")
     override var manifestEtag by stringPref("manifest_etag")
     override var pendingInstall by stringPref("pending_install")
+
+    override var storeCheckedAt: Long?
+        get() = prefs.getLong("store_checked_at", 0L).takeIf { it > 0 }
+        set(value) = prefs.edit().putLong("store_checked_at", value ?: 0L).apply()
+
+    override var onboarded: Boolean
+        get() = prefs.getBoolean("onboarded", false)
+        set(value) = prefs.edit().putBoolean("onboarded", value).apply()
+
+    override var account: AccountInfo?
+        get() = prefs.getString("account", null)?.let { raw ->
+            runCatching {
+                val json = JSONObject(raw)
+                AccountInfo(json.getString("id"), json.optStringOrNull("phone"))
+            }.getOrNull()
+        }
+        set(value) {
+            val json = value?.let { JSONObject().put("id", it.id).put("phone", it.phone ?: JSONObject.NULL).toString() }
+            prefs.edit().putString("account", json).apply()
+        }
 
     override var bytesPerSecond: Long?
         get() = prefs.getLong("bytes_per_second", 0L).takeIf { it > 0 }

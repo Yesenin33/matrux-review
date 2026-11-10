@@ -45,10 +45,25 @@ class InstallController(
 
     private val mutable = MutableStateFlow<InstallState>(InstallState.Idle)
     val state: StateFlow<InstallState> = mutable.asStateFlow()
+    private val installed = MutableStateFlow<Map<String, String>>(emptyMap())
+    val installedShas: StateFlow<Map<String, String>> = installed.asStateFlow()
     private var job: Job? = null
 
     fun rootfs(imageId: String) = File(storage.systems, imageId)
     fun isInstalled(imageId: String) = File(rootfs(imageId), READY_MARKER).exists()
+
+    fun refreshInstalled() {
+        installed.value = runCatching {
+            storage.systems.listFiles().orEmpty()
+                .mapNotNull { dir ->
+                    if (!dir.isDirectory) return@mapNotNull null
+                    val marker = File(dir, READY_MARKER)
+                    if (!marker.isFile) return@mapNotNull null
+                    dir.name to runCatching { marker.readText().trim() }.getOrDefault("")
+                }
+                .toMap()
+        }.getOrDefault(emptyMap())
+    }
 
     fun isCurrent(imageId: String, sha256: String?): Boolean {
         val marker = File(rootfs(imageId), READY_MARKER)
@@ -110,6 +125,7 @@ class InstallController(
                 lastLaunchMillis = null,
             )
             local.pendingInstall = null
+            refreshInstalled()
             mutable.value = InstallState.Done(image)
         } catch (error: CancellationException) {
             throw error

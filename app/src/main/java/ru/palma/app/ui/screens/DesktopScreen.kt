@@ -319,8 +319,8 @@ private fun CursorPad(actions: DesktopActions) {
             Modifier.height(Palma.space.touch * 2),
             verticalArrangement = Arrangement.spacedBy(Palma.space.unit / 2),
         ) {
-            PadButton("ПКМ", Modifier.weight(1f)) { actions.onClick(2) }
-            PadButton("ЛКМ", Modifier.weight(1f)) { actions.onClick(1) }
+            PadButton(stringResource(R.string.pad_right), Modifier.weight(1f)) { actions.onClick(2) }
+            PadButton(stringResource(R.string.pad_left), Modifier.weight(1f)) { actions.onClick(1) }
         }
         Column(
             Modifier.height(Palma.space.touch * 2),

@@ -241,8 +241,8 @@ fun Tappable(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Compo
     )
 }
 
-private const val PRESS_SCALE = 0.98f
-private const val DISABLED_ALPHA = 0.5f
+internal const val PRESS_SCALE = 0.98f
+internal const val DISABLED_ALPHA = 0.5f
 
 @Composable
 fun Spinner(modifier: Modifier = Modifier) {

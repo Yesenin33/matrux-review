@@ -32,8 +32,7 @@ def effective_tier(row: sqlite3.Row, now: datetime) -> str:
     return PRO if expires and expires > now else FREE
 
 
-def device_status(conn: sqlite3.Connection, device_id: str, now: datetime) -> DeviceStatus:
-    rows = conn.execute("SELECT * FROM purchases WHERE device_id = ?", (device_id,)).fetchall()
+def best_status(rows: list[sqlite3.Row], now: datetime) -> DeviceStatus:
     best = DeviceStatus(FREE, None)
     for row in rows:
         tier = effective_tier(row, now)
@@ -43,6 +42,27 @@ def device_status(conn: sqlite3.Connection, device_id: str, now: datetime) -> De
         elif tier == PRO == best.tier and expires and best.expires_at and expires > best.expires_at:
             best = DeviceStatus(tier, expires)
     return best
+
+
+def linked_account(conn: sqlite3.Connection, device_id: str) -> int | None:
+    row = conn.execute("SELECT account_id FROM account_devices WHERE device_id = ?", (device_id,)).fetchone()
+    return row["account_id"] if row is not None else None
+
+
+def account_rows(conn: sqlite3.Connection, account_id: int) -> list[sqlite3.Row]:
+    return conn.execute("SELECT * FROM entitlements WHERE account_id = ?", (account_id,)).fetchall()
+
+
+def account_status(conn: sqlite3.Connection, account_id: int, now: datetime) -> DeviceStatus:
+    return best_status(account_rows(conn, account_id), now)
+
+
+def device_status(conn: sqlite3.Connection, device_id: str, now: datetime) -> DeviceStatus:
+    rows = conn.execute("SELECT * FROM purchases WHERE device_id = ?", (device_id,)).fetchall()
+    account_id = linked_account(conn, device_id)
+    if account_id is not None:
+        rows = [*rows, *account_rows(conn, account_id)]
+    return best_status(rows, now)
 
 
 def bound_device(conn: sqlite3.Connection, purchase_id: str) -> sqlite3.Row | None:

@@ -9,6 +9,7 @@ from app.db import Database
 from app.errors import ApiError
 from app.rustore import PurchaseStore
 from app.signing import Signer
+from app.vkid import VkIdClient
 
 DEVICE_ID = re.compile(r"^[A-Za-z0-9._-]{1,128}$")
 
@@ -19,6 +20,7 @@ class Context:
     db: Database
     signer: Signer
     store: PurchaseStore
+    vkid: VkIdClient
 
     @property
     def images_dir(self) -> Path:

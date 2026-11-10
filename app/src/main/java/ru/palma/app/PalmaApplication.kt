@@ -1,6 +1,7 @@
 package ru.palma.app
 
 import android.app.Application
+import ru.palma.app.store.StoreSdk
 
 class PalmaApplication : Application() {
     lateinit var graph: AppGraph
@@ -8,6 +9,7 @@ class PalmaApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        StoreSdk.init(this)
         graph = AppGraph(this)
     }
 }

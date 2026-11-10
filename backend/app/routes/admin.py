@@ -12,6 +12,7 @@ from app.context import Context, get_context
 from app.db import bump_catalog
 from app.errors import ApiError, JsonUtf8Response
 from app.files import BlobTooLarge, commit_blob, store_blob
+from app.stats import user_stats
 from app.subscriptions import summary
 
 IMAGE_ID = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
@@ -149,3 +150,9 @@ def unpublish_image(image_id: str, ctx: Ctx) -> JsonUtf8Response:
 def subscribers(ctx: Ctx) -> JsonUtf8Response:
     with ctx.db.connect() as conn:
         return JsonUtf8Response(summary(conn, utcnow()))
+
+
+@router.get("/stats")
+def stats(ctx: Ctx) -> JsonUtf8Response:
+    with ctx.db.connect() as conn:
+        return JsonUtf8Response(user_stats(conn, utcnow(), ctx.settings.pro_months))

@@ -7,9 +7,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from app.clock import utcnow
 from app.config import Settings
 from app.main import create_app
 from app.signing import generate_seed
+from app.subscriptions import PRO, record_purchase
 
 ADMIN_TOKEN = "test-admin-token-4f1c"
 
@@ -29,6 +31,7 @@ def settings(tmp_path: Path) -> Settings:
         admin_token=ADMIN_TOKEN,
         signing_key=generate_seed(),
         rustore_stub=True,
+        vkid_stub=True,
     )
 
 
@@ -82,15 +85,39 @@ def device(client: TestClient) -> Callable[[str], dict[str, str]]:
 
 
 @pytest.fixture
+def account(client: TestClient, device: Callable[[str], dict[str, str]]) -> Callable[..., dict[str, str]]:
+    tokens: dict[str, dict[str, str]] = {}
+
+    def _account(device_id: str, user: str | None = None) -> dict[str, str]:
+        if device_id not in tokens:
+            response = client.post(
+                "/api/account/vkid",
+                headers=device(device_id),
+                json={
+                    "code": f"vk-{user or device_id}",
+                    "code_verifier": "v" * 43,
+                    "vk_device_id": "vkdev",
+                    "state": "s1",
+                    "device_id": device_id,
+                },
+            )
+            assert response.status_code == 200, response.text
+            tokens[device_id] = {"Authorization": f"Bearer {response.json()['token']}"}
+        return tokens[device_id]
+
+    return _account
+
+
+@pytest.fixture
 def subscribe(client: TestClient, device: Callable[[str], dict[str, str]]) -> Callable[..., dict[str, str]]:
+    context = client.app.state.context
+
     def _subscribe(device_id: str, purchase_id: str = "ok-1") -> dict[str, str]:
         headers = device(device_id)
-        response = client.post(
-            "/api/sub/verify",
-            headers=headers,
-            json={"purchase_id": purchase_id, "product_id": "palma_pro_month", "device_id": device_id},
-        )
-        assert response.status_code == 200, response.text
+        now = utcnow()
+        answer = context.store.check(purchase_id, "palma_pro_month", now)
+        with context.db.connect() as conn:
+            record_purchase(conn, purchase_id, "palma_pro_month", device_id, PRO, answer, None, now)
         return headers
 
     return _subscribe

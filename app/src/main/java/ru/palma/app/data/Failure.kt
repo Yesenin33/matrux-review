@@ -24,6 +24,11 @@ sealed interface Failure {
     data object PurchaseNotFound : Failure
     data object PurchaseOnOtherDevice : Failure
     data object BillingUnavailable : Failure
+    data object PurchaseOnOtherAccount : Failure
+    data object Cancelled : Failure
+    data object SignInUnavailable : Failure
+    data object SignInRejected : Failure
+    data object SignedOut : Failure
     data object EngineMissing : Failure
     data object EngineCrashed : Failure
     data class Engine(val output: String) : Failure
@@ -39,6 +44,7 @@ class FailureException(val failure: Failure, override val message: String? = nul
 object Failures {
     fun fromStatus(status: Int, code: String?): Failure = when (status) {
         0 -> Failure.NoConnection
+        401 -> if (code == "vkid_rejected") Failure.SignInRejected else Failure.SignedOut
         402 -> Failure.NeedSubscription
         403 -> Failure.NoAccess
         404 -> when (code) {
@@ -46,8 +52,16 @@ object Failures {
             "image_not_found" -> Failure.ImageNotFound
             else -> Failure.Server(status, code)
         }
-        409 -> if (code == "purchase_bound_to_other_device") Failure.PurchaseOnOtherDevice else Failure.Server(status, code)
-        503 -> if (code == "store_unavailable") Failure.BillingUnavailable else Failure.ImageUnavailable
+        409 -> when (code) {
+            "purchase_bound_to_other_device" -> Failure.PurchaseOnOtherDevice
+            "purchase_bound_to_other_account" -> Failure.PurchaseOnOtherAccount
+            else -> Failure.Server(status, code)
+        }
+        503 -> when (code) {
+            "store_unavailable" -> Failure.BillingUnavailable
+            "vkid_unavailable" -> Failure.SignInUnavailable
+            else -> Failure.ImageUnavailable
+        }
         else -> Failure.Server(status, code)
     }
 

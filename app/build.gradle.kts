@@ -14,6 +14,17 @@ val signing = Properties().apply {
     if (signingFile.isFile) signingFile.inputStream().use { load(it) }
 }
 
+fun secretFrom(path: String): String = path.takeIf { it.isNotBlank() }
+    ?.let { rootProject.file(it) }
+    ?.takeIf { it.isFile }
+    ?.readText()
+    ?.trim()
+    .orEmpty()
+
+val storeSdk = prop("palma.storeSdk") == "true"
+val vkidClientId = prop("palma.vkid.clientId")
+val payScheme = prop("palma.payScheme").ifEmpty { "palmapay" }
+
 val palmaVersionName = prop("palma.versionName")
 val palmaVersionCode = prop("palma.versionCode").toInt()
 
@@ -33,9 +44,19 @@ android {
         versionName = palmaVersionName
         buildConfigField("String", "API_BASE", quoted(prop("palma.apiBase")))
         buildConfigField("String", "MANIFEST_PUBKEY", quoted(prop("palma.manifestPubkey")))
-        buildConfigField("String", "PRODUCT_PRO_MONTH", quoted(prop("palma.productProMonth")))
-        buildConfigField("String", "PRODUCT_PRO_QUARTER", quoted(prop("palma.productProQuarter")))
-        buildConfigField("String", "PRODUCT_PRO_HALF_YEAR", quoted(prop("palma.productProHalfYear")))
+        buildConfigField("String", "PRODUCT_PRO_MONTH", quoted(prop("palma.product1m")))
+        buildConfigField("String", "PRODUCT_PRO_QUARTER", quoted(prop("palma.product3m")))
+        buildConfigField("String", "PRODUCT_PRO_HALF_YEAR", quoted(prop("palma.product6m")))
+        buildConfigField("String", "VKID_CLIENT_ID", quoted(vkidClientId))
+        buildConfigField("String", "RUSTORE_APP_ID", quoted(prop("palma.rustore.appId")))
+        manifestPlaceholders += mapOf(
+            "rustoreAppId" to prop("palma.rustore.appId"),
+            "payScheme" to payScheme,
+            "VKIDClientID" to vkidClientId,
+            "VKIDClientSecret" to secretFrom(prop("palma.vkid.secretFile")),
+            "VKIDRedirectHost" to "vk.ru",
+            "VKIDRedirectScheme" to "vk$vkidClientId",
+        )
         buildConfigField("String", "PRICE_PRO_MONTH", quoted(prop("palma.priceProMonth")))
         buildConfigField("String", "PRICE_PRO_QUARTER", quoted(prop("palma.priceProQuarter")))
         buildConfigField("String", "PRICE_PRO_HALF_YEAR", quoted(prop("palma.priceProHalfYear")))
@@ -45,6 +66,9 @@ android {
         buildConfigField("int", "TRIAL_DAYS", prop("palma.trialDays").ifEmpty { "0" })
         buildConfigField("boolean", "TEST_UNLOCKED", prop("palma.testUnlocked").ifEmpty { "false" })
         resourceConfigurations += listOf("ru")
+        ndk {
+            abiFilters += listOf("arm64-v8a")
+        }
     }
 
     signingConfigs {
@@ -92,8 +116,11 @@ android {
         jniLibs.useLegacyPackaging = true
     }
 
+    sourceSets["main"].java.srcDir(if (storeSdk) "src/store/java" else "src/nostore/java")
+
     testOptions {
         unitTests.isReturnDefaultValues = true
+        unitTests.all { it.environment("ANDROID_HOME", android.sdkDirectory.absolutePath) }
     }
 }
 
@@ -112,6 +139,12 @@ dependencies {
     implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
     implementation("org.tukaani:xz:1.9")
     implementation("com.github.luben:zstd-jni:1.5.6-3@aar")
+
+    if (storeSdk) {
+        implementation(platform("ru.rustore.sdk:bom:${prop("palma.sdk.rustoreBom")}"))
+        implementation("ru.rustore.sdk:pay")
+        implementation("com.vk.id:vkid:${prop("palma.sdk.vkid")}")
+    }
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")

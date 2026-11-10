@@ -9,10 +9,12 @@ import androidx.compose.ui.unit.dp
 data class PalmaShapes(
     val radiusCard: Dp = 20.dp,
     val radiusControl: Dp = 12.dp,
+    val radiusSegment: Dp = 8.dp,
     val radiusPill: Dp = 999.dp,
 ) {
     val card get() = RoundedCornerShape(radiusCard)
     val control get() = RoundedCornerShape(radiusControl)
+    val segment get() = RoundedCornerShape(radiusSegment)
     val pill get() = RoundedCornerShape(radiusPill)
 }
 
@@ -34,6 +36,20 @@ data class PalmaSpace(
     val logoMark: Dp = 28.dp,
     val navBar: Dp = 72.dp,
     val panel: Dp = 56.dp,
+    val avatar: Dp = 88.dp,
+    val avatarRing: Dp = 8.dp,
+    val avatarBadge: Dp = 28.dp,
+    val heroArt: Dp = 320.dp,
+    val heroArtAlpha: Float = 0.05f,
+    val lift: Dp = 12.dp,
+    val trackInset: Dp = 4.dp,
+    val scrimAlpha: Float = 0.32f,
+    val lessonMark: Dp = 28.dp,
+    val preview: Dp = 240.dp,
+    val onboardArt: Dp = 136.dp,
+    val onboardMark: Dp = 96.dp,
+    val onboardRow: Dp = 40.dp,
+    val dot: Dp = 8.dp,
 )
 
 @Immutable

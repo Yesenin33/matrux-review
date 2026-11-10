@@ -54,7 +54,7 @@ class LaunchSequenceTest {
     @Test
     fun prootCommandBindsRootfsAndRunsSessionScript() {
         val layout = ProotLayout(File("/lib/libproot.so"), File("/lib/libproot-loader.so"), File("/data/systems/debian"), File("/cache/proot"))
-        val args = ProotCommand.arguments(layout, DisplayMode.VNC, "720x1600")
+        val args = ProotCommand.arguments(layout, DisplayMode.VNC, "720x1600", 5901)
         assertEquals("/lib/libproot.so", args.first())
         assertEquals("/data/systems/debian", args[args.indexOf("-r") + 1])
         assertEquals(listOf("/bin/sh", ProotCommand.SESSION_SCRIPT, "vnc"), args.takeLast(3))

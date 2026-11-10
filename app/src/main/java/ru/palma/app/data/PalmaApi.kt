@@ -10,6 +10,11 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONObject
+import ru.palma.app.account.AccountInfo
+import ru.palma.app.account.AuthCode
+import ru.palma.app.account.AuthRequest
+import ru.palma.app.billing.PurchaseReceipt
+import ru.palma.app.billing.ServerPlan
 import java.util.concurrent.TimeUnit
 
 const val DEVICE_KEY_HEADER = "X-Device-Key"
@@ -19,6 +24,20 @@ private val JSON_TYPE = "application/json; charset=utf-8".toMediaType()
 sealed interface ManifestFetch {
     data class Fresh(val body: ByteArray, val signature: String?, val etag: String?) : ManifestFetch
     data class NotModified(val signature: String?) : ManifestFetch
+}
+
+data class AccountState(val account: AccountInfo, val status: SubscriptionStatus, val token: String? = null) {
+    companion object {
+        fun parse(body: String): AccountState {
+            val json = JSONObject(body)
+            val account = json.getJSONObject("account")
+            return AccountState(
+                account = AccountInfo(account.getString("id"), account.optStringOrNull("phone")),
+                status = SubscriptionStatus.parse(body),
+                token = json.optStringOrNull("token"),
+            )
+        }
+    }
 }
 
 data class Registration(val deviceId: String, val deviceKey: String?, val status: SubscriptionStatus)
@@ -31,6 +50,19 @@ class PalmaApi(baseUrl: String, private val client: OkHttpClient = defaultClient
 
     suspend fun pubkey(): String = call(get("/api/pubkey")) { response ->
         JSONObject(response.body!!.string()).getString("public_key")
+    }
+
+    suspend fun plans(): List<ServerPlan> = call(get("/api/plans")) { response ->
+        val plans = JSONObject(response.body!!.string()).getJSONArray("plans")
+        (0 until plans.length()).map { index ->
+            val plan = plans.getJSONObject(index)
+            ServerPlan(
+                productId = plan.optString("product_id"),
+                months = plan.getInt("months"),
+                priceRub = plan.getLong("price_rub"),
+                discountPercent = if (plan.has("discount_percent")) plan.getInt("discount_percent") else null,
+            )
+        }
     }
 
     suspend fun manifest(etag: String?): ManifestFetch {
@@ -75,17 +107,61 @@ class PalmaApi(baseUrl: String, private val client: OkHttpClient = defaultClient
         return call(request) { SubscriptionStatus.parse(it.body!!.string()) }
     }
 
-    suspend fun verify(deviceId: String, key: String, purchaseId: String, productId: String): VerifyResult {
+    suspend fun verify(deviceId: String, key: String, receipt: PurchaseReceipt, token: String? = null): VerifyResult {
         val payload = JSONObject()
-            .put("purchase_id", purchaseId)
-            .put("product_id", productId)
+            .put("purchase_id", receipt.purchaseId)
+            .put("product_id", receipt.productId)
             .put("device_id", deviceId)
+            .apply { receipt.invoiceId?.let { put("invoice_id", it) } }
         val request = Request.Builder()
             .url(resolve("/api/sub/verify"))
             .header(DEVICE_KEY_HEADER, key)
+            .apply { if (token != null) bearer(token) }
             .post(payload.toString().toRequestBody(JSON_TYPE))
             .build()
         return call(request) { response ->
+            val body = response.body!!.string()
+            VerifyResult(PurchaseState.valueOf(JSONObject(body).getString("state")), SubscriptionStatus.parse(body))
+        }
+    }
+
+    suspend fun signIn(code: AuthCode, request: AuthRequest, deviceId: String, key: String): AccountState {
+        val payload = JSONObject()
+            .put("code", code.code)
+            .put("code_verifier", request.verifier)
+            .put("vk_device_id", code.deviceId)
+            .put("state", request.state)
+            .put("device_id", deviceId)
+        return call(post("/api/account/vkid", payload).header(DEVICE_KEY_HEADER, key).build()) {
+            AccountState.parse(it.body!!.string())
+        }
+    }
+
+    suspend fun account(token: String): AccountState =
+        call(Request.Builder().url(resolve("/api/account")).bearer(token).build()) { AccountState.parse(it.body!!.string()) }
+
+    suspend fun linkDevice(token: String, deviceId: String, key: String): AccountState {
+        val request = post("/api/account/devices", JSONObject().put("device_id", deviceId))
+            .bearer(token)
+            .header(DEVICE_KEY_HEADER, key)
+            .build()
+        return call(request) { AccountState.parse(it.body!!.string()) }
+    }
+
+    suspend fun signOut(token: String, deviceId: String?, key: String?) {
+        val payload = JSONObject().put("device_id", deviceId ?: JSONObject.NULL)
+        val request = post("/api/account/logout", payload).bearer(token)
+            .apply { if (deviceId != null && key != null) header(DEVICE_KEY_HEADER, key) }
+            .build()
+        call(request) { }
+    }
+
+    suspend fun verifyAccountPurchase(token: String, receipt: PurchaseReceipt, invoiceId: String): VerifyResult {
+        val payload = JSONObject()
+            .put("invoice_id", invoiceId)
+            .put("purchase_id", receipt.purchaseId)
+            .put("product_id", receipt.productId)
+        return call(post("/api/account/purchases", payload).bearer(token).build()) { response ->
             val body = response.body!!.string()
             VerifyResult(PurchaseState.valueOf(JSONObject(body).getString("state")), SubscriptionStatus.parse(body))
         }
@@ -103,6 +179,11 @@ class PalmaApi(baseUrl: String, private val client: OkHttpClient = defaultClient
     val http: OkHttpClient get() = client
 
     private fun get(path: String) = Request.Builder().url(resolve(path)).build()
+
+    private fun post(path: String, payload: JSONObject) =
+        Request.Builder().url(resolve(path)).post(payload.toString().toRequestBody(JSON_TYPE))
+
+    private fun Request.Builder.bearer(token: String) = header("Authorization", "Bearer $token")
 
     private suspend fun <T> call(request: Request, read: (Response) -> T): T = io {
         client.newCall(request).execute().use { response ->

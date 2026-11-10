@@ -20,6 +20,15 @@ private fun manrope(weight: Int) = Font(
 
 val Manrope = FontFamily(manrope(400), manrope(500), manrope(600), manrope(700))
 
+@OptIn(ExperimentalTextApi::class)
+private fun inter(weight: Int) = Font(
+    R.font.inter,
+    weight = FontWeight(weight),
+    variationSettings = FontVariation.Settings(FontVariation.weight(weight)),
+)
+
+val Inter = FontFamily(inter(400), inter(600))
+
 val Mono = FontFamily(Font(R.font.mono, weight = FontWeight.Medium))
 
 @Immutable
@@ -58,6 +67,7 @@ data class PalmaType(
         fontSize = 13.sp,
         lineHeight = 20.sp,
         letterSpacing = (-0.01).em,
+        fontFeatureSettings = "liga 0, calt 0",
     ),
     val caption: TextStyle = TextStyle(
         fontFamily = Manrope,
@@ -67,4 +77,14 @@ data class PalmaType(
         letterSpacing = 0.005.em,
     ),
     val captionStrong: TextStyle = caption.copy(fontWeight = FontWeight.SemiBold),
+)
+
+fun PalmaType.inFamily(family: FontFamily): PalmaType = copy(
+    display = display.copy(fontFamily = family),
+    title = title.copy(fontFamily = family),
+    lead = lead.copy(fontFamily = family),
+    body = body.copy(fontFamily = family),
+    bodyStrong = bodyStrong.copy(fontFamily = family),
+    caption = caption.copy(fontFamily = family),
+    captionStrong = captionStrong.copy(fontFamily = family),
 )

@@ -31,6 +31,10 @@ class FailuresTest {
         assertEquals(Failure.ImageNotFound, Failures.fromStatus(404, "image_not_found"))
         assertEquals(Failure.PurchaseOnOtherDevice, Failures.fromStatus(409, "purchase_bound_to_other_device"))
         assertEquals(Failure.Server(409, "device_exists"), Failures.fromStatus(409, "device_exists"))
+        assertEquals(Failure.PurchaseOnOtherAccount, Failures.fromStatus(409, "purchase_bound_to_other_account"))
+        assertEquals(Failure.SignedOut, Failures.fromStatus(401, "unauthorized"))
+        assertEquals(Failure.SignInRejected, Failures.fromStatus(401, "vkid_rejected"))
+        assertEquals(Failure.SignInUnavailable, Failures.fromStatus(503, "vkid_unavailable"))
         assertEquals(Failure.Server(500, "internal_error"), Failures.fromStatus(500, "internal_error"))
     }
 

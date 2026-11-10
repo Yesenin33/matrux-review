@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import ru.palma.app.R
+import ru.palma.app.billing.Plan
 import ru.palma.app.data.Failure
 import ru.palma.app.shell.LaunchStep
 import ru.palma.app.ui.state.SubLine
@@ -25,6 +26,11 @@ fun failureText(failure: Failure): FailureText = when (failure) {
     Failure.PurchaseNotFound -> FailureText(R.string.fail_purchase_title, R.string.fail_purchase)
     Failure.PurchaseOnOtherDevice -> FailureText(R.string.fail_purchase_bound_title, R.string.fail_purchase_bound)
     Failure.BillingUnavailable -> FailureText(R.string.fail_billing_title, R.string.fail_billing)
+    Failure.PurchaseOnOtherAccount -> FailureText(R.string.fail_purchase_account_title, R.string.fail_purchase_account)
+    Failure.Cancelled -> FailureText(R.string.fail_cancelled_title, R.string.fail_cancelled)
+    Failure.SignInUnavailable -> FailureText(R.string.fail_signin_title, R.string.fail_signin)
+    Failure.SignInRejected -> FailureText(R.string.fail_signin_rejected_title, R.string.fail_signin_rejected)
+    Failure.SignedOut -> FailureText(R.string.fail_signed_out_title, R.string.fail_signed_out)
     Failure.EngineMissing -> FailureText(R.string.fail_engine_title, R.string.fail_engine)
     Failure.EngineCrashed -> FailureText(R.string.fail_engine_crash_title, R.string.fail_engine_crash)
     is Failure.Engine -> FailureText(R.string.fail_engine_crash_title, R.string.fail_engine_crash)
@@ -68,6 +74,24 @@ fun etaText(seconds: Long): String = when (val d = Format.eta(seconds)) {
     is Format.Duration.MinSec -> stringResource(R.string.eta_min_sec, d.minutes, d.seconds)
     is Format.Duration.Minutes -> pluralStringResource(R.plurals.unit_minutes, d.minutes, d.minutes)
 }
+
+@Composable
+fun termLabel(plan: Plan): String = stringResource(
+    when (plan) {
+        Plan.PRO_MONTH -> R.string.pro_term_1
+        Plan.PRO_QUARTER -> R.string.pro_term_3
+        Plan.PRO_HALF_YEAR -> R.string.pro_term_6
+    },
+)
+
+@Composable
+fun rubText(amount: Long): String = stringResource(R.string.price_rub, Format.rubles(amount))
+
+@Composable
+fun perMonthText(amount: Long): String = stringResource(R.string.price_per_month, Format.rubles(amount))
+
+@Composable
+fun discountText(percent: Int): String = stringResource(R.string.price_discount, percent)
 
 @Composable
 fun subLineText(line: SubLine): String = when (line) {

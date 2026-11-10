@@ -5,7 +5,8 @@ import sqlite3
 
 from fastapi import Request
 
-from app.context import Context
+from app.clock import to_iso, utcnow
+from app.context import DEVICE_ID, Context
 from app.errors import ApiError
 
 KEY_HEADER = "x-device-key"
@@ -31,8 +32,25 @@ def key_matches(conn: sqlite3.Connection, device_id: str, raw: bytes) -> bool:
     return row is not None and bool(raw) and same
 
 
+def mark_seen(conn: sqlite3.Connection, device_id: str) -> None:
+    conn.execute("UPDATE devices SET last_seen_at = ? WHERE device_id = ?", (to_iso(utcnow()), device_id))
+
+
+def seen_device(conn: sqlite3.Connection, device_id: str, raw: bytes) -> bool:
+    matched = key_matches(conn, device_id, raw)
+    if matched:
+        mark_seen(conn, device_id)
+    return matched
+
+
+def note_visit(conn: sqlite3.Connection, device_id: str | None, request: Request) -> None:
+    raw = provided_key(request)
+    if device_id is not None and raw and DEVICE_ID.fullmatch(device_id):
+        seen_device(conn, device_id, raw)
+
+
 def require_device(ctx: Context, device_id: str, request: Request) -> None:
     with ctx.db.connect() as conn:
-        allowed = key_matches(conn, device_id, provided_key(request))
+        allowed = seen_device(conn, device_id, provided_key(request))
     if not allowed:
         raise ApiError(403, "forbidden")

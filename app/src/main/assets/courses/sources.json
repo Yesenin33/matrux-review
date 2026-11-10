@@ -1,0 +1,262 @@
+{
+ "sources": [
+  {
+   "course": "python",
+   "author": "Евгений Попов",
+   "title": "Руководство по языку Python",
+   "url": "https://metanit.com/python/tutorial/",
+   "license": "© metanit.com, все права защищены",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "python",
+   "author": "Python Software Foundation",
+   "title": "Учебник Python, русская документация",
+   "url": "https://docs.python.org/ru/3/tutorial/",
+   "license": "PSF License v2, примеры кода — Zero Clause BSD",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "python",
+   "author": "younglinux.info",
+   "title": "Python. Введение в программирование",
+   "url": "https://younglinux.info/python/course",
+   "license": "© younglinux.info",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "python",
+   "author": "pythonworld.ru",
+   "title": "Самоучитель Python",
+   "url": "https://pythonworld.ru/samouchitel-python",
+   "license": "© pythonworld.ru",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "python",
+   "author": "Хекслет",
+   "title": "Основы Python",
+   "url": "https://ru.hexlet.io/courses/python-basics",
+   "license": "бесплатный курс, условия Хекслета",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "python",
+   "author": "Тимур Гуев и соавторы",
+   "title": "Поколение Python: курс для начинающих",
+   "url": "https://stepik.org/course/58852/promo",
+   "license": "условия платформы Stepik",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "go",
+   "author": "Евгений Попов",
+   "title": "Руководство по языку Go",
+   "url": "https://metanit.com/go/tutorial/",
+   "license": "© metanit.com, все права защищены",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "go",
+   "author": "Калеб Докси, перевод М. Полетаева и В. Розаева",
+   "title": "Введение в программирование на Go",
+   "url": "http://golang-book.ru/",
+   "license": "CC BY 3.0",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "go",
+   "author": "Konstantin8105 и участники",
+   "title": "Эффективный Go, перевод",
+   "url": "https://github.com/Konstantin8105/Effective_Go_RU",
+   "license": "MIT, оригинал go.dev — CC BY 4.0",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "go",
+   "author": "Mark McGranaghan, Eli Bendersky",
+   "title": "Go by Example",
+   "url": "https://gobyexample.com/",
+   "license": "CC BY 3.0",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "html",
+   "author": "Mozilla и участники MDN",
+   "title": "Структурирование содержимого с HTML",
+   "url": "https://developer.mozilla.org/ru/docs/Learn_web_development/Core/Structuring_content",
+   "license": "CC BY-SA 2.5",
+   "accessed": "2026-11-10",
+   "attribution": "Материалы MDN, помощники Mozilla, CC BY-SA 2.5"
+  },
+  {
+   "course": "html",
+   "author": "Mozilla и участники MDN",
+   "title": "Справочник HTML",
+   "url": "https://developer.mozilla.org/ru/docs/Web/HTML",
+   "license": "CC BY-SA 2.5",
+   "accessed": "2026-11-10",
+   "attribution": "Материалы MDN, помощники Mozilla, CC BY-SA 2.5"
+  },
+  {
+   "course": "html",
+   "author": "Mozilla и участники MDN",
+   "title": "Элемент form",
+   "url": "https://developer.mozilla.org/ru/docs/Web/HTML/Element/form",
+   "license": "CC BY-SA 2.5",
+   "accessed": "2026-11-10",
+   "attribution": "Материалы MDN, помощники Mozilla, CC BY-SA 2.5"
+  },
+  {
+   "course": "html",
+   "author": "Mozilla и участники MDN",
+   "title": "Доступность",
+   "url": "https://developer.mozilla.org/ru/docs/Learn_web_development/Core/Accessibility",
+   "license": "CC BY-SA 2.5",
+   "accessed": "2026-11-10",
+   "attribution": "Материалы MDN, помощники Mozilla, CC BY-SA 2.5"
+  },
+  {
+   "course": "html",
+   "author": "webref.ru",
+   "title": "Справочник HTML",
+   "url": "https://webref.ru/html",
+   "license": "CC BY-NC 4.0",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "html",
+   "author": "html5book.ru",
+   "title": "Учебник HTML5 и CSS3",
+   "url": "https://html5book.ru/",
+   "license": "© html5book.ru",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "css",
+   "author": "Mozilla и участники MDN",
+   "title": "Основы оформления CSS",
+   "url": "https://developer.mozilla.org/ru/docs/Learn_web_development/Core/Styling_basics",
+   "license": "CC BY-SA 2.5",
+   "accessed": "2026-11-10",
+   "attribution": "Материалы MDN, помощники Mozilla, CC BY-SA 2.5"
+  },
+  {
+   "course": "css",
+   "author": "Mozilla и участники MDN",
+   "title": "Блочная модель",
+   "url": "https://developer.mozilla.org/ru/docs/Learn_web_development/Core/Styling_basics/Box_model",
+   "license": "CC BY-SA 2.5",
+   "accessed": "2026-11-10",
+   "attribution": "Материалы MDN, помощники Mozilla, CC BY-SA 2.5"
+  },
+  {
+   "course": "css",
+   "author": "Mozilla и участники MDN",
+   "title": "Основные понятия flexbox",
+   "url": "https://developer.mozilla.org/ru/docs/Web/CSS/CSS_flexible_box_layout/Basic_concepts_of_flexbox",
+   "license": "CC BY-SA 2.5",
+   "accessed": "2026-11-10",
+   "attribution": "Материалы MDN, помощники Mozilla, CC BY-SA 2.5"
+  },
+  {
+   "course": "css",
+   "author": "Mozilla и участники MDN",
+   "title": "Основные понятия grid",
+   "url": "https://developer.mozilla.org/ru/docs/Web/CSS/CSS_grid_layout/Basic_concepts_of_grid_layout",
+   "license": "CC BY-SA 2.5",
+   "accessed": "2026-11-10",
+   "attribution": "Материалы MDN, помощники Mozilla, CC BY-SA 2.5"
+  },
+  {
+   "course": "css",
+   "author": "Mozilla и участники MDN",
+   "title": "Использование медиазапросов",
+   "url": "https://developer.mozilla.org/ru/docs/Web/CSS/CSS_media_queries/Using_media_queries",
+   "license": "CC BY-SA 2.5",
+   "accessed": "2026-11-10",
+   "attribution": "Материалы MDN, помощники Mozilla, CC BY-SA 2.5"
+  },
+  {
+   "course": "css",
+   "author": "Mozilla и участники MDN",
+   "title": "Использование CSS-анимаций",
+   "url": "https://developer.mozilla.org/ru/docs/Web/CSS/CSS_animations/Using_CSS_animations",
+   "license": "CC BY-SA 2.5",
+   "accessed": "2026-11-10",
+   "attribution": "Материалы MDN, помощники Mozilla, CC BY-SA 2.5"
+  },
+  {
+   "course": "css",
+   "author": "webref.ru",
+   "title": "Справочник CSS",
+   "url": "https://webref.ru/css",
+   "license": "CC BY-NC 4.0",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "cpp",
+   "author": "Евгений Попов",
+   "title": "Руководство по языку C++",
+   "url": "https://metanit.com/cpp/tutorial/",
+   "license": "© metanit.com, все права защищены",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "cpp",
+   "author": "Участники Викиучебника",
+   "title": "Язык Си в примерах",
+   "url": "https://ru.wikibooks.org/wiki/%D0%AF%D0%B7%D1%8B%D0%BA_%D0%A1%D0%B8_%D0%B2_%D0%BF%D1%80%D0%B8%D0%BC%D0%B5%D1%80%D0%B0%D1%85",
+   "license": "CC BY-SA 4.0",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "cpp",
+   "author": "Участники cppreference.com",
+   "title": "Справочник по C++",
+   "url": "https://ru.cppreference.com/w/cpp",
+   "license": "CC BY-SA 3.0 и GNU FDL",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "scripts",
+   "author": "Mendel Cooper, перевод Андрея Киселёва",
+   "title": "Искусство программирования на языке сценариев командной оболочки",
+   "url": "https://rus-linux.net/MyLDP/BOOKS/abs-guide/flat/abs-book.html",
+   "license": "Open Publication License 1.0",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "scripts",
+   "author": "Mendel Cooper, перевод Андрея Киселёва",
+   "title": "То же, зеркало OpenNet",
+   "url": "https://www.opennet.ru/docs/RUS/bash_scripting_guide/",
+   "license": "Open Publication License 1.0",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "scripts",
+   "author": "younglinux.info",
+   "title": "Введение в Linux и Bash",
+   "url": "https://younglinux.info/bash/linux",
+   "license": "© younglinux.info",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "scripts",
+   "author": "Free Software Foundation",
+   "title": "Справочное руководство GNU Bash",
+   "url": "https://www.gnu.org/software/bash/manual/bash.html",
+   "license": "GNU FDL",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "scripts",
+   "author": "EbookFoundation и участники",
+   "title": "Бесплатные книги по программированию на русском",
+   "url": "https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md",
+   "license": "CC BY 4.0",
+   "accessed": "2026-11-10"
+  }
+ ]
+}

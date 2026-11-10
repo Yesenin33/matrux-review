@@ -16,7 +16,6 @@ import ru.palma.app.ui.theme.Palma
 
 private const val PATTERN_ALPHA = 0.22f
 
-/** Узор схемы на фоне: плитка в акцентном цвете и затухание к низу экрана. */
 @Composable
 fun AppBackdrop(modifier: Modifier = Modifier) {
     val colors = Palma.colors

@@ -14,6 +14,7 @@ ROUTES = [
     ("POST", "/api/admin/images"),
     ("DELETE", "/api/admin/images/alpine"),
     ("GET", "/api/admin/subscribers"),
+    ("GET", "/api/admin/stats"),
 ]
 
 GARBAGE = [
@@ -114,7 +115,7 @@ def test_publish_without_file_422(client, admin_headers):
     assert response.json() == {"error": "missing_file"}
 
 
-def test_subscribers_summary(client, admin_headers, device):
+def test_subscribers_summary(client, admin_headers, device, account):
     for purchase, device_id, product in [
         ("ok-a", "d1", "palma_pro_month"),
         ("ok-b", "d2", "palma_pro_month"),
@@ -123,13 +124,14 @@ def test_subscribers_summary(client, admin_headers, device):
     ]:
         response = client.post(
             "/api/sub/verify",
-            headers=device(device_id),
+            headers={**device(device_id), **account(device_id)},
             json={"purchase_id": purchase, "product_id": product, "device_id": device_id},
         )
         assert response.status_code == 200
     soon = to_iso(utcnow() + timedelta(days=3))
     with client.app.state.context.db.connect() as conn:
         conn.execute("UPDATE purchases SET expires_at = ? WHERE purchase_id = 'ok-b'", (soon,))
+        conn.execute("UPDATE entitlements SET expires_at = ? WHERE purchase_id = 'ok-b'", (soon,))
     response = client.get("/api/admin/subscribers", headers=admin_headers)
     assert response.status_code == 200
     assert response.json() == {"total": 4, "pro": 2, "lifetime": 1, "expiring_7d": 1}

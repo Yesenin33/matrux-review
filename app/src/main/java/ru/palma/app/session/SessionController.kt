@@ -2,6 +2,7 @@ package ru.palma.app.session
 
 import android.graphics.Bitmap
 import android.util.Log
+import java.net.SocketTimeoutException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -89,6 +90,7 @@ class SessionController(
     private val engineOutput = StringBuilder()
     @Volatile private var startedGeometry = ""
     @Volatile private var restarting = false
+    private var autoRestarts = 0
     private var loggedFrame = ""
 
     fun start() {
@@ -100,6 +102,7 @@ class SessionController(
         }
         val started = clock()
         restarting = false
+        autoRestarts = AUTO_RESTARTS
         startedGeometry = geometry()
         startInput()
         job = scope.launch {
@@ -147,11 +150,19 @@ class SessionController(
             if (want == startedGeometry) return@launch
             if (!requestGeometry(want)) return@launch restartGeometry()
             startedGeometry = want
-            val reached = withTimeoutOrNull(GEOMETRY_WAIT_MS) {
-                frames.first { it != null && "${it.bitmap.width}x${it.bitmap.height}" == want }
+            val size = { frame: Frame? -> frame != null && "${frame.bitmap.width}x${frame.bitmap.height}" == want }
+            var reached = withTimeoutOrNull(GEOMETRY_LIVE_MS) { frames.first { size(it) } }
+            if (reached == null) {
+                dropConnection()
+                reached = withTimeoutOrNull(GEOMETRY_WAIT_MS) { frames.first { size(it) } }
             }
             if (reached == null) restartGeometry()
         }
+    }
+
+    private fun dropConnection() {
+        runCatching { socket?.close() }
+        socket = null
     }
 
     private fun requestGeometry(size: String): Boolean = runCatching {
@@ -334,6 +345,8 @@ class SessionController(
     private suspend fun startEngine(imageId: String) = withContext(Dispatchers.IO) {
         if (!engine.available()) throw FailureException(Failure.EngineMissing)
         val rootfs = installs.rootfs(imageId)
+        runCatching { engine.installSessionScript(rootfs) }
+            .onFailure { Log.w("palma-session", "script install skipped", it) }
         if (!engine.hasSessionScript(rootfs)) throw FailureException(Failure.SessionMissing)
         val mode = if (x11.available()) DisplayMode.X11 else DisplayMode.VNC
         vncPort = GuestPorts.free(ProotCommand.VNC_PORT)
@@ -393,8 +406,8 @@ class SessionController(
         val blocks = listOf(engine, logs).filter { it.isNotBlank() }
         if (blocks.isEmpty()) return ""
         val headers = listOfNotNull(
-            "— запуск —".takeIf { engine.isNotBlank() },
-            "— логи —".takeIf { logs.isNotBlank() },
+            "— launch —".takeIf { engine.isNotBlank() },
+            "— logs —".takeIf { logs.isNotBlank() },
         )
         return (headers + blocks).joinToString("\n").takeLast(MAX_ENGINE_OUTPUT)
     }
@@ -424,18 +437,31 @@ class SessionController(
                         val size = "${fb.width}x${fb.height}"
                         if (size != loggedFrame) {
                             loggedFrame = size
-                            Log.i(FRAME_TAG, "кадр $size пусто=${blankState.value}")
+                            Log.i(FRAME_TAG, "frame $size blank=${blankState.value}")
                         }
                     }
                 }
                 return@withContext
             } catch (error: Exception) {
                 if (!isActive) return@withContext
+                if (error is SocketTimeoutException && client.keepAlive()) {
+                    continue
+                }
                 blankState.value = true
                 runCatching { socket?.close() }
                 socket = null
                 vnc = null
                 if (reattach()) continue
+                if (process?.isAlive != true && autoRestarts > 0) {
+                    autoRestarts -= 1
+                    Log.i(FRAME_TAG, "session lost, restarting ($autoRestarts left)")
+                    teardown()
+                    scope.launch {
+                        delay(RESTART_PAUSE_MS)
+                        start()
+                    }
+                    return@withContext
+                }
                 teardown()
                 mutable.value = SessionState.Lost(name, Failures.fromThrowable(error).let {
                     if (it == Failure.NoConnection) Failure.EngineCrashed else it
@@ -448,7 +474,6 @@ class SessionController(
     private suspend fun reattach(): Boolean {
         var waited = 0L
         while (waited < REATTACH_TIMEOUT_MS) {
-            if (process?.isAlive == false) return false
             val connected = runCatching { VncClient.connect(LOOPBACK, vncPort, CONNECT_TIMEOUT_MS) }.getOrNull()
             if (connected != null) {
                 val (sock, client) = connected
@@ -496,6 +521,7 @@ class SessionController(
         process?.destroy()
         process = null
         x11.stop()
+        GuestProcesses.killGuest()
     }
 
     private companion object {
@@ -506,7 +532,9 @@ class SessionController(
         const val REATTACH_TIMEOUT_MS = 60_000L
         const val RETRY_MS = 500L
         const val RESTART_PAUSE_MS = 800L
+        const val AUTO_RESTARTS = 2
         const val GEOMETRY_WAIT_MS = 30_000L
+        const val GEOMETRY_LIVE_MS = 6_000L
         const val GEOMETRY_DEBOUNCE_MS = 400L
         const val FRAME_TAG = "palma-vnc"
         const val MAX_ENGINE_OUTPUT = 1200
@@ -522,7 +550,7 @@ class SessionController(
         const val WHEEL_DOWN = 5
         const val LOG_TAIL = 500
         const val DEFAULT_GEOMETRY = "1280x800"
-        val DISPLAY_LOGS = listOf("trace.log", "xvfb-0.log", "xvfb-1.log", "x11vnc.log")
-        val DIAGNOSTIC_LOGS = listOf("trace.log", "xvfb-0.log", "x11vnc.log", "xfce.log")
+        val DISPLAY_LOGS = listOf("trace.log", "xvnc.log", "xvfb-0.log", "xvfb-1.log", "x11vnc.log")
+        val DIAGNOSTIC_LOGS = listOf("trace.log", "xvnc.log", "xvfb-0.log", "x11vnc.log", "xfce.log")
     }
 }

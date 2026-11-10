@@ -31,6 +31,7 @@ import ru.palma.app.ui.theme.Palma
 enum class Tab(val label: Int, val icon: Lucide) {
     HOME(R.string.tab_home, Lucide.House),
     CATALOG(R.string.tab_catalog, Lucide.List),
+    KNOWLEDGE(R.string.tab_knowledge, Lucide.BookOpen),
     SUBSCRIPTION(R.string.tab_subscription, Lucide.CreditCard),
 }
 

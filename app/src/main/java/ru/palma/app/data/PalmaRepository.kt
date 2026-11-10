@@ -2,6 +2,12 @@ package ru.palma.app.data
 
 import okhttp3.Request
 import ru.palma.app.BuildConfig
+import ru.palma.app.account.AccountInfo
+import ru.palma.app.account.AuthCode
+import ru.palma.app.account.AuthRequest
+import ru.palma.app.billing.PurchaseReceipt
+import ru.palma.app.billing.ServerPlan
+import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
@@ -13,8 +19,14 @@ class PalmaRepository(
     private val secrets: SecretStore,
     private val pinnedKey: String?,
     private val deviceName: String?,
+    private val storePurchases: suspend () -> List<PurchaseReceipt> = { emptyList() },
+    private val unlocked: Boolean = BuildConfig.TEST_UNLOCKED,
+    private val clock: () -> Instant = Instant::now,
 ) {
     private val keyName = "device_key"
+    private val tokenName = "account_token"
+
+    val account: AccountInfo? get() = local.account?.takeIf { secrets.read(tokenName) != null }
 
     val deviceId: String? get() = local.deviceId
     val hasDeviceKey: Boolean get() = secrets.read(keyName) != null
@@ -50,23 +62,85 @@ class PalmaRepository(
     val cachedStatus: SubscriptionStatus? get() = local.cachedStatus
 
     suspend fun refreshStatus(): SubscriptionStatus {
-        if (BuildConfig.TEST_UNLOCKED) {
-            val status = SubscriptionStatus(Tier.LIFETIME, null, Instant.now())
+        if (unlocked) {
+            val status = SubscriptionStatus(Tier.LIFETIME, null, clock())
             local.cachedStatus = status
             return status
         }
-        val (id, key) = ensureDevice()
-        val status = api.status(id, key)
+        resyncStore()
+        val status = accountStatus() ?: deviceStatus()
         local.cachedStatus = status
         return status
     }
 
-    suspend fun verifyPurchase(purchaseId: String, productId: String): VerifyResult {
+    private suspend fun deviceStatus(): SubscriptionStatus {
         val (id, key) = ensureDevice()
-        val result = api.verify(id, key, purchaseId, productId)
+        return api.status(id, key)
+    }
+
+    private suspend fun accountStatus(): SubscriptionStatus? {
+        val token = secrets.read(tokenName) ?: return null
+        return try {
+            api.account(token).also { local.account = it.account }.status
+        } catch (error: FailureException) {
+            if (error.failure != Failure.SignedOut) throw error
+            forgetAccount()
+            null
+        }
+    }
+
+    private suspend fun resyncStore() {
+        val now = clock()
+        val last = local.storeCheckedAt?.let(Instant::ofEpochMilli)
+        if (last != null && Duration.between(last, now) < STORE_RECHECK && now >= last) return
+        val receipts = runCatching { storePurchases() }.getOrNull() ?: return
+        receipts.forEach { receipt ->
+            try {
+                verifyPurchase(receipt)
+            } catch (error: FailureException) {
+                if (error.failure == Failure.NoConnection) return
+            }
+        }
+        local.storeCheckedAt = now.toEpochMilli()
+    }
+
+    suspend fun verifyPurchase(receipt: PurchaseReceipt): VerifyResult {
+        val token = secrets.read(tokenName)
+        val invoiceId = receipt.invoiceId
+        val result = if (token != null && invoiceId != null) {
+            api.verifyAccountPurchase(token, receipt, invoiceId)
+        } else {
+            val (id, key) = ensureDevice()
+            api.verify(id, key, receipt, token)
+        }
         local.cachedStatus = result.status
         return result
     }
+
+    suspend fun signIn(code: AuthCode, request: AuthRequest): SubscriptionStatus {
+        val (id, key) = ensureDevice()
+        val state = api.signIn(code, request, id, key)
+        val token = state.token ?: throw FailureException(Failure.SignInRejected)
+        secrets.write(tokenName, token)
+        local.account = state.account
+        local.cachedStatus = state.status
+        local.storeCheckedAt = null
+        return state.status
+    }
+
+    suspend fun signOut() {
+        val token = secrets.read(tokenName)
+        forgetAccount()
+        if (token == null) return
+        runCatching { api.signOut(token, local.deviceId, secrets.read(keyName)) }
+    }
+
+    private fun forgetAccount() {
+        secrets.remove(tokenName)
+        local.account = null
+    }
+
+    suspend fun plans(): List<ServerPlan> = api.plans()
 
     suspend fun catalog(): Catalog {
         val key = try {
@@ -132,4 +206,8 @@ class PalmaRepository(
     val http get() = api.http
 
     private fun newDeviceId() = "a-" + UUID.randomUUID().toString()
+
+    private companion object {
+        val STORE_RECHECK: Duration = Duration.ofHours(6)
+    }
 }

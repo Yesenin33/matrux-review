@@ -1,0 +1,7 @@
+[2026-11-10T19:17:03+00:00] STAGE=init agent=omd-orchestrator status=ok route=new-artifact lane=design-mockups artifact=design/login/
+[2026-11-10T19:45:43+00:00] STAGE=build agent=omd-orchestrator(design-executor) status=ok artifact=design/login/v1..v4.png,all.png src=design/login/src/render.py
+[2026-11-10T19:49:25+00:00] STAGE=review agent=omd-designer-review round=1 status=BLOCK issues=B3/W8 report=design/login/.reviews/round-1.md
+[2026-11-10T19:55:09+00:00] STAGE=review agent=omd-designer-review round=2 status=WARN block=0 warn=6 report=design/login/.reviews/round-2.md
+[2026-11-10T20:00:25+00:00] STAGE=critic agent=omd-final-qa round=1 status=REVISION fail=item8(v2 redraw of SignInScreen) report=design/login/.reviews/final-qa.md
+[2026-11-10T20:03:06+00:00] STAGE=critic agent=omd-final-qa round=2 status=PASS report=design/login/.reviews/final-qa-round-2.md
+[2026-11-10T20:03:06+00:00] STAGE=handoff agent=omd-orchestrator status=ok artifacts=v1.png,v2.png,v3.png,v4.png,all.png known_issues=K1-K4

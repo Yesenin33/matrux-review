@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 from app.clock import to_iso, utcnow
 from app.context import Context, check_device_id, get_context
-from app.devices import hash_key, key_matches, new_device_key, provided_key
+from app.devices import hash_key, new_device_key, provided_key, seen_device
 from app.errors import ApiError, JsonUtf8Response
 from app.subscriptions import device_status
 
@@ -33,10 +33,13 @@ def register_device(payload: RegisterRequest, request: Request, ctx: Ctx) -> Jso
     now = utcnow()
     with ctx.db.connect() as conn:
         created = conn.execute(
-            "INSERT OR IGNORE INTO devices (device_id, key_hash, name, created_at) VALUES (?, ?, ?, ?)",
-            (device_id, hash_key(key.encode()), name, to_iso(now)),
+            """
+            INSERT OR IGNORE INTO devices (device_id, key_hash, name, created_at, last_seen_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (device_id, hash_key(key.encode()), name, to_iso(now), to_iso(now)),
         ).rowcount
-        if not created and not key_matches(conn, device_id, provided_key(request)):
+        if not created and not seen_device(conn, device_id, provided_key(request)):
             raise ApiError(409, "device_exists")
         status = device_status(conn, device_id, now)
     body = {"device_id": device_id, "tier": status.tier, "expires_at": to_iso(status.expires_at)}

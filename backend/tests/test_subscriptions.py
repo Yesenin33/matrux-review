@@ -9,11 +9,11 @@ LIFETIME = "palma_lifetime"
 
 
 @pytest.fixture
-def verify(client, device):
+def verify(client, device, account):
     def _verify(purchase_id, device_id="dev-1", product_id=PRO):
         return client.post(
             "/api/sub/verify",
-            headers=device(device_id),
+            headers={**device(device_id), **account(device_id)},
             json={"purchase_id": purchase_id, "product_id": product_id, "device_id": device_id},
         )
 
@@ -126,3 +126,55 @@ def test_stub_off_reports_store_unavailable(tmp_path):
         )
     assert response.status_code == 503
     assert response.json() == {"error": "store_unavailable"}
+
+
+def anonymous_verify(client, device, purchase_id, device_id, headers=None):
+    return client.post(
+        "/api/sub/verify",
+        headers={**device(device_id), **(headers or {})},
+        json={"purchase_id": purchase_id, "product_id": PRO, "device_id": device_id},
+    )
+
+
+@pytest.mark.parametrize("headers", [None, {"Authorization": "Bearer garbage"}, {"Authorization": "Basic x"}])
+def test_new_purchase_without_account_is_refused(client, device, status, headers):
+    response = anonymous_verify(client, device, "ok-anon", "dev-anon", headers)
+    assert response.status_code == 401
+    assert response.json() == {"error": "unauthorized"}
+    assert status("dev-anon").json()["tier"] == "free"
+    with client.app.state.context.db.connect() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM purchases").fetchone()[0] == 0
+        assert conn.execute("SELECT COUNT(*) FROM entitlements").fetchone()[0] == 0
+
+
+def test_new_purchase_with_account_grants_pro_to_device_and_account(client, device, account, status):
+    headers = account("dev-acc")
+    response = anonymous_verify(client, device, "ok-acc", "dev-acc", headers)
+    assert response.status_code == 200, response.text
+    assert response.json()["tier"] == "pro"
+    assert status("dev-acc").json()["tier"] == "pro"
+    assert client.get("/api/account", headers=headers).json()["tier"] == "pro"
+
+
+def test_new_purchase_with_token_of_other_account_is_409(client, device, account):
+    account("dev-mine")
+    stranger = account("dev-other")
+    response = anonymous_verify(client, device, "ok-cross", "dev-mine", stranger)
+    assert response.status_code == 409
+    assert response.json() == {"error": "purchase_bound_to_other_account"}
+
+
+def test_new_purchase_with_foreign_app_user_id_is_409(client, device, account):
+    headers = account("dev-own")
+    client.app.state.context.store.owners["ok-foreign"] = "someone-else"
+    response = anonymous_verify(client, device, "ok-foreign", "dev-own", headers)
+    assert response.status_code == 409
+    assert response.json() == {"error": "purchase_bound_to_other_account"}
+
+
+def test_legacy_device_purchase_keeps_working_without_account(client, device, subscribe, status):
+    subscribe("dev-legacy", "ok-legacy")
+    assert status("dev-legacy").json()["tier"] == "pro"
+    response = anonymous_verify(client, device, "ok-legacy", "dev-legacy")
+    assert response.status_code == 200, response.text
+    assert response.json()["tier"] == "pro"

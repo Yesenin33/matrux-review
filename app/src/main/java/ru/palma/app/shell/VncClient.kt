@@ -13,6 +13,8 @@ import java.nio.IntBuffer
 
 class VncException(message: String) : IOException(message)
 
+const val IDLE_TIMEOUT_MS = 20_000
+
 class Framebuffer(val width: Int, val height: Int) {
     val buffer: ByteBuffer = ByteBuffer.allocateDirect(width * height * 4).order(ByteOrder.nativeOrder())
     val pixels: IntBuffer = buffer.asIntBuffer()
@@ -58,13 +60,15 @@ class Framebuffer(val width: Int, val height: Int) {
 
     fun copyRect(srcX: Int, srcY: Int, x: Int, y: Int, w: Int, h: Int) {
         if (w <= 0 || h <= 0) return
-        if (srcX + w > width || srcY + h > height || x + w > width || y + h > height) return
-        val size = w * 4
+        val cw = minOf(w, width - x, width - srcX)
+        val ch = minOf(h, height - y, height - srcY)
+        if (cw <= 0 || ch <= 0) return
+        val size = cw * 4
         val row = packRow(size)
         val view = buffer
         val down = y > srcY
-        for (n in 0 until h) {
-            val r = if (down) h - 1 - n else n
+        for (n in 0 until ch) {
+            val r = if (down) ch - 1 - n else n
             view.position(((srcY + r) * width + srcX) * 4)
             view.get(row, 0, size)
             view.position(((y + r) * width + x) * 4)
@@ -121,7 +125,7 @@ class VncClient(
         setPixelFormat()
         setEncodings()
         requestUpdate(incremental = false)
-        socket?.soTimeout = 0
+        socket?.soTimeout = IDLE_TIMEOUT_MS
     }
 
     fun readMessage(): Boolean {
@@ -181,15 +185,13 @@ class VncClient(
         when (val encoding = input.readInt()) {
             ENCODING_RAW -> {
                 val fb = framebuffer
-                if (x + w > fb.width || y + h > fb.height) {
-                    skipFully(w.toLong() * h * 4)
-                } else {
-                    val size = w * 4
-                    val row = fb.rawRow(size)
-                    for (line in 0 until h) {
-                        input.readFully(row, 0, size)
-                        fb.writeRow(y + line, x, row, size)
-                    }
+                val size = w * 4
+                val row = fb.rawRow(size)
+                val visible = (fb.width - x).coerceIn(0, w)
+                for (line in 0 until h) {
+                    input.readFully(row, 0, size)
+                    val dest = y + line
+                    if (visible > 0 && dest < fb.height) fb.writeRow(dest, x, row, visible * 4)
                 }
             }
             ENCODING_COPYRECT -> framebuffer.copyRect(input.readUnsignedShort(), input.readUnsignedShort(), x, y, w, h)
@@ -239,7 +241,7 @@ class VncClient(
         output.flush()
     }
 
-    private fun requestUpdate(incremental: Boolean) = synchronized(output) {
+    fun requestUpdate(incremental: Boolean) = synchronized(output) {
         val fb = framebuffer
         output.writeByte(3)
         output.writeByte(if (incremental) 1 else 0)
@@ -249,6 +251,11 @@ class VncClient(
         output.writeShort(fb.height)
         output.flush()
     }
+
+    fun keepAlive(): Boolean = runCatching {
+        requestUpdate(incremental = true)
+        true
+    }.getOrDefault(false)
 
     private fun readReason(): String {
         val length = input.readInt()

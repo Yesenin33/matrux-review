@@ -1,6 +1,13 @@
 package ru.palma.app.ui.knowledge
 
-enum class Branch { START, DEEPER }
+enum class Branch(val key: String) {
+    START("start"),
+    DEEPER("deeper");
+
+    companion object {
+        fun of(key: String): Branch = entries.firstOrNull { it.key == key } ?: DEEPER
+    }
+}
 
 data class KnowledgeEntry(
     val title: String,
@@ -21,21 +28,6 @@ data class KnowledgeSection(
     val pro: Boolean,
     val groups: List<KnowledgeGroup>,
     val branch: Branch = Branch.DEEPER,
-)
-
-val knowledge: List<KnowledgeSection> = listOf(
-    firstSteps,
-    files,
-    linux,
-    terms,
-    packages,
-    users,
-    services,
-    network,
-    disks,
-    logs,
-    scripts,
-    git,
-    hardware,
-    languages,
-)
+) {
+    val size: Int get() = groups.sumOf { it.entries.size }
+}

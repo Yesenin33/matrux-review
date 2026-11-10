@@ -31,7 +31,7 @@ object GuestPorts {
 object GuestProcesses {
 
     private val NAMES = listOf(
-        "x11vnc", "Xvfb", "xfce4-session", "xfwm4", "xfce4-panel", "xfdesktop",
+        "x11vnc", "Xvfb", "Xvnc", "Xtigervnc", "xfce4-session", "xfwm4", "xfce4-panel", "xfdesktop",
         "xfsettingsd", "xfconfd", "palma-session", "libproot.so",
     )
 
@@ -66,4 +66,30 @@ object GuestProcesses {
     private fun cmdline(pid: Int): String? =
         runCatching { File("/proc/$pid/cmdline").readText().replace('\u0000', ' ').trim() }
             .getOrNull()
+
+    fun killGuest(): Int {
+        val me = android.os.Process.myPid()
+        val uid = android.os.Process.myUid()
+        var killed = 0
+        for (entry in File("/proc").list() ?: return 0) {
+            val pid = entry.toIntOrNull() ?: continue
+            if (pid == me) continue
+            if (uidOf(pid) != uid) continue
+            runCatching {
+                android.os.Process.sendSignal(pid, 9)
+                killed++
+            }
+        }
+        return killed
+    }
+
+    private fun uidOf(pid: Int): Int? = runCatching {
+        File("/proc/$pid/status").useLines { lines ->
+            lines.firstOrNull { it.startsWith("Uid:") }
+                ?.split('\t')
+                ?.getOrNull(1)
+                ?.trim()
+                ?.toIntOrNull()
+        }
+    }.getOrNull()
 }

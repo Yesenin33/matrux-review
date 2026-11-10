@@ -3,11 +3,12 @@ import json
 import sqlite3
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Header, Query, Request
 from starlette.responses import Response
 
 from app.clock import utcnow
 from app.context import Context, check_device_id, get_context
+from app.devices import note_visit
 from app.errors import JSON_UTF8, ApiError, JsonUtf8Response
 from app.files import serve_blob
 from app.subscriptions import device_status
@@ -49,8 +50,14 @@ def pubkey(ctx: Ctx) -> JsonUtf8Response:
 
 
 @router.get("/manifest")
-def manifest(ctx: Ctx, if_none_match: Annotated[str | None, Header()] = None) -> Response:
+def manifest(
+    request: Request,
+    ctx: Ctx,
+    device_id: Annotated[str | None, Query()] = None,
+    if_none_match: Annotated[str | None, Header()] = None,
+) -> Response:
     with ctx.db.connect() as conn:
+        note_visit(conn, device_id, request)
         catalog = conn.execute("SELECT version, updated_at FROM catalog WHERE key = 1").fetchone()
         rows = conn.execute("SELECT * FROM images WHERE active = 1 ORDER BY sort, created_at, id").fetchall()
     document = {
@@ -73,6 +80,7 @@ def manifest(ctx: Ctx, if_none_match: Annotated[str | None, Header()] = None) ->
 @router.get("/images/{image_id}")
 def download_image(
     image_id: str,
+    request: Request,
     ctx: Ctx,
     device_id: Annotated[str | None, Query()] = None,
     range_header: Annotated[str | None, Header(alias="range")] = None,
@@ -80,6 +88,7 @@ def download_image(
 ) -> Response:
     now = utcnow()
     with ctx.db.connect() as conn:
+        note_visit(conn, device_id, request)
         row = conn.execute("SELECT * FROM images WHERE id = ? AND active = 1", (image_id,)).fetchone()
         if row is None:
             raise ApiError(404, "image_not_found")

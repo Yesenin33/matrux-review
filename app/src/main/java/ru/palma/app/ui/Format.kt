@@ -27,6 +27,9 @@ object Format {
         }
     }
 
+    fun rubles(amount: Long): String =
+        amount.toString().reversed().chunked(3).joinToString("\u00A0").reversed()
+
     sealed interface Duration {
         data class Seconds(val seconds: Int) : Duration
         data class Minutes(val minutes: Int) : Duration

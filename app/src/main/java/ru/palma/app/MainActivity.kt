@@ -40,10 +40,12 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.palma.app.data.Catalog
 import ru.palma.app.data.ImageInfo
+import ru.palma.app.data.InstalledSystem
 import ru.palma.app.install.InstallState
 import ru.palma.app.session.SessionState
 import ru.palma.app.service.InstallService
 import ru.palma.app.service.SessionService
+import ru.palma.app.store.StoreSdk
 import ru.palma.app.shell.LaunchState
 import ru.palma.app.ui.Keys
 import ru.palma.app.ui.components.Tab
@@ -57,17 +59,40 @@ import ru.palma.app.ui.screens.HomeScreen
 import ru.palma.app.ui.screens.InstallActions
 import ru.palma.app.ui.screens.InstallScreen
 import ru.palma.app.ui.screens.LaunchScreen
-import ru.palma.app.ui.screens.ProScreen
+import ru.palma.app.ui.screens.KnowledgeScreen
+import ru.palma.app.ui.screens.KnowledgeActions
+import ru.palma.app.ui.screens.CourseActions
+import ru.palma.app.ui.screens.CourseScreen
+import ru.palma.app.ui.screens.LessonActions
+import ru.palma.app.ui.screens.LessonScreen
+import ru.palma.app.ui.screens.SourcesActions
+import ru.palma.app.ui.screens.SourcesScreen
+import ru.palma.app.learn.Answer
+import ru.palma.app.learn.Course
+import ru.palma.app.learn.Grader
+import ru.palma.app.learn.Lesson
+import ru.palma.app.learn.Task
+import ru.palma.app.learn.Verdict
+import ru.palma.app.ui.state.Attempt
+import ru.palma.app.ui.state.courseUi
+import ru.palma.app.ui.state.lessonUi
+import ru.palma.app.ui.screens.OnboardingOverlay
+import ru.palma.app.ui.screens.ProOfferOverlay
 import ru.palma.app.ui.screens.SectionActions
 import ru.palma.app.ui.screens.SectionScreen
+import ru.palma.app.ui.screens.SignInOverlay
 import ru.palma.app.ui.screens.SubscriptionActions
 import ru.palma.app.ui.screens.SubscriptionScreen
-import ru.palma.app.ui.knowledge.knowledge
-import ru.palma.app.ui.state.CatalogAction
+import ru.palma.app.ui.state.SectionRow
+import ru.palma.app.ui.state.SystemAction
+import ru.palma.app.ui.state.GateSystem
 import ru.palma.app.ui.state.Load
+import ru.palma.app.ui.state.SignInUi
 import ru.palma.app.ui.state.SubscriptionUi
-import ru.palma.app.ui.state.action
-import ru.palma.app.ui.state.catalogImageSha
+import ru.palma.app.ui.state.AccountUi
+import ru.palma.app.ui.state.knowledgeUi
+import ru.palma.app.ui.state.onboardUi
+import ru.palma.app.ui.state.proOffer
 import ru.palma.app.ui.state.catalogUi
 import ru.palma.app.ui.state.homeUi
 import ru.palma.app.ui.state.paidSub
@@ -82,7 +107,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-enum class Route { HOME, CATALOG, INSTALL, SUBSCRIPTION, LAUNCH, DESKTOP, SECTION, PRO }
+enum class Route { HOME, CATALOG, INSTALL, KNOWLEDGE, SUBSCRIPTION, LAUNCH, DESKTOP, SECTION, COURSE, LESSON, SOURCES }
 
 private const val STUCK_MS = 25_000L
 private const val AUTOTEST_EXTRA = "palma_autotest"
@@ -91,18 +116,22 @@ private const val AUTOTEST_IMAGE = "alpine-xfce"
 private const val AUTOTEST_IMAGE_EXTRA = "palma_image"
 private const val AUTOTEST_ROTATION_EXTRA = "palma_rotation"
 private const val AUTOTEST_SHADE_EXTRA = "palma_shade"
+private const val AUTOTEST_ACTION_EXTRA = "palma_action"
+private const val AUTOTEST_LOGIN_EXTRA = "palma_login"
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         graph.refresh()
+        StoreSdk.handleIntent(this, intent, savedInstanceState == null)
         applyRotationExtra(intent)
         setContent { PalmaTheme { PalmaApp() } }
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        StoreSdk.handleIntent(this, intent, firstLaunch = false)
         applyRotationExtra(intent)
     }
 
@@ -144,9 +173,31 @@ class MainActivity : ComponentActivity() {
         if (graph.installs.state.value !is InstallState.ConfirmMetered) InstallService.start(this)
     }
 
+    private fun switchTo(image: ImageInfo) {
+        val sha = graph.installs.installedShas.value[image.id] ?: image.sha256
+        graph.local.installed = InstalledSystem(
+            imageId = image.id,
+            name = image.name,
+            distro = image.distro,
+            desktop = image.desktop,
+            sizeBytes = image.sizeBytes,
+            sha256 = sha,
+            lastLaunchMillis = null,
+        )
+        launch()
+    }
+
     private fun launch() {
         graph.session.start()
         SessionService.start(this)
+    }
+
+    private fun openLink(url: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+        } catch (error: ActivityNotFoundException) {
+            Log.w("palma-learn", "no browser for $url")
+        }
     }
 
     private fun manageSubscription() {
@@ -167,18 +218,29 @@ class MainActivity : ComponentActivity() {
         val zone = remember { ZoneId.systemDefault() }
         var route by rememberSaveable { mutableStateOf(Route.HOME) }
         var sectionId by rememberSaveable { mutableStateOf("") }
+        var courseId by rememberSaveable { mutableStateOf("") }
+        var lessonId by rememberSaveable { mutableStateOf("") }
+        var attempt by remember { mutableStateOf<Pair<String, Attempt>>("" to Attempt.Idle) }
+        val progress by graph.progress.progress.collectAsStateWithLifecycle()
+        val courses = graph.courses.courses
+        val sheets = graph.courses.sheets
         val catalog by graph.catalog.collectAsStateWithLifecycle()
         val status by graph.status.collectAsStateWithLifecycle()
         val statusFailure by graph.statusFailure.collectAsStateWithLifecycle()
         val install by graph.installs.state.collectAsStateWithLifecycle()
+        val installedShas by graph.installs.installedShas.collectAsStateWithLifecycle()
         val session by graph.session.state.collectAsStateWithLifecycle()
         val hasFrame by remember(graph) {
             graph.session.frame.map { it != null }.distinctUntilChanged()
         }.collectAsStateWithLifecycle(false)
         val purchase by graph.purchase.collectAsStateWithLifecycle()
+        val account by graph.account.collectAsStateWithLifecycle()
+        val signIn by graph.signIn.collectAsStateWithLifecycle()
         val blank by graph.session.blank.collectAsStateWithLifecycle()
         val scope = rememberCoroutineScope()
-        val plan by graph.selectedPlan.collectAsStateWithLifecycle()
+        val terms by graph.plans.terms.collectAsStateWithLifecycle()
+        var offerOpen by rememberSaveable { mutableStateOf(false) }
+        val onboardFlags by graph.onboarding.flags.collectAsStateWithLifecycle()
 
         if (BuildConfig.DEBUG && intent.getBooleanExtra(AUTOTEST_EXTRA, false)) {
             var stage by remember { mutableStateOf(0) }
@@ -189,27 +251,27 @@ class MainActivity : ComponentActivity() {
                     val wanted = intent.getStringExtra(AUTOTEST_IMAGE_EXTRA) ?: AUTOTEST_IMAGE
                     val image = autoImages.firstOrNull { it.id == wanted } ?: autoImages.first()
                     if (autoInstalled?.sha256.equals(image.sha256, ignoreCase = true)) {
-                        Log.i(AUTOTEST_TAG, "автотест: ${image.id} уже стоит, запускаю")
+                        Log.i(AUTOTEST_TAG, "autotest: ${image.id} installed, launching")
                         launch()
                         route = Route.LAUNCH
                         stage = 2
                     } else {
-                        Log.i(AUTOTEST_TAG, "автотест: ставлю ${image.id} ${image.sha256.take(8)}")
+                        Log.i(AUTOTEST_TAG, "autotest: installing ${image.id} ${image.sha256.take(8)}")
                         install(image, allowMetered = true)
                         route = Route.INSTALL
                         stage = 1
                     }
                 } else if (stage == 1 && install is InstallState.Done) {
-                    Log.i(AUTOTEST_TAG, "автотест: установка завершена, запускаю")
+                    Log.i(AUTOTEST_TAG, "autotest: install done, launching")
                     launch()
                     route = Route.LAUNCH
                     stage = 2
                 }
                 if (stage >= 2) {
-                    Log.i(AUTOTEST_TAG, "состояние: $session")
+                    Log.i(AUTOTEST_TAG, "state: $session")
                     if (session is SessionState.Lost) {
                         val dump = withContext(Dispatchers.IO) { graph.session.diagnostics() }
-                        Log.i(AUTOTEST_TAG, "диагностика: ${dump.replace('\n', '|')}")
+                        Log.i(AUTOTEST_TAG, "diagnostics: ${dump.replace('\n', '|')}")
                     }
                 }
             }
@@ -253,6 +315,7 @@ class MainActivity : ComponentActivity() {
             route = when (tab) {
                 Tab.HOME -> Route.HOME
                 Tab.CATALOG -> if (install is InstallState.Running || install is InstallState.Failed) Route.INSTALL else Route.CATALOG
+                Tab.KNOWLEDGE -> Route.KNOWLEDGE
                 Tab.SUBSCRIPTION -> Route.SUBSCRIPTION
             }
         }
@@ -260,21 +323,67 @@ class MainActivity : ComponentActivity() {
         BackHandler(route != Route.HOME) {
             route = when (route) {
                 Route.INSTALL -> Route.CATALOG
+                Route.SECTION, Route.COURSE, Route.SOURCES -> Route.KNOWLEDGE
+                Route.LESSON -> Route.COURSE
                 else -> Route.HOME
             }
         }
 
         val paid = subLine(status, statusFailure, zone).paidSub()
-        val openSection: (ru.palma.app.ui.knowledge.KnowledgeSection) -> Unit = { section ->
-            if (section.pro && !paid) {
-                route = Route.PRO
+        val openSection: (SectionRow) -> Unit = { row ->
+            if (row.locked) {
+                offerOpen = true
             } else {
-                sectionId = section.id
+                sectionId = row.section.id
                 route = Route.SECTION
             }
         }
+        val openLesson: (String, String) -> Unit = { course, lesson ->
+            courseId = course
+            lessonId = lesson
+            attempt = "" to Attempt.Idle
+            route = Route.LESSON
+        }
+        val check: (Course, Lesson, Answer) -> Unit = { course, lesson, answer ->
+            val key = course.id + "/" + lesson.id
+            val finish: (Verdict) -> Unit = { verdict ->
+                attempt = key to Attempt.Result(verdict)
+                if (verdict is Verdict.Pass) graph.progress.mark(course.id, lesson.id)
+            }
+            when (val task = lesson.task) {
+                is Task.Choice -> finish(Grader.choice(task, (answer as Answer.Pick).index))
+                is Task.Output -> finish(Grader.output(task, (answer as Answer.Text).text))
+                is Task.Run -> {
+                    attempt = key to Attempt.Running
+                    scope.launch { finish(Grader.run(task, graph.check(task, (answer as Answer.Code).text))) }
+                }
+            }
+        }
+        val images = (catalog as? Load.Ready<Catalog>)?.value?.manifest?.images.orEmpty()
+        val running = session is SessionState.Live || session is SessionState.Launching
+        val subscription = SubscriptionUi(
+            status = status,
+            sub = subLine(status, statusFailure, zone),
+            terms = terms,
+            busy = purchase.first,
+            failure = purchase.second,
+            billingReady = graph.billing.available,
+            account = AccountUi(account, graph.auth.available, signIn.first, signIn.second),
+        )
 
         val motion = Palma.motion
+        val gateOpen by graph.gate.open.collectAsStateWithLifecycle()
+        val installedSystem = graph.local.installed
+        val installNow = install
+        val signInSystem: GateSystem = when {
+            installNow is InstallState.Running -> GateSystem.Installing(installNow.image.name, installNow.percent)
+            installedSystem != null -> {
+                val name = installedSystem.name
+                if (session is SessionState.Live || session is SessionState.Launching) GateSystem.Running(name)
+                else GateSystem.Stopped(name)
+            }
+            else -> GateSystem.Absent
+        }
         AnimatedContent(
             targetState = route,
             transitionSpec = {
@@ -284,54 +393,93 @@ class MainActivity : ComponentActivity() {
             label = "route",
         ) { current ->
             when (current) {
-                Route.HOME -> {
-                    val installed = graph.local.installed
-                    val ui = homeUi(
-                        installed = installed,
-                        installedReady = installed != null && graph.installs.isCurrent(installed.imageId, catalogImageSha(catalog, installed.imageId)),
-                        catalog = catalog,
-                        install = install,
-                        session = session,
-                        status = status,
-                        statusFailure = statusFailure,
-                        freeBytes = graph.freeBytes(),
-                        zone = zone,
-                    )
-                    HomeScreen(
-                        ui,
-                        HomeActions(
-                            onLaunch = {
+                Route.HOME -> HomeScreen(
+                    homeUi(catalog, status, statusFailure, terms, courses, sheets, zone),
+                    HomeActions(
+                        onBuy = { offer ->
+                            graph.buy(offer)
+                            route = Route.SUBSCRIPTION
+                        },
+                        onSelect = graph::select,
+                        onLocked = { offerOpen = true },
+                        onReRegister = graph::reRegister,
+                        onTab = onTab,
+                    ),
+                )
+                Route.CATALOG -> CatalogScreen(
+                    catalogUi(catalog, status, statusFailure, graph.local.installed?.imageId, graph.local.bytesPerSecond, installedShas, running),
+                    onAction = { row, action ->
+                        when (action) {
+                            SystemAction.OPEN -> route = if (session is SessionState.Live) Route.DESKTOP else Route.LAUNCH
+                            SystemAction.STOP -> graph.session.stop()
+                            SystemAction.LAUNCH -> {
                                 launch()
                                 route = Route.LAUNCH
-                            },
-                            onReturn = { route = if (session is SessionState.Live) Route.DESKTOP else Route.LAUNCH },
-                            onStop = graph.session::stop,
-                            onInstall = { image ->
-                                install(image)
-                                route = Route.INSTALL
-                            },
-                            onOpenInstall = { route = Route.INSTALL },
-                            onCatalog = { route = Route.CATALOG },
-                            onRetry = graph::refresh,
-                            onReRegister = graph::reRegister,
-                            onSection = openSection,
-                            onTab = onTab,
-                        ),
-                    )
-                }
-                Route.CATALOG -> CatalogScreen(
-                    catalogUi(catalog, status, statusFailure, graph.local.installed?.imageId, graph.local.installed?.sha256, graph.local.bytesPerSecond),
-                    onPick = { row ->
-                        when (row.action()) {
-                            CatalogAction.INSTALL, CatalogAction.REINSTALL -> {
+                            }
+                            SystemAction.SWITCH -> {
+                                switchTo(row.image)
+                                route = Route.LAUNCH
+                            }
+                            SystemAction.INSTALL, SystemAction.REINSTALL -> {
                                 install(row.image)
                                 route = Route.INSTALL
                             }
-                            CatalogAction.SUBSCRIBE -> route = Route.SUBSCRIPTION
+                            SystemAction.SUBSCRIBE -> route = Route.SUBSCRIPTION
                         }
                     },
                     onRetry = graph::refresh,
                     onTab = onTab,
+                )
+                Route.KNOWLEDGE -> {
+                    val ui = knowledgeUi(courses, sheets, paid, progress)
+                    LaunchedEffect(ui.offerOnEnter) {
+                        if (ui.offerOnEnter) {
+                            graph.progress.seeOffer()
+                            offerOpen = true
+                        }
+                    }
+                    KnowledgeScreen(
+                        ui,
+                        KnowledgeActions(
+                            onCourse = { card ->
+                                courseId = card.course.id
+                                route = Route.COURSE
+                            },
+                            onSection = openSection,
+                            onSources = { route = Route.SOURCES },
+                            onTab = onTab,
+                        ),
+                    )
+                }
+                Route.COURSE -> {
+                    val course = graph.courses.course(courseId) ?: courses.first()
+                    CourseScreen(
+                        courseUi(course, paid, progress),
+                        CourseActions(
+                            onBack = { route = Route.KNOWLEDGE },
+                            onLesson = { row -> if (row.locked) offerOpen = true else openLesson(course.id, row.lesson.id) },
+                            onPro = { offerOpen = true },
+                        ),
+                    )
+                }
+                Route.LESSON -> {
+                    val course = graph.courses.course(courseId) ?: courses.first()
+                    val lesson = course.lesson(lessonId) ?: course.lessons.first()
+                    val key = course.id + "/" + lesson.id
+                    LessonScreen(
+                        lessonUi(course, lesson, paid, progress, if (attempt.first == key) attempt.second else Attempt.Idle),
+                        LessonActions(
+                            onBack = { route = Route.COURSE },
+                            onCheck = { answer -> check(course, lesson, answer) },
+                            onNext = { course.next(lesson.id)?.let { openLesson(course.id, it.id) } },
+                            onPro = { offerOpen = true },
+                        ),
+                    )
+                }
+                Route.SOURCES -> SourcesScreen(
+                    courses,
+                    graph.courses.sources,
+                    SourcesActions(onBack = { route = Route.KNOWLEDGE }, onOpen = ::openLink),
                 )
                 Route.INSTALL -> InstallScreen(
                     install,
@@ -370,54 +518,30 @@ class MainActivity : ComponentActivity() {
                     ),
                 )
                 Route.SUBSCRIPTION -> SubscriptionScreen(
-                    SubscriptionUi(
-                        status = status,
-                        sub = subLine(status, statusFailure, zone),
-                        offers = graph.offers,
-                        selected = plan,
-                        busy = purchase.first,
-                        failure = purchase.second,
-                    ),
+                    subscription,
                     SubscriptionActions(
                         onSelect = graph::select,
                         onBuy = graph::buy,
                         onManage = ::manageSubscription,
                         onTab = onTab,
+                        onSignIn = graph.gate::show,
+                        onSignOut = graph::signOut,
+                        onOnboarding = graph.onboarding::replay,
                     ),
                 )
                 Route.SECTION -> {
-                    val section = knowledge.firstOrNull { it.id == sectionId } ?: knowledge.first()
+                    val section = graph.courses.sheet(sectionId) ?: sheets.first()
                     SectionScreen(
                         section = section,
-                        paid = paid,
-                        actions = SectionActions(
-                            onBack = { route = Route.HOME },
-                            onPro = { route = Route.PRO },
-                        ),
+                        actions = SectionActions(onBack = { route = Route.KNOWLEDGE }),
                     )
                 }
-                Route.PRO -> ProScreen(
-                    SubscriptionUi(
-                        status = status,
-                        sub = subLine(status, statusFailure, zone),
-                        offers = graph.offers,
-                        selected = plan,
-                        busy = purchase.first,
-                        failure = purchase.second,
-                    ),
-                    SubscriptionActions(
-                        onSelect = graph::select,
-                        onBuy = graph::buy,
-                        onManage = ::manageSubscription,
-                    ),
-                    onBack = { route = Route.HOME },
-                )
                 Route.LAUNCH -> {
                     val launching = session as? SessionState.Launching
                     LaunchScreen(
                         state = launching?.launch ?: LaunchState.Running(ru.palma.app.shell.LaunchStep.SUBSCRIPTION),
                         onRetry = ::launch,
-                        onBack = { route = Route.HOME },
+                        onBack = { route = Route.CATALOG },
                     )
                 }
                 Route.DESKTOP -> {
@@ -429,9 +553,13 @@ class MainActivity : ComponentActivity() {
                         DesktopActions(
                             onClose = {
                                 graph.session.stop()
-                                route = Route.HOME
+                                stopService(Intent(this@MainActivity, SessionService::class.java))
+                                finishAndRemoveTask()
                             },
-                            onMinimize = { moveTaskToBack(true) },
+                            onMinimize = {
+                                graph.session.stop()
+                                route = Route.CATALOG
+                            },
                             onRestart = {
                                 report = ""
                                 launch()
@@ -459,6 +587,14 @@ class MainActivity : ComponentActivity() {
                             onRotate = ::rotate,
                         )
                     }
+                    if (BuildConfig.DEBUG) {
+                        LaunchedEffect(Unit) {
+                            val act = intent.getStringExtra(AUTOTEST_ACTION_EXTRA) ?: return@LaunchedEffect
+                            delay(5_000)
+                            android.util.Log.i(AUTOTEST_TAG, "auto action=$act")
+                            if (act == "close") actions.onClose() else if (act == "collapse") actions.onMinimize()
+                        }
+                    }
                     DesktopScreen(
                         DesktopUi(
                             title = listOfNotNull(
@@ -483,5 +619,47 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        BackHandler(enabled = offerOpen) { offerOpen = false }
+        ProOfferOverlay(
+            visible = offerOpen,
+            ui = proOffer(images, courses, sheets),
+            onSubscribe = {
+                offerOpen = false
+                route = Route.SUBSCRIPTION
+            },
+            onClose = { offerOpen = false },
+        )
+        val signedIn = !account?.id.isNullOrBlank()
+        OnboardingOverlay(
+            visible = onboardFlags.visible(signedIn),
+            ui = onboardUi(catalog, sheets, courses, terms),
+            onFinish = {
+                if (!onboardFlags.replay) route = Route.HOME
+                offerOpen = false
+                graph.onboarding.finish()
+            },
+            onLeave = if (onboardFlags.replay) graph.onboarding::finish else null,
+        )
+        BackHandler(enabled = gateOpen) { graph.gate.dismiss() }
+        if (BuildConfig.DEBUG) {
+            LaunchedEffect(Unit) {
+                if (intent.getBooleanExtra(AUTOTEST_LOGIN_EXTRA, false)) {
+                    delay(1_500)
+                    android.util.Log.i(AUTOTEST_TAG, "autotest: sign-in window")
+                    graph.gate.show()
+                }
+            }
+        }
+        SignInOverlay(
+            visible = gateOpen,
+            ui = SignInUi(
+                system = signInSystem,
+                signedIn = signedIn,
+                busy = signIn.first,
+                available = graph.auth.available,
+            ),
+            onSignIn = { graph.signIn(this@MainActivity) },
+        )
     }
 }

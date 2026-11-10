@@ -1,0 +1,60 @@
+{
+ "sheets": [
+  {
+   "file": "start.json",
+   "id": "start"
+  },
+  {
+   "file": "linux.json",
+   "id": "linux"
+  },
+  {
+   "file": "terms.json",
+   "id": "terms"
+  },
+  {
+   "file": "files.json",
+   "id": "files"
+  },
+  {
+   "file": "git.json",
+   "id": "git"
+  },
+  {
+   "file": "hardware.json",
+   "id": "hardware"
+  },
+  {
+   "file": "packages.json",
+   "id": "packages"
+  },
+  {
+   "file": "users.json",
+   "id": "users"
+  },
+  {
+   "file": "services.json",
+   "id": "services"
+  },
+  {
+   "file": "network.json",
+   "id": "network"
+  },
+  {
+   "file": "disks.json",
+   "id": "disks"
+  },
+  {
+   "file": "logs.json",
+   "id": "logs"
+  },
+  {
+   "file": "scripts.json",
+   "id": "scripts"
+  },
+  {
+   "file": "languages.json",
+   "id": "languages"
+  }
+ ]
+}

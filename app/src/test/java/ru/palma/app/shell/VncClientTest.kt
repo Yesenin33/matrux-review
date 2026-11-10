@@ -44,8 +44,8 @@ class VncClientTest {
         assertEquals("palma:1", client.name)
         assertEquals(2, client.framebuffer.width)
         assertTrue(client.readMessage())
-        assertEquals(0xFF102030.toInt(), client.framebuffer.pixels[0])
-        assertEquals(0xFF030201.toInt(), client.framebuffer.pixels[1])
+        assertEquals(0xFF302010.toInt(), client.framebuffer.pixels.get(0))
+        assertEquals(0xFF010203.toInt(), client.framebuffer.pixels.get(1))
         val out = sent.toByteArray()
         assertEquals("RFB 003.008\n", String(out, 0, 12))
         assertEquals(1, out[12].toInt())
@@ -79,22 +79,24 @@ class VncClientTest {
     @Test
     fun copyRectMovesPixels() {
         val fb = Framebuffer(3, 1)
-        fb.pixels[0] = 7
+        fb.pixels.put(0, 7)
         fb.copyRect(0, 0, 2, 0, 1, 1)
-        assertEquals(7, fb.pixels[2])
+        assertEquals(7, fb.pixels.get(2))
     }
 
     @Test
-    fun outOfBoundsRectIsRejected() {
+    fun outOfBoundsRectIsClipped() {
         val input = serverScript {
             write("RFB 003.008\n".toByteArray())
             writeByte(1); writeByte(1); writeInt(0)
             init(1, 1)
             writeByte(0); writeByte(0); writeShort(1)
             writeShort(0); writeShort(0); writeShort(5); writeShort(5); writeInt(0)
+            write(ByteArray(5 * 5 * 4))
         }
         val client = VncClient(input, DataOutputStream(ByteArrayOutputStream()))
         client.handshake()
-        assertEquals("rect_out_of_bounds", runCatching { client.readMessage() }.exceptionOrNull()?.message)
+        assertEquals(true, client.readMessage())
+        assertEquals(0xFF000000.toInt(), client.framebuffer.pixels.get(0))
     }
 }

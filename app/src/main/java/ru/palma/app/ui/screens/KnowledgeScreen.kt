@@ -36,18 +36,23 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import ru.palma.app.R
 import ru.palma.app.ui.components.Card
 import ru.palma.app.ui.components.Lucide
 import ru.palma.app.ui.components.LucideIcon
-import ru.palma.app.ui.components.PenguinMark
-import ru.palma.app.ui.components.PrimaryButton
-import ru.palma.app.ui.knowledge.Branch
+import ru.palma.app.ui.components.Tappable
 import ru.palma.app.ui.knowledge.KnowledgeEntry
 import ru.palma.app.ui.knowledge.KnowledgeGroup
 import ru.palma.app.ui.knowledge.KnowledgeSection
+import ru.palma.app.ui.components.ScreenTitle
+import ru.palma.app.ui.components.Tab
+import ru.palma.app.ui.components.TabScreen
+import ru.palma.app.ui.state.KnowledgeUi
+import ru.palma.app.ui.state.SectionRow
+import ru.palma.app.ui.state.CourseCard
 import ru.palma.app.ui.theme.Palma
 
 private const val COPY_MS = 1600L
@@ -72,41 +77,113 @@ fun sectionIcon(id: String): Lucide = when (id) {
 
 private fun KnowledgeSection.entries(): List<KnowledgeEntry> = groups.flatMap { it.entries }
 
+fun courseIcon(id: String): Lucide = when (id) {
+    "python" -> Lucide.FileCode
+    "go" -> Lucide.Code
+    "html" -> Lucide.Globe
+    "css" -> Lucide.Sliders
+    "cpp" -> Lucide.Cpu
+    "scripts" -> Lucide.Terminal
+    else -> Lucide.BookOpen
+}
+
+data class KnowledgeActions(
+    val onCourse: (CourseCard) -> Unit = {},
+    val onSection: (SectionRow) -> Unit = {},
+    val onSources: () -> Unit = {},
+    val onTab: (Tab) -> Unit = {},
+)
+
 @Composable
-fun SectionsBlock(sections: List<KnowledgeSection>, paid: Boolean, onOpen: (KnowledgeSection) -> Unit) {
-    Text(stringResource(R.string.sections_title), style = Palma.type.title, color = Palma.colors.ink)
-    Spacer(Modifier.height(Palma.space.block))
-    Branch.entries.forEachIndexed { index, branch ->
-        val part = sections.filter { it.branch == branch }
-        if (part.isEmpty()) return@forEachIndexed
-        if (index > 0) Spacer(Modifier.height(Palma.space.block))
-        Text(
-            stringResource(if (branch == Branch.START) R.string.sections_start else R.string.sections_deeper),
-            style = Palma.type.bodyStrong,
-            color = Palma.colors.muted,
-        )
-        Spacer(Modifier.height(Palma.space.unit + Palma.space.unit / 2))
-        Column(verticalArrangement = Arrangement.spacedBy(Palma.space.unit + Palma.space.unit / 2)) {
-            part.forEach { section -> SectionCard(section, paid, onOpen) }
+fun KnowledgeScreen(ui: KnowledgeUi, actions: KnowledgeActions) {
+    TabScreen(Tab.KNOWLEDGE, actions.onTab, scroll = true) {
+        Spacer(Modifier.height(Palma.space.unit))
+        ScreenTitle(stringResource(R.string.knowledge_title), null)
+        Spacer(Modifier.height(Palma.space.block))
+        if (ui.courses.isNotEmpty()) {
+            BlockTitle(stringResource(R.string.knowledge_courses))
+            Column(verticalArrangement = Arrangement.spacedBy(Palma.space.unit + Palma.space.unit / 2)) {
+                ui.courses.forEach { card -> CourseCardView(card, ui.paid) { actions.onCourse(card) } }
+            }
+            Spacer(Modifier.height(Palma.space.block))
+        }
+        if (ui.rows.isNotEmpty()) {
+            BlockTitle(stringResource(R.string.knowledge_sheets))
+            Column(verticalArrangement = Arrangement.spacedBy(Palma.space.unit + Palma.space.unit / 2)) {
+                ui.rows.forEach { row -> SectionCard(row, ui.paid) { actions.onSection(row) } }
+            }
+            Spacer(Modifier.height(Palma.space.block))
+        }
+        Tappable(actions.onSources, Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.knowledge_sources), style = Palma.type.body, color = Palma.colors.ink, modifier = Modifier.weight(1f))
+            LucideIcon(Lucide.ChevronRight, Palma.colors.muted, size = Palma.space.iconSmall)
+        }
+        Spacer(Modifier.height(Palma.space.block))
+    }
+}
+
+@Composable
+private fun BlockTitle(text: String) {
+    Text(text, style = Palma.type.bodyStrong, color = Palma.colors.muted)
+    Spacer(Modifier.height(Palma.space.unit + Palma.space.unit / 2))
+}
+
+@Composable
+fun AccessMark(locked: Boolean, paid: Boolean) {
+    when {
+        locked -> LucideIcon(Lucide.Lock, Palma.colors.muted, size = Palma.space.iconSmall)
+        paid -> LucideIcon(Lucide.BadgeCheck, Palma.colors.success, size = Palma.space.iconSmall)
+        else -> LucideIcon(Lucide.ChevronRight, Palma.colors.muted, size = Palma.space.iconSmall)
+    }
+}
+
+@Composable
+private fun IconTile(icon: Lucide) {
+    Box(
+        Modifier
+            .size(Palma.space.logoTile)
+            .clip(Palma.shapes.control)
+            .background(Palma.colors.canvas),
+        contentAlignment = Alignment.Center,
+    ) {
+        LucideIcon(icon, Palma.colors.inkSoft)
+    }
+}
+
+@Composable
+private fun CourseCardView(card: CourseCard, paid: Boolean, onOpen: () -> Unit) {
+    val colors = Palma.colors
+    val course = card.course
+    Card(Modifier.clickable(role = Role.Button, onClick = onOpen)) {
+        Row(verticalAlignment = Alignment.Top) {
+            IconTile(courseIcon(course.id))
+            Spacer(Modifier.width(Palma.space.unit + Palma.space.unit / 2))
+            Column(Modifier.weight(1f)) {
+                Text(course.title, style = Palma.type.bodyStrong, color = colors.ink)
+                Spacer(Modifier.height(Palma.space.unit / 2))
+                Text(course.outcome, style = Palma.type.body, color = colors.inkSoft, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Spacer(Modifier.height(Palma.space.unit / 2))
+                Text(lessonsLine(card.total, card.done), style = Palma.type.caption, color = colors.muted)
+            }
+            Spacer(Modifier.width(Palma.space.unit))
+            AccessMark(card.locked, paid)
         }
     }
 }
 
 @Composable
-private fun SectionCard(section: KnowledgeSection, paid: Boolean, onOpen: (KnowledgeSection) -> Unit) {
+fun lessonsLine(total: Int, done: Int): String {
+    val count = pluralStringResource(R.plurals.course_lessons, total, total)
+    return if (done > 0) count + " · " + stringResource(R.string.course_progress, done, total) else count
+}
+
+@Composable
+private fun SectionCard(row: SectionRow, paid: Boolean, onOpen: () -> Unit) {
     val colors = Palma.colors
-    val locked = section.pro && !paid
-    Card(Modifier.clickable(role = Role.Button) { onOpen(section) }) {
+    val section = row.section
+    Card(Modifier.clickable(role = Role.Button, onClick = onOpen)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier
-                    .size(Palma.space.logoTile)
-                    .clip(Palma.shapes.control)
-                    .background(colors.accentTint),
-                contentAlignment = Alignment.Center,
-            ) {
-                LucideIcon(sectionIcon(section.id), colors.accent)
-            }
+            IconTile(sectionIcon(section.id))
             Spacer(Modifier.width(Palma.space.unit + Palma.space.unit / 2))
             Column(Modifier.weight(1f)) {
                 Text(section.title, style = Palma.type.bodyStrong, color = colors.ink)
@@ -118,22 +195,17 @@ private fun SectionCard(section: KnowledgeSection, paid: Boolean, onOpen: (Knowl
                 )
             }
             Spacer(Modifier.width(Palma.space.unit))
-            if (locked) {
-                LucideIcon(Lucide.Lock, colors.muted, size = Palma.space.iconSmall)
-            } else {
-                LucideIcon(Lucide.ChevronRight, colors.muted, size = Palma.space.iconSmall)
-            }
+            AccessMark(row.locked, paid)
         }
     }
 }
 
 data class SectionActions(
     val onBack: () -> Unit = {},
-    val onPro: () -> Unit = {},
 )
 
 @Composable
-fun SectionScreen(section: KnowledgeSection, paid: Boolean, actions: SectionActions) {
+fun SectionScreen(section: KnowledgeSection, actions: SectionActions) {
     val colors = Palma.colors
     var query by remember(section.id) { mutableStateOf("") }
     Column(
@@ -142,7 +214,7 @@ fun SectionScreen(section: KnowledgeSection, paid: Boolean, actions: SectionActi
             .background(colors.surface)
             .statusBarsPadding(),
     ) {
-        BackRow(actions.onBack)
+        BackRow(stringResource(R.string.section_back), actions.onBack)
         Column(
             Modifier
                 .weight(1f)
@@ -152,21 +224,15 @@ fun SectionScreen(section: KnowledgeSection, paid: Boolean, actions: SectionActi
         ) {
             Text(section.title, style = Palma.type.display, color = colors.ink)
             Spacer(Modifier.height(Palma.space.block))
-            ProNote(section, paid, actions)
-            if (section.pro && !paid) {
-                Spacer(Modifier.height(Palma.space.block))
-                Locked()
+            SearchField(query) { query = it }
+            Spacer(Modifier.height(Palma.space.block))
+            val groups = filtered(section, query)
+            if (groups.isEmpty()) {
+                Text(stringResource(R.string.section_search_empty), style = Palma.type.body, color = colors.muted)
             } else {
-                SearchField(query) { query = it }
-                Spacer(Modifier.height(Palma.space.block))
-                val groups = filtered(section, query)
-                if (groups.isEmpty()) {
-                    Text(stringResource(R.string.section_search_empty), style = Palma.type.body, color = colors.muted)
-                } else {
-                    groups.forEachIndexed { index, group ->
-                        if (index > 0) Spacer(Modifier.height(Palma.space.block))
-                        Group(group)
-                    }
+                groups.forEachIndexed { index, group ->
+                    if (index > 0) Spacer(Modifier.height(Palma.space.block))
+                    Group(group)
                 }
             }
         }
@@ -174,7 +240,7 @@ fun SectionScreen(section: KnowledgeSection, paid: Boolean, actions: SectionActi
 }
 
 @Composable
-private fun BackRow(onBack: () -> Unit) {
+fun BackRow(label: String, onBack: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -185,43 +251,7 @@ private fun BackRow(onBack: () -> Unit) {
     ) {
         LucideIcon(Lucide.ChevronLeft, Palma.colors.accent)
         Spacer(Modifier.width(Palma.space.unit))
-        Text(stringResource(R.string.section_back), style = Palma.type.body, color = Palma.colors.accent)
-    }
-}
-
-@Composable
-private fun ProNote(section: KnowledgeSection, paid: Boolean, actions: SectionActions) {
-    if (!section.pro) return
-    if (paid) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            LucideIcon(Lucide.BadgeCheck, Palma.colors.success, size = Palma.space.iconSmall)
-            Spacer(Modifier.width(Palma.space.unit / 2))
-            Text(stringResource(R.string.section_pro), style = Palma.type.captionStrong, color = Palma.colors.success)
-        }
-    } else {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .clickable(role = Role.Button, onClick = actions.onPro),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            LucideIcon(Lucide.Lock, Palma.colors.accent, size = Palma.space.iconSmall)
-            Spacer(Modifier.width(Palma.space.unit / 2))
-            Text(stringResource(R.string.section_pro), style = Palma.type.captionStrong, color = Palma.colors.accent)
-            Spacer(Modifier.weight(1f))
-            LucideIcon(Lucide.ChevronRight, Palma.colors.accent, size = Palma.space.iconSmall)
-        }
-    }
-}
-
-@Composable
-private fun Locked() {
-    Card {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            PenguinMark(size = 44.dp, silhouette = true, tint = Palma.colors.ink)
-            Spacer(Modifier.width(Palma.space.unit + Palma.space.unit / 2))
-            Text(stringResource(R.string.section_pro), style = Palma.type.bodyStrong, color = Palma.colors.ink)
-        }
+        Text(label, style = Palma.type.body, color = Palma.colors.accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

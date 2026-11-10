@@ -1,16 +1,17 @@
 package ru.palma.app.ui.state
 
-import ru.palma.app.billing.Plan
+import ru.palma.app.billing.Terms
 import ru.palma.app.billing.PlanOffer
 import ru.palma.app.data.Catalog
 import ru.palma.app.data.Failure
 import ru.palma.app.data.ImageInfo
-import ru.palma.app.data.InstalledSystem
+import ru.palma.app.ui.knowledge.KnowledgeSection
+import ru.palma.app.learn.Access
+import ru.palma.app.learn.Course
+import ru.palma.app.account.AccountInfo
 import ru.palma.app.data.SubscriptionStatus
 import ru.palma.app.data.Tier
 import ru.palma.app.install.InstallEstimate
-import ru.palma.app.install.InstallState
-import ru.palma.app.session.SessionState
 import ru.palma.app.shell.LaunchState
 import ru.palma.app.shell.LaunchStep
 import java.time.Instant
@@ -45,60 +46,89 @@ fun subLine(status: SubscriptionStatus?, failure: Failure?, zone: ZoneId): SubLi
 
 fun SubLine.paidSub(): Boolean = this is SubLine.ProUntil || this is SubLine.Lifetime
 
-sealed interface HomeUi {
-    val sub: SubLine
+data class HomeUi(
+    val sub: SubLine,
+    val terms: Terms,
+    val systems: List<ImageInfo>,
+    val courses: List<Course>,
+    val sheets: Int,
+    val locked: ProOfferUi = ProOfferUi(emptyList(), emptyList(), 0),
+) {
+    val paid: Boolean get() = sub.paidSub()
+    val revoked: Boolean get() = sub == SubLine.Revoked
+    val lessons: Int get() = courses.sumOf { it.lessonCount }
+}
 
-    data class Loading(override val sub: SubLine) : HomeUi
-    data class Empty(val suggestion: ImageInfo, val freeBytes: Long, override val sub: SubLine) : HomeUi
-    data class NoCatalog(val failure: Failure, override val sub: SubLine) : HomeUi
-    data class Ready(
-        val system: InstalledSystem,
-        val freeBytes: Long,
-        val running: Boolean,
-        override val sub: SubLine,
-    ) : HomeUi
-    data class Installing(val progress: InstallState.Running, override val sub: SubLine) : HomeUi
-    data class Revoked(override val sub: SubLine) : HomeUi
+enum class HomeBlock { REVOKED, BUY, STATUS, TERMS, INSIDE, LOCKED }
+
+fun homeBlocks(ui: HomeUi): List<HomeBlock> = buildList {
+    if (ui.revoked) add(HomeBlock.REVOKED)
+    if (ui.paid) {
+        add(HomeBlock.STATUS)
+        add(HomeBlock.INSIDE)
+    } else {
+        add(HomeBlock.BUY)
+        add(HomeBlock.TERMS)
+        add(HomeBlock.INSIDE)
+        add(HomeBlock.LOCKED)
+    }
 }
 
 fun homeUi(
-    installed: InstalledSystem?,
-    installedReady: Boolean,
     catalog: Load<Catalog>,
-    install: InstallState,
-    session: SessionState,
     status: SubscriptionStatus?,
     statusFailure: Failure?,
-    freeBytes: Long,
+    terms: Terms,
+    courses: List<Course>,
+    sections: List<KnowledgeSection>,
     zone: ZoneId,
 ): HomeUi {
-    val sub = subLine(status, statusFailure, zone)
-    if (statusFailure == Failure.NoAccess) return HomeUi.Revoked(sub)
-    if (install is InstallState.Running) return HomeUi.Installing(install, sub)
-    if (installed != null && installedReady) {
-        val running = session is SessionState.Live || session is SessionState.Launching
-        return HomeUi.Ready(installed, freeBytes, running, sub)
-    }
-    return when (catalog) {
-        Load.Loading -> HomeUi.Loading(sub)
-        is Load.Failed -> HomeUi.NoCatalog(catalog.failure, sub)
-        is Load.Ready -> suggestion(catalog.value.manifest.images, installed?.imageId)
-            ?.let { HomeUi.Empty(it, freeBytes, sub) }
-            ?: HomeUi.NoCatalog(Failure.ImageUnavailable, sub)
+    val images = (catalog as? Load.Ready)?.value?.manifest?.images.orEmpty()
+    return HomeUi(
+        sub = subLine(status, statusFailure, zone),
+        terms = terms,
+        systems = images,
+        courses = courses,
+        sheets = sections.size,
+        locked = proOffer(images, courses, sections),
+    )
+}
+
+enum class LockedItem { COURSES, SYSTEMS, SHEETS, OFFLINE }
+
+data class ProOfferUi(
+    val systems: List<String>,
+    val courses: List<String>,
+    val lessons: Int,
+    val sheets: List<String> = emptyList(),
+) {
+    val items: List<LockedItem> get() = buildList {
+        if (courses.isNotEmpty() && lessons > 0) add(LockedItem.COURSES)
+        if (systems.isNotEmpty()) add(LockedItem.SYSTEMS)
+        if (sheets.isNotEmpty()) add(LockedItem.SHEETS)
+        add(LockedItem.OFFLINE)
     }
 }
 
-fun suggestion(images: List<ImageInfo>, preferId: String? = null): ImageInfo? =
-    preferId?.let { id -> images.firstOrNull { it.id == id } }
-        ?: images.firstOrNull { it.distro.equals("debian", ignoreCase = true) && it.desktop != "none" }
-        ?: images.firstOrNull()
+fun proOffer(images: List<ImageInfo>, courses: List<Course>, sections: List<KnowledgeSection>): ProOfferUi = ProOfferUi(
+    systems = images.filter { it.pro }.map { it.name },
+    courses = courses.map { it.title },
+    lessons = courses.sumOf { course -> course.lessonCount - Access.openLessons(course, paid = false).size },
+    sheets = if (Access.cheatSheetLocked()) sections.filter { it.pro }.map { it.title } else emptyList(),
+)
 
 data class CatalogRow(
     val image: ImageInfo,
     val locked: Boolean,
+    val active: Boolean,
     val installed: Boolean,
+    val outdated: Boolean,
     val estimateSeconds: Long?,
-)
+    val running: Boolean = false,
+) {
+    val switchable: Boolean get() = installed && !active
+    val reinstallable: Boolean get() = active || (installed && outdated)
+}
 
 sealed interface CatalogUi {
     data object Loading : CatalogUi
@@ -118,9 +148,10 @@ fun catalogUi(
     catalog: Load<Catalog>,
     status: SubscriptionStatus?,
     statusFailure: Failure?,
-    installedId: String?,
-    installedSha: String?,
+    activeId: String?,
     bytesPerSecond: Long?,
+    installedShas: Map<String, String> = emptyMap(),
+    running: Boolean = false,
 ): CatalogUi = when (catalog) {
     Load.Loading -> CatalogUi.Loading
     is Load.Failed -> CatalogUi.Failed(catalog.failure)
@@ -132,11 +163,15 @@ fun catalogUi(
             val paid = status?.paid == true && statusFailure != Failure.NoAccess
             CatalogUi.Ready(
                 rows = images.map { image ->
+                    val marker = installedShas[image.id]
                     CatalogRow(
                         image = image,
                         locked = image.pro && !paid,
-                        installed = image.id == installedId && (installedSha == null || image.sha256.equals(installedSha, ignoreCase = true)),
+                        active = image.id == activeId,
+                        installed = marker != null,
+                        outdated = marker != null && !image.sha256.equals(marker, ignoreCase = true),
                         estimateSeconds = InstallEstimate.seconds(image.sizeBytes, bytesPerSecond),
+                        running = running && image.id == activeId,
                     )
                 },
                 offline = catalog.value.offline,
@@ -146,12 +181,16 @@ fun catalogUi(
     }
 }
 
-enum class CatalogAction { INSTALL, REINSTALL, SUBSCRIBE }
+enum class SystemAction { OPEN, STOP, LAUNCH, SWITCH, REINSTALL, INSTALL, SUBSCRIBE }
 
-fun CatalogRow.action(): CatalogAction = when {
-    installed -> CatalogAction.REINSTALL
-    locked -> CatalogAction.SUBSCRIBE
-    else -> CatalogAction.INSTALL
+fun CatalogRow.actions(): List<SystemAction> = when {
+    active && running -> listOf(SystemAction.OPEN, SystemAction.STOP)
+    active && installed -> listOf(SystemAction.LAUNCH, SystemAction.REINSTALL)
+    active -> listOf(SystemAction.REINSTALL)
+    switchable && outdated -> listOf(SystemAction.SWITCH, SystemAction.REINSTALL)
+    switchable -> listOf(SystemAction.SWITCH)
+    locked -> listOf(SystemAction.SUBSCRIBE)
+    else -> listOf(SystemAction.INSTALL)
 }
 
 enum class LaunchStepState { DONE, ACTIVE, FAILED, WAITING }
@@ -177,20 +216,45 @@ fun launchFraction(state: LaunchState): Float = when (state) {
     is LaunchState.Ready -> 1f
 }
 
+data class AccountUi(
+    val info: AccountInfo?,
+    val available: Boolean,
+    val busy: Boolean = false,
+    val failure: Failure? = null,
+)
+
 data class SubscriptionUi(
     val status: SubscriptionStatus?,
     val sub: SubLine,
-    val offers: List<PlanOffer>,
-    val selected: Plan,
+    val terms: Terms,
     val busy: Boolean,
     val failure: Failure?,
+    val billingReady: Boolean = true,
+    val account: AccountUi? = null,
 ) {
     val paid: Boolean get() = status?.paid == true
-    val trialAvailable: Boolean get() = !paid && offers.any { it.plan == selected && it.trialDays > 0 }
-    val selectedOffer: PlanOffer? get() = offers.firstOrNull { it.plan == selected }
-    val canBuy: Boolean get() = selectedOffer?.let { it.productId.isNotBlank() } == true &&
+    val trialAvailable: Boolean get() = !paid && (selectedOffer?.trialDays ?: 0) > 0
+    val selectedOffer: PlanOffer? get() = terms.selectedOffer
+    val canBuy: Boolean get() = billingReady &&
+        selectedOffer?.let { it.productId.isNotBlank() } == true &&
         !(status?.tier == Tier.LIFETIME) &&
         !paid
 }
 
 fun Instant.localDate(zone: ZoneId): LocalDate = atZone(zone).toLocalDate()
+
+sealed interface GateSystem {
+    data class Running(val name: String) : GateSystem
+    data class Stopped(val name: String) : GateSystem
+    data class Installing(val name: String, val percent: Int) : GateSystem
+    data object Absent : GateSystem
+}
+
+data class SignInUi(
+    val system: GateSystem,
+    val signedIn: Boolean,
+    val busy: Boolean,
+    val available: Boolean,
+) {
+    val enabled: Boolean get() = available && !busy && !signedIn
+}

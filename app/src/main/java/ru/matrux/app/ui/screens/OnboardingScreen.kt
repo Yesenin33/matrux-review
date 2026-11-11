@@ -6,12 +6,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,185 +26,381 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import ru.matrux.app.BuildConfig
 import ru.matrux.app.R
-import ru.matrux.app.ui.components.Card
+import ru.matrux.app.ui.components.Lucide
 import ru.matrux.app.ui.components.LucideIcon
-import ru.matrux.app.ui.components.PrimaryButton
-import ru.matrux.app.ui.imageLogo
 import ru.matrux.app.ui.state.OnboardUi
 import ru.matrux.app.ui.state.Slide
 import ru.matrux.app.ui.theme.Inter
-import ru.matrux.app.ui.theme.LocalMatruxType
 import ru.matrux.app.ui.theme.Matrux
-import ru.matrux.app.ui.theme.inFamily
+
+private val Navy = Color(0xFF0B2A5B)
+private val Sub = Color(0xFF5B6478)
+private val Blue = Color(0xFF1F6FE5)
+private val BlueDeep = Color(0xFF1E5FC9)
+private val DotIdle = Color(0xFFCBD9F0)
+private val Page = Color(0xFFF5F9FF)
+private val Line = Color(0xFFDCE7F8)
 
 @Composable
-fun OnboardingOverlay(visible: Boolean, ui: OnboardUi, onFinish: () -> Unit, onLeave: (() -> Unit)?) {
+fun OnboardingOverlay(
+    visible: Boolean,
+    ui: OnboardUi,
+    onFinish: () -> Unit,
+    onSubscribe: () -> Unit,
+) {
     val motion = Matrux.motion
-    val lift = with(LocalDensity.current) { Matrux.space.lift.roundToPx() }
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(tween(motion.duration(motion.medium), easing = motion.easing)) +
-            slideInVertically(tween(motion.duration(motion.medium), easing = motion.easing)) { lift },
+        enter = fadeIn(tween(motion.duration(motion.medium), easing = motion.easing)),
         exit = fadeOut(tween(motion.duration(motion.short), easing = motion.easing)),
     ) {
-        OnboardingScreen(ui, onFinish, onLeave = onLeave)
+        OnboardingScreen(ui, onFinish, onSubscribe)
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun OnboardingScreen(ui: OnboardUi, onFinish: () -> Unit, initialPage: Int = 0, onLeave: (() -> Unit)? = null) {
+fun OnboardingScreen(
+    ui: OnboardUi,
+    onFinish: () -> Unit,
+    onSubscribe: () -> Unit,
+    initialPage: Int = 0,
+) {
     val pager = rememberPagerState(initialPage = initialPage) { ui.slides.size }
     val scope = rememberCoroutineScope()
-    val motion = Matrux.motion
-    val go: (Int) -> Unit = { page ->
-        scope.launch { pager.animateScrollToPage(page, animationSpec = tween(motion.duration(motion.medium), easing = motion.easing)) }
-    }
-    BackHandler {
-        when {
-            pager.currentPage > 0 -> go(pager.currentPage - 1)
-            onLeave != null -> onLeave()
-        }
-    }
-    CompositionLocalProvider(LocalMatruxType provides Matrux.type.inFamily(Inter)) {
+    val go: (Int) -> Unit = { page -> scope.launch { pager.animateScrollToPage(page) } }
+    BackHandler { if (pager.currentPage > 0) go(pager.currentPage - 1) }
+    val slide = ui.slides[pager.currentPage.coerceIn(0, ui.last)]
+
+    Box(Modifier.fillMaxSize().background(Page)) {
+        Image(
+            painterResource(R.drawable.onboard_bg),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.matchParentSize().graphicsLayer { alpha = 0.75f },
+        )
         Column(
             Modifier
                 .fillMaxSize()
-                .background(Matrux.colors.canvas)
-                .clickable(remember { MutableInteractionSource() }, null) {}
                 .statusBarsPadding()
-                .navigationBarsPadding(),
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 12.dp),
         ) {
             HorizontalPager(pager, Modifier.weight(1f).fillMaxWidth()) { page ->
-                SlidePage(ui, ui.slides[page])
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    SlideCard(slide = ui.slides[page], onSubscribe = onSubscribe)
+                }
             }
-            Column(Modifier.fillMaxWidth().padding(horizontal = Matrux.space.page)) {
-                Dots(ui.slides.size, pager.currentPage)
-                Spacer(Modifier.height(Matrux.space.block))
-                val last = pager.currentPage == ui.last
-                PrimaryButton(
-                    stringResource(if (last) R.string.onboard_start else R.string.onboard_next),
-                    { if (last) onFinish() else go(pager.currentPage + 1) },
-                )
-                Spacer(Modifier.height(Matrux.space.page))
+            Spacer(Modifier.height(18.dp))
+            Dots(ui.slides.size, pager.currentPage)
+            Spacer(Modifier.height(16.dp))
+            if (slide == Slide.START) {
+                Spacer(Modifier.height(58.dp))
+            } else {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    RoundNext { if (pager.currentPage == ui.last) onFinish() else go(pager.currentPage + 1) }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun SlideCard(slide: Slide, onSubscribe: () -> Unit) {
+    Surface(
+        color = Color.White,
+        shape = RoundedCornerShape(30.dp),
+        shadowElevation = 12.dp,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(horizontal = 22.dp, vertical = 28.dp)) {
+            when (slide) {
+                Slide.WELCOME -> WelcomeSlide()
+                Slide.CATALOG -> CatalogSlide()
+                Slide.BASICS -> BasicsSlide()
+                Slide.LEVEL -> LevelSlide(onSubscribe)
+                Slide.START -> StartSlide(onSubscribe)
             }
         }
     }
+}
+
+@Composable
+private fun WelcomeSlide() {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Image(painterResource(R.drawable.logo_mark), contentDescription = null, modifier = Modifier.size(128.dp))
+        Spacer(Modifier.height(30.dp))
+        Title(stringResource(R.string.onboard_welcome_title), 28)
+        Spacer(Modifier.height(14.dp))
+        Lead(stringResource(R.string.onboard_welcome_lead))
+    }
+}
+
+@Composable
+private fun CatalogSlide() {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(22.dp)) {
+            Image(painterResource(R.drawable.logo_mark), contentDescription = null, modifier = Modifier.size(62.dp))
+            Image(painterResource(R.drawable.logo_debian), contentDescription = null, modifier = Modifier.size(58.dp))
+            Image(painterResource(R.drawable.logo_ubuntu), contentDescription = null, modifier = Modifier.size(58.dp))
+        }
+        Spacer(Modifier.height(24.dp))
+        Divider()
+        Spacer(Modifier.height(22.dp))
+        Title(stringResource(R.string.onboard_catalog_title), 27)
+        Spacer(Modifier.height(12.dp))
+        Text(
+            stringResource(R.string.onboard_catalog_names),
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold,
+            color = Blue,
+            textAlign = TextAlign.Center,
+            fontFamily = Inter,
+        )
+        Spacer(Modifier.height(12.dp))
+        Lead(stringResource(R.string.onboard_catalog_lead))
+    }
+}
+
+@Composable
+private fun BasicsSlide() {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            LucideIcon(Lucide.Terminal, BlueDeep, size = 46.dp)
+            Spacer(Modifier.width(24.dp))
+            VerticalLine()
+            Spacer(Modifier.width(24.dp))
+            LucideIcon(Lucide.BookOpen, BlueDeep, size = 46.dp)
+            Spacer(Modifier.width(24.dp))
+            VerticalLine()
+            Spacer(Modifier.width(24.dp))
+            LucideIcon(Lucide.Code, BlueDeep, size = 46.dp)
+        }
+        Spacer(Modifier.height(30.dp))
+        Title(stringResource(R.string.onboard_basics_title), 27)
+        Spacer(Modifier.height(16.dp))
+        Box(Modifier.width(64.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(Blue))
+        Spacer(Modifier.height(20.dp))
+        Lead(stringResource(R.string.onboard_basics_lead))
+    }
+}
+
+@Composable
+private fun LevelSlide(onSubscribe: () -> Unit) {
+    Column(Modifier.fillMaxWidth()) {
+        Image(painterResource(R.drawable.logo_mark), contentDescription = null, modifier = Modifier.size(40.dp))
+        Spacer(Modifier.height(18.dp))
+        Text(
+            stringResource(R.string.onboard_level_title),
+            fontSize = 25.sp,
+            lineHeight = 32.sp,
+            fontWeight = FontWeight.Bold,
+            color = Navy,
+            fontFamily = Inter,
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(stringResource(R.string.onboard_level_lead), fontSize = 16.sp, color = Sub, fontFamily = Inter)
+        Spacer(Modifier.height(22.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PlanCard(
+                modifier = Modifier.weight(1f),
+                highlighted = false,
+                icon = Lucide.Package,
+                name = stringResource(R.string.onboard_free_title),
+                price = "0 ₽",
+                features = listOf(
+                    stringResource(R.string.onboard_free_1),
+                    stringResource(R.string.onboard_free_2),
+                    stringResource(R.string.onboard_free_3),
+                ),
+            )
+            PlanCard(
+                modifier = Modifier.weight(1f),
+                highlighted = true,
+                icon = Lucide.BadgeCheck,
+                name = stringResource(R.string.onboard_pro_title),
+                price = BuildConfig.PRICE_PRO_MONTH,
+                features = listOf(
+                    stringResource(R.string.onboard_pro_1),
+                    stringResource(R.string.onboard_pro_2),
+                    stringResource(R.string.onboard_pro_3),
+                ),
+            )
+        }
+        Spacer(Modifier.height(20.dp))
+        PrimaryBlue(stringResource(R.string.onboard_buy_pro), onSubscribe)
+    }
+}
+
+@Composable
+private fun StartSlide(onSubscribe: () -> Unit) {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Image(painterResource(R.drawable.rocket), contentDescription = null, modifier = Modifier.size(160.dp))
+        Spacer(Modifier.height(14.dp))
+        Title(stringResource(R.string.onboard_start_title), 28)
+        Spacer(Modifier.height(14.dp))
+        Lead(stringResource(R.string.onboard_start_lead))
+        Spacer(Modifier.height(24.dp))
+        PrimaryBlue(stringResource(R.string.onboard_go_pro), onSubscribe)
+    }
+}
+
+@Composable
+private fun PlanCard(
+    modifier: Modifier,
+    highlighted: Boolean,
+    icon: Lucide,
+    name: String,
+    price: String,
+    features: List<String>,
+) {
+    Column(
+        modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(if (highlighted) Color(0xFFF3F8FF) else Color(0xFFF8FAFE))
+            .padding(horizontal = 10.dp, vertical = 18.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            Modifier.size(52.dp).clip(CircleShape).background(if (highlighted) Blue else Color(0xFFE4EDFB)),
+            contentAlignment = Alignment.Center,
+        ) {
+            LucideIcon(icon, if (highlighted) Color.White else Blue, size = 26.dp)
+        }
+        Spacer(Modifier.height(14.dp))
+        Text(name, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = if (highlighted) Blue else Navy, fontFamily = Inter)
+        Spacer(Modifier.height(2.dp))
+        Text(price, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = if (highlighted) Blue else Navy, fontFamily = Inter)
+        Spacer(Modifier.height(12.dp))
+        Box(Modifier.fillMaxWidth().height(1.dp).background(Line))
+        Spacer(Modifier.height(12.dp))
+        features.forEach { feature ->
+            Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.Top) {
+                Box(Modifier.padding(top = 2.dp)) {
+                    LucideIcon(Lucide.Check, Blue, size = 16.dp)
+                }
+                Spacer(Modifier.width(5.dp))
+                Text(feature, fontSize = 11.sp, lineHeight = 15.sp, color = Navy, fontFamily = Inter)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrimaryBlue(label: String, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 58.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Brush.verticalGradient(listOf(Color(0xFF2A7BF0), BlueDeep)))
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 20.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Text(label, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White, fontFamily = Inter)
+        Spacer(Modifier.width(10.dp))
+        LucideIcon(Lucide.ChevronRight, Color.White, size = 22.dp)
+    }
+}
+
+@Composable
+private fun RoundNext(onClick: () -> Unit) {
+    Box(
+        Modifier
+            .size(58.dp)
+            .clip(CircleShape)
+            .background(Brush.verticalGradient(listOf(Color(0xFF2A7BF0), BlueDeep)))
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        LucideIcon(Lucide.ChevronRight, Color.White, size = 26.dp)
+    }
+}
+
+@Composable
+private fun Title(text: String, size: Int) {
+    Text(
+        text,
+        fontSize = size.sp,
+        lineHeight = (size + 8).sp,
+        fontWeight = FontWeight.Bold,
+        color = Navy,
+        textAlign = TextAlign.Center,
+        fontFamily = Inter,
+    )
+}
+
+@Composable
+private fun Lead(text: String) {
+    Text(
+        text,
+        fontSize = 17.sp,
+        color = Sub,
+        textAlign = TextAlign.Center,
+        lineHeight = 24.sp,
+        fontFamily = Inter,
+    )
+}
+
+@Composable
+private fun Divider() {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.weight(1f).height(1.dp).background(Line))
+        Box(Modifier.padding(horizontal = 10.dp).size(7.dp).clip(CircleShape).background(Blue))
+        Box(Modifier.weight(1f).height(1.dp).background(Line))
+    }
+}
+
+@Composable
+private fun VerticalLine() {
+    Box(Modifier.width(1.dp).height(44.dp).background(Line))
 }
 
 @Composable
 private fun Dots(count: Int, current: Int) {
-    val colors = Matrux.colors
     val label = stringResource(R.string.onboard_position, current + 1, count)
     Row(
         Modifier.fillMaxWidth().semantics { contentDescription = label },
-        horizontalArrangement = Arrangement.spacedBy(Matrux.space.unit, Alignment.CenterHorizontally),
+        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
     ) {
         repeat(count) { index ->
             val active by animateFloatAsState(
                 targetValue = if (index == current) 1f else 0f,
-                animationSpec = tween(Matrux.motion.duration(Matrux.motion.short), easing = Matrux.motion.easing),
+                animationSpec = tween(240),
                 label = "dot",
             )
-            Box(Modifier.size(Matrux.space.dot)) {
-                Box(Modifier.matchParentSize().clip(CircleShape).background(colors.hairline))
-                Box(Modifier.matchParentSize().graphicsLayer { alpha = active }.clip(CircleShape).background(colors.ink))
-            }
-        }
-    }
-}
-
-@Composable
-private fun SlidePage(ui: OnboardUi, slide: Slide) {
-    Column(
-        Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = Matrux.space.page)
-            .padding(top = Matrux.space.block, bottom = Matrux.space.block),
-    ) {
-        when (slide) {
-            Slide.DESK -> DeskSlide(ui)
-            Slide.COMMANDS -> CommandsSlide(ui)
-        }
-    }
-}
-
-@Composable
-private fun Heading(title: String, lead: String?) {
-    Text(title, style = Matrux.type.display, color = Matrux.colors.ink)
-    if (lead != null) {
-        Spacer(Modifier.height(Matrux.space.unit))
-        Text(lead, style = Matrux.type.body, color = Matrux.colors.muted)
-    }
-    Spacer(Modifier.height(Matrux.space.block))
-}
-
-@Composable
-private fun DeskSlide(ui: OnboardUi) {
-    val space = Matrux.space
-    Heading(
-        stringResource(R.string.onboard_desk_title),
-        stringResource(R.string.onboard_desk_lead, stringResource(R.string.app_name)),
-    )
-    Card {
-        Image(
-            painterResource(R.drawable.desktop_real),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(space.onboardArt)
-                .clip(Matrux.shapes.control),
-        )
-        if (ui.systems.isNotEmpty()) {
-            Spacer(Modifier.height(space.unit * 2))
-            ui.systems.forEach { image ->
-                Row(Modifier.fillMaxWidth().heightIn(min = space.onboardRow), verticalAlignment = Alignment.CenterVertically) {
-                    val logo = imageLogo(image)
-                    Box(Modifier.size(space.logoMark), contentAlignment = Alignment.Center) {
-                        if (logo != null) Image(painterResource(logo), contentDescription = null, modifier = Modifier.size(space.logoMark))
-                    }
-                    Spacer(Modifier.width(space.unit * 2))
-                    Text(image.name, style = Matrux.type.body, color = Matrux.colors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CommandsSlide(ui: OnboardUi) {
-    Heading(stringResource(R.string.onboard_commands_title), null)
-    if (ui.sheets.isEmpty()) return
-    Card {
-        ui.sheets.forEach { section ->
-            Row(Modifier.fillMaxWidth().heightIn(min = Matrux.space.onboardRow), verticalAlignment = Alignment.CenterVertically) {
-                LucideIcon(sectionIcon(section.id), Matrux.colors.inkSoft, size = Matrux.space.iconSmall)
-                Spacer(Modifier.width(Matrux.space.unit * 2))
-                Text(section.title, style = Matrux.type.body, color = Matrux.colors.ink, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Box(Modifier.size(11.dp)) {
+                Box(Modifier.matchParentSize().clip(CircleShape).background(DotIdle))
+                Box(Modifier.matchParentSize().graphicsLayer { alpha = active }.clip(CircleShape).background(Blue))
             }
         }
     }

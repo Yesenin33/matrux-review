@@ -593,13 +593,17 @@ class MainActivity : ComponentActivity() {
         )
         OnboardingOverlay(
             visible = onboardFlags.visible,
-            ui = onboardUi(catalog, sheets),
+            ui = onboardUi(),
             onFinish = {
                 route = Route.HOME
                 offerOpen = false
                 graph.onboarding.finish()
             },
-            onLeave = null,
+            onSubscribe = {
+                route = Route.SUBSCRIPTION
+                offerOpen = false
+                graph.onboarding.finish()
+            },
         )
         if (BuildConfig.DEBUG) {
             LaunchedEffect(Unit) {

@@ -1,5 +1,6 @@
 package ru.matrux.app.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -33,7 +35,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ru.matrux.app.R
-import ru.matrux.app.ui.components.Card
 import ru.matrux.app.ui.components.Lucide
 import ru.matrux.app.ui.components.LucideIcon
 import ru.matrux.app.ui.components.Pill
@@ -42,6 +43,25 @@ import ru.matrux.app.ui.components.TabScreen
 import ru.matrux.app.ui.state.HomeSection
 import ru.matrux.app.ui.state.SectionRow
 import ru.matrux.app.ui.theme.Matrux
+import ru.matrux.app.ui.theme.cardShadow
+
+private fun sectionImage(id: String): Int = when (id) {
+    "start" -> R.drawable.sec_start
+    "linux" -> R.drawable.sec_linux
+    "terms" -> R.drawable.sec_terms
+    "files" -> R.drawable.sec_files
+    "git" -> R.drawable.sec_git
+    "hardware" -> R.drawable.sec_hardware
+    "packages" -> R.drawable.sec_packages
+    "users" -> R.drawable.sec_users
+    "services" -> R.drawable.sec_services
+    "network" -> R.drawable.sec_network
+    "disks" -> R.drawable.sec_disks
+    "logs" -> R.drawable.sec_logs
+    "scripts" -> R.drawable.sec_scripts
+    "languages" -> R.drawable.sec_languages
+    else -> R.drawable.sec_linux
+}
 
 data class HomeActions(
     val onSection: (SectionRow) -> Unit = {},
@@ -169,7 +189,7 @@ private fun SectionHead(
             )
             if (badge != null) {
                 Spacer(Modifier.width(Matrux.space.unit))
-                Pill(stringResource(badge), tint, badgeBackground)
+                Badge(stringResource(badge), tint)
             }
         }
         if (action != null && onAction != null) {
@@ -184,17 +204,40 @@ private fun SectionHead(
                     .clip(Matrux.shapes.control)
                     .background(colors.accent)
                     .clickable(role = Role.Button, onClick = onAction)
-                    .padding(horizontal = Matrux.space.unit + Matrux.space.unit / 2, vertical = Matrux.space.unit + 2.dp),
+                    .padding(horizontal = Matrux.space.unit + Matrux.space.unit / 2, vertical = Matrux.space.unit + 4.dp),
             )
         }
     }
 }
 
 @Composable
+private fun Badge(text: String, background: androidx.compose.ui.graphics.Color) {
+    Text(
+        text,
+        style = Matrux.type.captionStrong,
+        color = Matrux.colors.surface,
+        maxLines = 1,
+        softWrap = false,
+        modifier = Modifier
+            .clip(Matrux.shapes.pill)
+            .background(background)
+            .padding(horizontal = Matrux.space.unit + 2.dp, vertical = 3.dp),
+    )
+}
+
+@Composable
 private fun SectionCard(row: SectionRow, found: Int?, onOpen: () -> Unit) {
     val colors = Matrux.colors
     val section = row.section
-    Card(Modifier.clickable(role = Role.Button, onClick = onOpen)) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .cardShadow()
+            .clip(Matrux.shapes.control)
+            .background(colors.surface)
+            .clickable(role = Role.Button, onClick = onOpen)
+            .padding(horizontal = Matrux.space.unit * 2, vertical = Matrux.space.unit + Matrux.space.unit / 2),
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             SectionMark(section.id, row.locked)
             Spacer(Modifier.width(Matrux.space.unit * 2))
@@ -228,16 +271,16 @@ private fun SectionMark(id: String, locked: Boolean) {
     val colors = Matrux.colors
     Box(
         Modifier
-            .size(Matrux.space.logoTile + Matrux.space.unit)
+            .size(Matrux.space.logoTile)
             .clip(CircleShape)
             .background(if (locked) colors.muted else colors.accentTint),
         contentAlignment = Alignment.Center,
     ) {
-        if (locked) {
-            LucideIcon(Lucide.Lock, colors.surface, size = Matrux.space.iconSmall)
-        } else {
-            LucideIcon(sectionIcon(id), colors.accent, size = Matrux.space.iconLarge)
-        }
+        Image(
+            painterResource(if (locked) R.drawable.sec_lock else sectionImage(id)),
+            contentDescription = null,
+            modifier = Modifier.size(if (locked) Matrux.space.iconLarge else Matrux.space.iconLarge + 2.dp),
+        )
     }
 }
 

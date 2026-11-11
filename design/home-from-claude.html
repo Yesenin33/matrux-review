@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Главная</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: #E9E9EC;
+    font-family: Manrope, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #1D1D1F;
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh;
+  }
+  .app {
+    position: relative;
+    width: 390px; height: 844px;
+    background: #F5F5F7;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .status {
+    height: 47px; padding: 0 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 16px; font-weight: 600; flex-shrink: 0;
+  }
+  .status .icons { display: flex; gap: 6px; align-items: center; }
+  .scroll {
+    flex: 1; overflow-y: auto;
+
+    padding: 8px 16px 120px;
+    scrollbar-width: none;
+  }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  h1 {
+    font-size: 36px; font-weight: 800; letter-spacing: -0.5px;
+    padding: 4px 4px 0;
+  }
+  .title-bar {
+    width: 108px; height: 4px; border-radius: 2px;
+    background: #0071E3; margin: 10px 0 18px 4px;
+  }
+
+  .search {
+    display: flex; align-items: center; gap: 10px;
+    background: #FFFFFF; border: 1px solid #D2D2D7; border-radius: 12px;
+    height: 52px; padding: 0 14px; margin-bottom: 22px;
+  }
+  .search svg { width: 20px; height: 20px; flex-shrink: 0; stroke: #6E6E73; fill: none; stroke-width: 2; }
+  .search input {
+    flex: 1; border: none; outline: none; background: transparent;
+    font: inherit; font-size: 17px; color: #1D1D1F;
+  }
+  .search input::placeholder { color: #6E6E73; }
+
+  .sec-head {
+    display: flex; align-items: center; gap: 8px;
+    margin: 0 4px 10px; min-height: 28px;
+  }
+  .sec-head h2 { font-size: 20px; font-weight: 700; }
+  .sec-sub { margin: -6px 4px 10px; }
+
+  .badge {
+    font-size: 13px; font-weight: 600; color: #FFFFFF;
+    padding: 3px 10px; border-radius: 10px;
+  }
+  .badge.free { background: #1D8A4E; }
+  .badge.pro { background: #0071E3; }
+  .btn-pro {
+    margin-left: auto;
+    background: #0071E3; color: #FFFFFF; border: none;
+    border-radius: 12px; padding: 10px 16px;
+    font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+
+  .section { margin-bottom: 22px; }
+  .list { display: flex; flex-direction: column; gap: 10px; }
+
+  .card {
+    width: 100%; display: flex; align-items: center; gap: 14px;
+    background: #FFFFFF; border: 1px solid #FFFFFF; border-radius: 12px;
+    padding: 12px 14px; cursor: pointer; text-align: left;
+    font: inherit; color: #1D1D1F;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    transition: background 0.15s;
+  }
+  .card:active { background: #F0F0F3; }
+  .ico {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: #EAF2FD; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .ico svg { width: 22px; height: 22px; fill: #0071E3; }
+  .ico.locked { background: #EEF0F3; }
+
+  .ico.locked svg { fill: #6E6E73; }
+  .txt { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .txt .t { font-size: 17px; font-weight: 500; }
+  .txt .n { font-size: 14px; color: #6E6E73; }
+  .chev { width: 18px; height: 18px; stroke: #6E6E73; fill: none; stroke-width: 2; flex-shrink: 0; }
+
+  .empty { text-align: center; color: #6E6E73; padding: 40px 0; font-size: 15px; }
+
+  nav {
+    position: absolute; left: 8px; right: 8px; bottom: 10px;
+    height: 72px; background: #FFFFFF; border-radius: 20px;
+    border: 1px solid #D2D2D7;
+    display: flex; justify-content: space-around; align-items: center;
+    padding: 0 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  }
+  .nav-item {
+    background: none; border: none; font: inherit; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    color: #6E6E73; font-size: 12px; font-weight: 500; width: 84px;
+  }
+  .nav-item svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 1.8; }
+  .nav-item.active { color: #0071E3; }
+  .nav-item.active svg { stroke: #0071E3; }
+
+  .toast {
+    position: absolute; left: 50%; bottom: 100px; transform: translateX(-50%) translateY(20px);
+    background: #1D1D1F; color: #FFFFFF; padding: 12px 18px; border-radius: 12px;
+    font-size: 14px; opacity: 0; pointer-events: none; transition: all 0.25s;
+    white-space: nowrap; z-index: 10;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="status">
+    <span>9:52</span>
+    <span class="icons">
+      <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#1D1D1F"/><rect x="5" y="5" width="3" height="7" rx="1" fill="#1D1D1F"/><rect x="10" y="2" width="3" height="10" rx="1" fill="#1D1D1F"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#1D1D1F"/></svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#1D1D1F"><path d="M8 11.5L5.6 9a3.4 3.4 0 0 1 4.8 0zM8 6.2a6.6 6.6 0 0 1 4.7 1.9l1.3-1.3a8.4 8.4 0 0 0-12 0l1.3 1.3A6.6 6.6 0 0 1 8 6.2zM8 2.2a10.6 10.6 0 0 1 7.5 3.1l1.3-1.3a12.4 12.4 0 0 0-17.6 0l1.3 1.3A10.6 10.6 0 0 1 8 2.2z"/></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12"><rect x="0.5" y="0.5" width="22" height="11" rx="3" fill="none" stroke="#1D1D1F"/><rect x="2" y="2" width="19" height="8" rx="1.5" fill="#1D1D1F"/><rect x="24" y="4" width="2" height="4" rx="1" fill="#1D1D1F"/></svg>
+    </span>
+  </div>
+
+  <main class="scroll">
+    <h1>Главная</h1>
+    <div class="title-bar"></div>
+
+    <label class="search">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input id="searchInput" type="text" placeholder="Поиск по шпаргалке" autocomplete="off">
+    </label>
+
+    <div id="searchResults" class="section" style="display:none"></div>
+
+    <div id="mainSections">
+      <section class="section">
+        <div class="sec-head">
+          <h2>Базовые знания</h2>
+          <span class="badge free">Бесплатно</span>
+        </div>
+        <div class="list" id="basicList"></div>
+      </section>
+
+
+      <section class="section">
+        <div class="sec-head">
+          <h2>Расширенные знания</h2>
+          <span class="badge pro">Pro</span>
+          <button class="btn-pro" id="proBtn" onclick="openPro()">Оформить Pro</button>
+        </div>
+        <div class="list" id="proList"></div>
+      </section>
+    </div>
+  </main>
+
+  <nav>
+    <button class="nav-item active" onclick="showToast('Главная')">
+      <svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z"/></svg>
+      Главная
+    </button>
+    <button class="nav-item" onclick="showToast('Каталог')">
+      <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+      Каталог
+    </button>
+    <button class="nav-item" onclick="showToast('Знания')">
+      <svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><path d="M3 5a2 2 0 0 1 2-2h5v16H5a2 2 0 0 0-2 2zM21 5a2 2 0 0 0-2-2h-5v16h5a2 2 0 0 1 2 2z"/></svg>
+      Знания
+    </button>
+    <button class="nav-item" onclick="openPro()">
+      <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>
+      Подписка Pro
+    </button>
+  </nav>
+
+  <div id="toast" class="toast"></div>
+
+</div>
+
+<script>
+  // Переключатель: false — без подписки, true — подписка Pro активна
+  const IS_PRO = false;
+
+  const BASIC = [
+    { title: "Первые шаги",      count: 26,  icon: "rocket"   },
+    { title: "Команды Linux",    count: 104, icon: "terminal" },
+    { title: "Основные термины", count: 45,  icon: "book"     }
+  ];
+
+  const PRO = [
+    { title: "Файлы и каталоги",    count: 32, icon: "folder"   },
+    { title: "Git",                 count: 36, icon: "git"      },
+    { title: "Устройство компьютера", count: 40, icon: "computer" },
+    { title: "Пакеты и обновления", count: 31, icon: "package"  },
+    { title: "Права и пользователи", count: 29, icon: "users"    },
+    { title: "Службы и процессы",   count: 32, icon: "server"   },
+    { title: "Сеть и SSH",          count: 31, icon: "network"  },
+    { title: "Диски и память",      count: 27, icon: "disk"     },
+    { title: "Логи и поиск",        count: 31, icon: "logs"     },
+    { title: "Скрипты",             count: 29, icon: "script"   },
+    { title: "Языки программирования", count: 48, icon: "code"   }
+  ];
+
+  const ICONS = {
+    rocket:   '<path d="M12 2c3 2 5 6 5 10l2 3v2h-3l-2 3h-4l-2-3H5v-2l2-3c0-4 2-8 5-10z"/>',
+    terminal: '<rect x="2" y="4" width="20" height="16" rx="3"/><path d="M6 9l3 3-3 3 1.2 1.2L10.4 12 7.2 7.8zM12 16h6v2h-6z" fill="#EAF2FD"/>',
+    book:     '<path d="M3 5a2 2 0 0 1 2-2h5v16H5a2 2 0 0 0-2 2zM21 5a2 2 0 0 0-2-2h-5v16h5a2 2 0 0 1 2 2z"/>',
+    folder:   '<path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+    git:      '<circle cx="7" cy="6" r="2.5"/><circle cx="7" cy="18" r="2.5"/><circle cx="17" cy="8" r="2.5"/><rect x="6" y="8" width="2" height="8"/>',
+
+    computer: '<rect x="3" y="4" width="18" height="12" rx="2"/><rect x="9" y="18" width="6" height="2"/>',
+    package:  '<path d="M12 2l9 4.5v9L12 20l-9-4.5v-9z"/>',
+    users:    '<circle cx="9" cy="8" r="4"/><path d="M1 21a8 8 0 0 1 16 0z"/>',
+    server:   '<rect x="3" y="3" width="18" height="7" rx="2"/><rect x="3" y="14" width="18" height="7" rx="2"/>',
+    network:  '<circle cx="12" cy="4" r="3"/><circle cx="5" cy="19" r="3"/><circle cx="19" cy="19" r="3"/><path d="M12 7v5M12 12l-5 4M12 12l5 4" stroke="#EAF2FD" stroke-width="1.5" fill="none"/>',
+    disk:     '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6c0 1.7-3.6 3-8 3S4 7.7 4 6z"/>',
+    logs:     '<path d="M6 2h9l5 5v15H6z"/>',
+    script:   '<path d="M8 4l-6 8 6 8 2-2-4.5-6L10 6zM16 4l-2 2 4.5 6-4.5 6 2 2 6-8z"/>',
+    code:     '<path d="M9 17l-5-5 5-5 1.4 1.4L6.8 12l3.6 3.6zM15 7l5 5-5 5-1.4-1.4 3.6-3.6-3.6-3.6z"/>',
+    lock:     '<path d="M7 11V8a5 5 0 0 1 10 0v3h1v10H6V11zm2 0h6V8a3 3 0 0 0-6 0z"/>'
+  };
+
+  const CHEVRON = '<svg class="chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>';
+  const LOCK_ICON = `<svg class="chev" viewBox="0 0 24 24" style="fill:#6E6E73;stroke:none;width:18px;height:18px"><path d="${ICONS.lock.replace(/<\/?path[^>]*>/g,'').replace(/d="([^"]+)"/, '$1')}"/></svg>`;
+
+  function plural(n) {
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return "запись";
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return "записи";
+    return "записей";
+  }
+
+  function iconSvg(name, locked = false) {
+    return `<span class="ico ${locked ? 'locked' : ''}"><svg viewBox="0 0 24 24">${ICONS[name]}</svg></span>`;
+  }
+
+  function lockSvg() {
+    return `<svg class="chev" viewBox="0 0 24 24" style="stroke:none;fill:#6E6E73"><path d="M7 11V8a5 5 0 0 1 10 0v3h1v10H6V11zm2 0h6V8a3 3 0 0 0-6 0z"/></svg>`;
+  }
+
+  function cardHtml(item, locked) {
+    const handler = locked
+
+      ? `openPro()`
+      : `openSection('${item.title.replace(/'/g, "\\'")}')`;
+    return `
+      <button class="card" onclick="${handler}">
+        ${iconSvg(item.icon, locked)}
+        <span class="txt">
+          <span class="t">${item.title}</span>
+          <span class="n">${item.count} ${plural(item.count)}</span>
+        </span>
+        ${locked && !IS_PRO ? lockSvg() : CHEVRON}
+      </button>`;
+  }
+
+  function renderSections() {
+    document.getElementById('basicList').innerHTML = BASIC.map(i => cardHtml(i, false)).join('');
+    const locked = !IS_PRO;
+    document.getElementById('proList').innerHTML = PRO.map(i => cardHtml(i, locked)).join('');
+    if (IS_PRO) document.getElementById('proBtn').style.display = 'none';
+  }
+
+  function renderSearch(query) {
+    const q = query.trim().toLowerCase();
+    const mainEl = document.getElementById('mainSections');
+    const resEl = document.getElementById('searchResults');
+
+    if (!q) {
+      resEl.style.display = 'none';
+      mainEl.style.display = '';
+      return;
+    }
+
+    const searchable = IS_PRO ? [...BASIC, ...PRO] : BASIC;
+
+    const found = searchable.filter(i => i.title.toLowerCase().includes(q));
+
+    mainEl.style.display = 'none';
+    resEl.style.display = '';
+    resEl.innerHTML = `<div class="list">${
+      found.length
+        ? found.map(i => cardHtml(i, false)).join('')
+        : '<div class="empty">Ничего не найдено</div>'
+    }</div>`;
+  }
+
+  function openSection(title) {
+    showToast('Открыт раздел: ' + title);
+  }
+
+  function openPro() {
+    showToast('Переход к оформлению Pro');
+  }
+
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
+  }
+
+  document.getElementById('searchInput').addEventListener('input', e => renderSearch(e.target.value));
+
+  renderSections();
+</script>
+
+</body>
+</html>

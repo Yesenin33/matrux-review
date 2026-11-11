@@ -181,7 +181,7 @@ private fun SectionHead(
         Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 title,
-                style = Matrux.type.title.copy(fontSize = 16.sp, lineHeight = 20.sp),
+                style = Matrux.type.title.copy(fontSize = 17.sp, lineHeight = 22.sp),
                 color = colors.ink,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -196,7 +196,7 @@ private fun SectionHead(
             Spacer(Modifier.width(Matrux.space.unit))
             Text(
                 action,
-                style = Matrux.type.captionStrong,
+                style = Matrux.type.caption,
                 color = colors.surface,
                 maxLines = 1,
                 softWrap = false,
@@ -204,7 +204,7 @@ private fun SectionHead(
                     .clip(Matrux.shapes.control)
                     .background(colors.accent)
                     .clickable(role = Role.Button, onClick = onAction)
-                    .padding(horizontal = Matrux.space.unit + Matrux.space.unit / 2, vertical = Matrux.space.unit + 4.dp),
+                    .padding(horizontal = Matrux.space.unit, vertical = Matrux.space.unit + 2.dp),
             )
         }
     }
@@ -244,7 +244,7 @@ private fun SectionCard(row: SectionRow, found: Int?, onOpen: () -> Unit) {
             Column(Modifier.weight(1f)) {
                 Text(
                     section.title,
-                    style = Matrux.type.title.copy(fontSize = 16.sp, lineHeight = 20.sp),
+                    style = Matrux.type.title.copy(fontSize = 17.sp, lineHeight = 22.sp),
                     color = colors.ink,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -271,7 +271,7 @@ private fun SectionMark(id: String, locked: Boolean) {
     val colors = Matrux.colors
     Box(
         Modifier
-            .size(Matrux.space.logoTile)
+            .size(Matrux.space.logoTile + 4.dp)
             .clip(CircleShape)
             .background(if (locked) colors.muted else colors.accentTint),
         contentAlignment = Alignment.Center,

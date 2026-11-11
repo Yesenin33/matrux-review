@@ -227,7 +227,6 @@
     <string name="knowledge_title">Знания</string>
     <string name="home_basics">Базовые знания</string>
     <string name="home_advanced">Расширенные базовые знания</string>
-    <string name="home_read">прочитано %1$d из %2$d</string>
     <string name="home_pro_hint">Эти темы доступны в Pro-версии</string>
     <string name="home_topic_git">Git</string>
     <string name="home_topic_files">Файлы</string>

@@ -13,9 +13,7 @@ data class CourseCard(val course: Course, val done: Int, val locked: Boolean) {
     val total: Int get() = course.lessonCount
 }
 
-data class SectionRow(val section: KnowledgeSection, val locked: Boolean, val read: Int = 0) {
-    val total: Int get() = section.size
-}
+data class SectionRow(val section: KnowledgeSection, val locked: Boolean)
 
 data class KnowledgeUi(
     val courses: List<CourseCard>,
@@ -27,7 +25,7 @@ data class KnowledgeUi(
 fun knowledgeUi(courses: List<Course>, sections: List<KnowledgeSection>, paid: Boolean, progress: Progress): KnowledgeUi =
     KnowledgeUi(
         courses = courses.map { CourseCard(it, progress.count(it), Access.courseLocked(paid)) },
-        rows = sections.map { SectionRow(it, Access.cheatSheetLocked(), progress.readIn(it.id).size) },
+        rows = sections.map { SectionRow(it, Access.cheatSheetLocked()) },
         paid = paid,
         offerOnEnter = !paid && !progress.offerSeen,
     )

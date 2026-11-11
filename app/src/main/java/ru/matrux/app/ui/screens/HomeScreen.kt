@@ -26,14 +26,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.roundToInt
 import ru.matrux.app.R
 import ru.matrux.app.ui.components.Card
 import ru.matrux.app.ui.components.Lucide
 import ru.matrux.app.ui.components.LucideIcon
 import ru.matrux.app.ui.components.Pill
 import ru.matrux.app.ui.components.PrimaryButton
-import ru.matrux.app.ui.components.ProgressBar
 import ru.matrux.app.ui.components.Tab
 import ru.matrux.app.ui.components.TabScreen
 import ru.matrux.app.ui.state.HomeSection
@@ -47,11 +45,11 @@ data class HomeActions(
 )
 
 private val LOCKED_TOPICS = listOf(
-    "git" to R.string.home_topic_git,
-    "files" to R.string.home_topic_files,
-    "network" to R.string.home_topic_network,
-    "scripts" to R.string.home_topic_scripts,
-    "languages" to R.string.home_topic_languages,
+    R.string.home_topic_git,
+    R.string.home_topic_files,
+    R.string.home_topic_network,
+    R.string.home_topic_scripts,
+    R.string.home_topic_languages,
 )
 
 @Composable
@@ -64,7 +62,7 @@ fun HomeScreen(sections: List<HomeSection>, actions: HomeActions) {
         Spacer(Modifier.height(Matrux.space.block))
         basics?.rows?.forEachIndexed { index, row ->
             if (index > 0) Spacer(Modifier.height(Matrux.space.unit * 2))
-            ProgressCard(row) { actions.onSection(row) }
+            SectionCard(row) { actions.onSection(row) }
         }
         if (advanced != null) {
             Spacer(Modifier.height(Matrux.space.block))
@@ -75,7 +73,7 @@ fun HomeScreen(sections: List<HomeSection>, actions: HomeActions) {
                 Spacer(Modifier.height(Matrux.space.block))
                 advanced.rows.forEachIndexed { index, row ->
                     if (index > 0) Spacer(Modifier.height(Matrux.space.unit * 2))
-                    ProgressCard(row) { actions.onSection(row) }
+                    SectionCard(row) { actions.onSection(row) }
                 }
             }
         }
@@ -97,10 +95,9 @@ private fun Header(text: String) {
 }
 
 @Composable
-private fun ProgressCard(row: SectionRow, onOpen: () -> Unit) {
+private fun SectionCard(row: SectionRow, onOpen: () -> Unit) {
     val colors = Matrux.colors
     val section = row.section
-    val fraction = if (row.total > 0) row.read.toFloat() / row.total else 0f
     Card(Modifier.clickable(role = Role.Button, onClick = onOpen)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             SectionMark(section.id)
@@ -123,18 +120,6 @@ private fun ProgressCard(row: SectionRow, onOpen: () -> Unit) {
             Spacer(Modifier.width(Matrux.space.unit))
             LucideIcon(Lucide.ChevronRight, colors.muted, size = Matrux.space.iconSmall)
         }
-        Spacer(Modifier.height(Matrux.space.unit + Matrux.space.unit / 2))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            ProgressBar(fraction, Modifier.weight(1f))
-            Spacer(Modifier.width(Matrux.space.unit + Matrux.space.unit / 2))
-            Text(
-                "${(fraction * 100).roundToInt()}%",
-                style = Matrux.type.captionStrong,
-                color = if (fraction >= 1f) colors.success else colors.muted,
-            )
-        }
-        Spacer(Modifier.height(Matrux.space.unit))
-        Text(stringResource(R.string.home_read, row.read, row.total), style = Matrux.type.caption, color = colors.muted)
     }
 }
 
@@ -158,7 +143,7 @@ private fun SectionMark(id: String) {
 @Composable
 private fun LockedCard(section: HomeSection, onSubscribe: () -> Unit) {
     val colors = Matrux.colors
-    val topics = LOCKED_TOPICS.map { (_, label) -> stringResource(label) }
+    val topics = LOCKED_TOPICS.map { stringResource(it) }
     Card {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(

@@ -381,7 +381,7 @@ class MainActivity : ComponentActivity() {
         ) { current ->
             when (current) {
                 Route.HOME -> HomeScreen(
-                    homeSections(sheets, paid, progress),
+                    homeSections(sheets, paid),
                     HomeActions(
                         onSection = openSection,
                         onSubscribe = { route = Route.SUBSCRIPTION },
@@ -494,10 +494,7 @@ class MainActivity : ComponentActivity() {
                     val section = graph.courses.sheet(sectionId) ?: sheets.first()
                     SectionScreen(
                         section = section,
-                        actions = SectionActions(
-                            onBack = { route = Route.HOME },
-                            onRead = { entry -> graph.progress.markRead(section.id, entry) },
-                        ),
+                        actions = SectionActions(onBack = { route = Route.HOME }),
                     )
                 }
                 Route.LAUNCH -> {

@@ -67,10 +67,12 @@ def manifest(
     }
     body = json.dumps(document, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()
     etag = f'"{hashlib.sha256(body).hexdigest()[:32]}"'
+    signature = ctx.signer.sign(body)
     headers = {
         "ETag": etag,
         "Cache-Control": "public, max-age=60",
-        "X-Palma-Signature": ctx.signer.sign(body),
+        "X-Matrux-Signature": signature,
+        "X-Palma-Signature": signature,
     }
     if etag_matches(if_none_match, etag):
         return Response(status_code=304, headers=headers)

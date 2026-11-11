@@ -30,7 +30,7 @@ class Settings:
     pro_period_days: int = 30
     home_max_bytes: int = 2 * 1024**3
     image_max_bytes: int = 8 * 1024**3
-    package_name: str = "ru.palma.app"
+    package_name: str = "ru.matrux.app"
     rustore_key_id: str = ""
     rustore_key_file: str = ""
     rustore_sandbox: bool = False
@@ -77,7 +77,7 @@ class Settings:
             pro_period_days=_int("PALMA_PRO_PERIOD_DAYS", 30),
             home_max_bytes=_int("PALMA_HOME_MAX_BYTES", 2 * 1024**3),
             image_max_bytes=_int("PALMA_IMAGE_MAX_BYTES", 8 * 1024**3),
-            package_name=_text("PALMA_PACKAGE_NAME", "ru.palma.app"),
+            package_name=_text("PALMA_PACKAGE_NAME", "ru.matrux.app"),
             rustore_key_id=_text("RUSTORE_KEY_ID"),
             rustore_key_file=_text("RUSTORE_KEY_FILE"),
             rustore_sandbox=_flag("RUSTORE_SANDBOX"),

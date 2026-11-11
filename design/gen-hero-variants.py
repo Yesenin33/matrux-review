@@ -9,9 +9,6 @@ OUT = "/root/palma/design/shots"
 BODY = "M31.73 15.866c-1.25-2.499-3.152-4.995-4.942-6.723C24.337 3.711 20.759 0 18 0s-6.337 3.71-8.788 9.143c-1.791 1.729-3.693 4.224-4.943 6.724-2.438 4.876-3.116 11.426-2.078 11.944.873.437 2.324-1.552 4.208-5.082C6.667 33.604 13.446 33.678 18 33.678c4.553 0 11.333-.073 11.601-10.947 1.884 3.528 3.335 5.517 4.207 5.08 1.038-.519.361-7.069-2.078-11.945z"
 BELLY = "M21.675 6.943c-.85.607-2.172 1.186-3.675 1.186s-2.825-.578-3.675-1.185c-3.302 2.137-5.615 7.06-5.615 12.798 0 7.695 4.159 13.936 9.29 13.936 5.132 0 9.291-6.24 9.291-13.936 0-5.738-2.313-10.662-5.616-12.799z"
 FEET = "M28.068 31.355c-2.229 0-8.468.785-10.068 1.832-1.601-1.047-7.84-1.832-10.069-1.832-2.564 0-1.161 1.039-1.161 2.322C6.77 34.96 5.367 36 7.931 36c2.229 0 8.468-.785 10.069-1.832C19.601 35.215 25.84 36 28.068 36c2.565 0 1.161-1.04 1.161-2.322 0-1.283 1.405-2.323-1.161-2.323z"
-PENG = (f'<svg viewBox="0 0 36 36"><path d="{FEET}"/><path d="{BODY}"/>'
-        f'<path style="fill:#f5f5f7" d="{BELLY}"/></svg>')
-
 CSS = """
 @font-face{font-family:Manrope;src:url("file:///root/palma/tmp-assets/Manrope");font-weight:200 800}
 :root{--canvas:#f5f5f7;--surface:#fff;--alt:#fafafa;--ink:#1d1d1f;--ink-soft:#515154;--muted:#6e6e73;--accent:#0071e3;--tint:#eaf2fd;--hair:#d2d2d7}
@@ -63,12 +60,6 @@ VARIANTS = {
   <i style="width:250px;height:250px;right:-100px;top:110px;border-radius:50%;
      background:radial-gradient(circle,rgba(226,229,236,.90),rgba(226,229,236,0) 70%)"></i>
 </div>''',
-    "B-penguin": '''
-<div class="bg">
-  <i style="width:320px;height:320px;left:-90px;top:-160px;border-radius:50%;
-     background:radial-gradient(circle,rgba(178,206,244,.38),rgba(178,206,244,0) 70%)"></i>
-  <div style="right:-34px;bottom:38px;width:210px;height:210px;opacity:.055;transform:rotate(-7deg)">''' + PENG + '''</div>
-</div>''',
     "C-paper": '''
 <div class="bg">
   <i style="inset:0;background:linear-gradient(180deg,#ffffff 0%,rgba(255,255,255,.55) 34%,rgba(245,245,247,0) 62%)"></i>
@@ -93,8 +84,7 @@ def page(key, bg, note):
             f'<div class="tag">{key} — {note}</div></div>')
 
 
-NOTES = {"A-aurora": "мягкие пятна", "B-penguin": "пингвин-водяной знак",
-         "C-paper": "светлый градиент + зерно", "D-mesh": "сетка точек + свечение"}
+NOTES = {"A-aurora": "мягкие пятна", "C-paper": "светлый градиент + зерно", "D-mesh": "сетка точек + свечение"}
 
 html = ('<!doctype html><html lang="ru"><head><meta charset="utf-8"><style>' + CSS + '</style></head><body>'
         + "".join(page(k, v, NOTES[k]) for k, v in VARIANTS.items()) + '</body></html>')

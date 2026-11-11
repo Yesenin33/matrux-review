@@ -80,14 +80,11 @@ import ru.matrux.app.ui.screens.OnboardingOverlay
 import ru.matrux.app.ui.screens.ProOfferOverlay
 import ru.matrux.app.ui.screens.SectionActions
 import ru.matrux.app.ui.screens.SectionScreen
-import ru.matrux.app.ui.screens.SignInOverlay
 import ru.matrux.app.ui.screens.SubscriptionActions
 import ru.matrux.app.ui.screens.SubscriptionScreen
 import ru.matrux.app.ui.state.SectionRow
 import ru.matrux.app.ui.state.SystemAction
-import ru.matrux.app.ui.state.GateSystem
 import ru.matrux.app.ui.state.Load
-import ru.matrux.app.ui.state.SignInUi
 import ru.matrux.app.ui.state.SubscriptionUi
 import ru.matrux.app.ui.state.AccountUi
 import ru.matrux.app.ui.state.knowledgeUi
@@ -374,16 +371,6 @@ class MainActivity : ComponentActivity() {
 
         val motion = Matrux.motion
         val installedSystem = graph.local.installed
-        val installNow = install
-        val signInSystem: GateSystem = when {
-            installNow is InstallState.Running -> GateSystem.Installing(installNow.image.name, installNow.percent)
-            installedSystem != null -> {
-                val name = installedSystem.name
-                if (session is SessionState.Live || session is SessionState.Launching) GateSystem.Running(name)
-                else GateSystem.Stopped(name)
-            }
-            else -> GateSystem.Absent
-        }
         AnimatedContent(
             targetState = route,
             transitionSpec = {
@@ -392,7 +379,6 @@ class MainActivity : ComponentActivity() {
             },
             label = "route",
         ) { current ->
-            if (!signedIn) return@AnimatedContent
             when (current) {
                 Route.HOME -> HomeScreen(
                     homeSections(sheets, paid),
@@ -607,7 +593,7 @@ class MainActivity : ComponentActivity() {
         )
         OnboardingOverlay(
             visible = onboardFlags.visible,
-            ui = onboardUi(catalog, sheets, courses, terms),
+            ui = onboardUi(catalog, sheets),
             onFinish = {
                 route = Route.HOME
                 offerOpen = false
@@ -624,15 +610,5 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        SignInOverlay(
-            visible = !signedIn && !onboardFlags.visible,
-            ui = SignInUi(
-                system = signInSystem,
-                signedIn = signedIn,
-                busy = signIn.first,
-                available = graph.auth.available,
-            ),
-            onSignIn = { graph.signIn(this@MainActivity) },
-        )
     }
 }

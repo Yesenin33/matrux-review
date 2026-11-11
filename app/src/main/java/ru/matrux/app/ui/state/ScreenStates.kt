@@ -217,18 +217,4 @@ data class SubscriptionUi(
 
 fun Instant.localDate(zone: ZoneId): LocalDate = atZone(zone).toLocalDate()
 
-sealed interface GateSystem {
-    data class Running(val name: String) : GateSystem
-    data class Stopped(val name: String) : GateSystem
-    data class Installing(val name: String, val percent: Int) : GateSystem
-    data object Absent : GateSystem
-}
 
-data class SignInUi(
-    val system: GateSystem,
-    val signedIn: Boolean,
-    val busy: Boolean,
-    val available: Boolean,
-) {
-    val enabled: Boolean get() = available && !busy && !signedIn
-}

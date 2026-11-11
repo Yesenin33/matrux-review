@@ -289,12 +289,7 @@
     <string name="pad_left">ЛКМ</string>
     <string name="onboard_desk_title">Твой Linux-стол в телефоне</string>
     <string name="onboard_desk_lead">%1$s запускает настоящий Linux с рабочим столом. Без root.</string>
-    <string name="onboard_sheets_title">Все необходимые шпаргалки</string>
-    <string name="onboard_sheets_lead">Команды с примерами: открыл, скопировал, запустил в терминале.</string>
-    <string name="onboard_languages_title">Знания по популярным языкам</string>
-    <string name="onboard_languages_lead">Уроки с задачами. Решение проверяется запуском кода.</string>
-    <string name="onboard_pro_title">Что открывает Pro</string>
-    <string name="onboard_pro_lead">Курсы целиком и все системы каталога.</string>
+    <string name="onboard_commands_title">Все необходимые команды</string>
     <string name="onboard_next">Дальше</string>
     <string name="onboard_start">Начать</string>
     <string name="onboard_position">%1$d из %2$d</string>

@@ -65,6 +65,7 @@ android {
         buildConfigField("String", "PER_MONTH_PRO_HALF_YEAR", quoted(prop("matrux.perMonthProHalfYear")))
         buildConfigField("int", "TRIAL_DAYS", prop("matrux.trialDays").ifEmpty { "0" })
         buildConfigField("boolean", "TEST_UNLOCKED", prop("matrux.testUnlocked").ifEmpty { "false" })
+        buildConfigField("boolean", "AUTH_REQUIRED", prop("matrux.authRequired").ifEmpty { "false" })
         resourceConfigurations += listOf("ru")
         ndk {
             abiFilters += listOf("arm64-v8a")

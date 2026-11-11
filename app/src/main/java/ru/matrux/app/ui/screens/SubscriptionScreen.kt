@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import ru.matrux.app.BuildConfig
 import ru.matrux.app.R
 import ru.matrux.app.billing.Plan
 import ru.matrux.app.billing.PlanOffer
@@ -143,10 +144,12 @@ private fun AccountLine(account: AccountUi, actions: SubscriptionActions) {
     val colors = Matrux.colors
     val info = account.info
     if (info == null) {
-        GhostButton(
-            stringResource(if (account.busy) R.string.account_signing_in else R.string.account_sign_in),
-            { if (!account.busy) actions.onSignIn() },
-        )
+        if (BuildConfig.AUTH_REQUIRED) {
+            GhostButton(
+                stringResource(if (account.busy) R.string.account_signing_in else R.string.account_sign_in),
+                { if (!account.busy) actions.onSignIn() },
+            )
+        }
     } else {
         Row(
             Modifier.fillMaxWidth().heightIn(min = Matrux.space.touch),

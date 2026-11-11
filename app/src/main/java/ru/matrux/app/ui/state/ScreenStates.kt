@@ -9,6 +9,7 @@ import ru.matrux.app.data.ImageInfo
 import ru.matrux.app.ui.knowledge.KnowledgeSection
 import ru.matrux.app.learn.Access
 import ru.matrux.app.learn.Course
+import ru.matrux.app.learn.Progress
 import ru.matrux.app.account.AccountInfo
 import ru.matrux.app.data.SubscriptionStatus
 import ru.matrux.app.data.Tier
@@ -60,12 +61,14 @@ private val ADVANCED_SHEETS = listOf(
     "network", "disks", "logs", "scripts", "languages",
 )
 
-private fun sheetRows(sections: List<KnowledgeSection>, ids: List<String>, locked: Boolean): List<SectionRow> =
-    ids.mapNotNull { id -> sections.firstOrNull { it.id == id }?.let { SectionRow(it, locked) } }
+private fun sheetRows(sections: List<KnowledgeSection>, ids: List<String>, locked: Boolean, progress: Progress): List<SectionRow> =
+    ids.mapNotNull { id ->
+        sections.firstOrNull { it.id == id }?.let { SectionRow(it, locked, progress.readIn(it.id).size) }
+    }
 
-fun homeSections(sections: List<KnowledgeSection>, paid: Boolean): List<HomeSection> = listOf(
-    HomeSection("basics", R.string.home_basics, sheetRows(sections, BASICS_SHEETS, locked = false), locked = false),
-    HomeSection("advanced", R.string.home_advanced, sheetRows(sections, ADVANCED_SHEETS, locked = !paid), locked = !paid),
+fun homeSections(sections: List<KnowledgeSection>, paid: Boolean, progress: Progress = Progress()): List<HomeSection> = listOf(
+    HomeSection("basics", R.string.home_basics, sheetRows(sections, BASICS_SHEETS, locked = false, progress), locked = false),
+    HomeSection("advanced", R.string.home_advanced, sheetRows(sections, ADVANCED_SHEETS, locked = !paid, progress), locked = !paid),
 )
 
 enum class LockedItem { COURSES, SYSTEMS, SHEETS, OFFLINE }

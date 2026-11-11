@@ -18,11 +18,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,7 +48,13 @@ import ru.matrux.app.ui.theme.Matrux
 import ru.matrux.app.ui.theme.cardShadow
 
 @Composable
-fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
+fun PrimaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    icon: Lucide? = null,
+) {
     val source = remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
     val colors = Matrux.colors
@@ -70,7 +78,15 @@ fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
             .clickable(source, null, enabled = enabled, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text, style = Matrux.type.bodyStrong, color = colors.surface)
+        if (icon == null) {
+            Text(text, style = Matrux.type.bodyStrong, color = colors.surface)
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                LucideIcon(icon, colors.surface, size = Matrux.space.iconSmall)
+                Spacer(Modifier.width(Matrux.space.unit))
+                Text(text, style = Matrux.type.bodyStrong, color = colors.surface)
+            }
+        }
     }
 }
 

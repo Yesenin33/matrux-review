@@ -35,10 +35,15 @@ class ProgressTest {
         store.mark("python", "print")
         store.mark("python", "input")
         store.mark("html", "skeleton")
+        store.markRead("linux", "ls")
+        store.markRead("linux", "cd")
+        store.markRead("linux", "ls")
         store.seeOffer()
         val reopened = FileProgressStore(file).progress.value
         assertEquals(setOf("print", "input"), reopened.doneIn("python"))
         assertEquals(setOf("skeleton"), reopened.doneIn("html"))
+        assertEquals(setOf("ls", "cd"), reopened.readIn("linux"))
+        assertEquals(2, reopened.readCount("linux", listOf("ls", "cd", "pwd")))
         assertTrue(reopened.offerSeen)
         assertFalse(File(folder.root, ".learning.json.new").exists())
     }

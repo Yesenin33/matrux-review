@@ -153,6 +153,7 @@ fun SectionCard(row: SectionRow, paid: Boolean, onOpen: () -> Unit) {
 
 data class SectionActions(
     val onBack: () -> Unit = {},
+    val onRead: (String) -> Unit = {},
 )
 
 @Composable
@@ -183,7 +184,7 @@ fun SectionScreen(section: KnowledgeSection, actions: SectionActions) {
             } else {
                 groups.forEachIndexed { index, group ->
                     if (index > 0) Spacer(Modifier.height(Matrux.space.block))
-                    Group(group)
+                    Group(group, actions.onRead)
                 }
             }
         }
@@ -258,7 +259,7 @@ private fun SearchField(value: String, onChange: (String) -> Unit) {
 }
 
 @Composable
-private fun Group(group: KnowledgeGroup) {
+private fun Group(group: KnowledgeGroup, onRead: (String) -> Unit) {
     val colors = Matrux.colors
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(group.title, style = Matrux.type.bodyStrong, color = colors.ink)
@@ -272,13 +273,13 @@ private fun Group(group: KnowledgeGroup) {
     Spacer(Modifier.height(Matrux.space.unit))
     Card {
         Column(verticalArrangement = Arrangement.spacedBy(Matrux.space.unit * 2)) {
-            group.entries.forEach { entry -> Entry(entry) }
+            group.entries.forEach { entry -> Entry(entry, onRead) }
         }
     }
 }
 
 @Composable
-private fun Entry(entry: KnowledgeEntry) {
+private fun Entry(entry: KnowledgeEntry, onRead: (String) -> Unit) {
     val colors = Matrux.colors
     val clipboard = LocalClipboardManager.current
     var copied by remember(entry.title) { mutableStateOf(false) }
@@ -295,6 +296,7 @@ private fun Entry(entry: KnowledgeEntry) {
             .clickable(role = Role.Button) {
                 clipboard.setText(AnnotatedString(text))
                 copied = true
+                onRead(entry.title)
             },
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

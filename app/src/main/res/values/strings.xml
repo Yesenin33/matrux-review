@@ -206,6 +206,12 @@
         <item quantity="many">%1$d записей</item>
         <item quantity="other">%1$d записи</item>
     </plurals>
+    <plurals name="home_found">
+        <item quantity="one">%1$d совпадение</item>
+        <item quantity="few">%1$d совпадения</item>
+        <item quantity="many">%1$d совпадений</item>
+        <item quantity="other">%1$d совпадения</item>
+    </plurals>
     <plurals name="section_groups">
         <item quantity="one">%1$d группа</item>
         <item quantity="few">%1$d группы</item>
@@ -225,14 +231,11 @@
 
     <string name="tab_knowledge">Знания</string>
     <string name="knowledge_title">Знания</string>
+    <string name="home_title">Главная</string>
     <string name="home_basics">Базовые знания</string>
-    <string name="home_advanced">Расширенные базовые знания</string>
-    <string name="home_pro_hint">Эти темы доступны в Pro-версии</string>
-    <string name="home_topic_git">Git</string>
-    <string name="home_topic_files">Файлы</string>
-    <string name="home_topic_network">Сеть</string>
-    <string name="home_topic_scripts">Скрипты</string>
-    <string name="home_topic_languages">Языки программирования</string>
+    <string name="home_advanced">Расширенные знания</string>
+    <string name="home_free_badge">бесплатно</string>
+    <string name="home_search">Поиск по шпаргалке</string>
     <string name="offer_title">В Pro</string>
     <string name="offer_systems">Все системы каталога</string>
     <string name="price_rub">%1$s ₽</string>
@@ -296,7 +299,7 @@
     <string name="onboard_welcome_title">Добро пожаловать!</string>
     <string name="onboard_welcome_lead">Запускайте полноценный Linux прямо в приложении</string>
     <string name="onboard_catalog_title">Каталог систем</string>
-    <string name="onboard_catalog_names">Alpine, Debian, Ubuntu + XFCE</string>
+    <string name="onboard_catalog_names">Alpine, Debian, Ubuntu, Dev + XFCE</string>
     <string name="onboard_catalog_lead">Установите рабочий стол одним нажатием</string>
     <string name="onboard_basics_title">Базовые знания</string>
     <string name="onboard_basics_lead">Команды Linux, Python, Go, Node.js, Git и устройство компьютера</string>
@@ -311,7 +314,7 @@
     <string name="onboard_pro_2">Языки программирования</string>
     <string name="onboard_pro_3">Git и расширенные знания</string>
     <string name="onboard_buy_pro">Оформить Pro</string>
-    <string name="onboard_start_title">Начните сейчас!</string>
+    <string name="onboard_start_title">Стань пользователем Linux</string>
     <string name="onboard_start_lead">Pro открывает все возможности: полный каталог, знания и инструменты</string>
     <string name="onboard_go_pro">Перейти к Pro</string>
     <string name="onboard_next">Дальше</string>

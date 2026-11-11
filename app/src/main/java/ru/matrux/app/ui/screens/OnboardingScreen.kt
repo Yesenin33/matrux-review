@@ -114,7 +114,7 @@ fun OnboardingScreen(
         ) {
             HorizontalPager(pager, Modifier.weight(1f).fillMaxWidth()) { page ->
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    SlideCard(slide = ui.slides[page], onSubscribe = onSubscribe)
+                    SlideCard(slide = ui.slides[page], onSubscribe = onSubscribe, onStart = onFinish)
                 }
             }
             Spacer(Modifier.height(18.dp))
@@ -133,7 +133,7 @@ fun OnboardingScreen(
 }
 
 @Composable
-private fun SlideCard(slide: Slide, onSubscribe: () -> Unit) {
+private fun SlideCard(slide: Slide, onSubscribe: () -> Unit, onStart: () -> Unit) {
     Surface(
         color = Color.White,
         shape = RoundedCornerShape(30.dp),
@@ -146,7 +146,7 @@ private fun SlideCard(slide: Slide, onSubscribe: () -> Unit) {
                 Slide.CATALOG -> CatalogSlide()
                 Slide.BASICS -> BasicsSlide()
                 Slide.LEVEL -> LevelSlide(onSubscribe)
-                Slide.START -> StartSlide(onSubscribe)
+                Slide.START -> StartSlide(onStart)
             }
         }
     }
@@ -166,10 +166,11 @@ private fun WelcomeSlide() {
 @Composable
 private fun CatalogSlide() {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(22.dp)) {
-            Image(painterResource(R.drawable.logo_mark), contentDescription = null, modifier = Modifier.size(62.dp))
-            Image(painterResource(R.drawable.logo_debian), contentDescription = null, modifier = Modifier.size(58.dp))
-            Image(painterResource(R.drawable.logo_ubuntu), contentDescription = null, modifier = Modifier.size(58.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            Image(painterResource(R.drawable.logo_mark), contentDescription = null, modifier = Modifier.size(58.dp))
+            Image(painterResource(R.drawable.logo_debian), contentDescription = null, modifier = Modifier.size(54.dp))
+            Image(painterResource(R.drawable.logo_ubuntu), contentDescription = null, modifier = Modifier.size(54.dp))
+            Image(painterResource(R.drawable.logo_dev), contentDescription = null, modifier = Modifier.size(54.dp))
         }
         Spacer(Modifier.height(24.dp))
         Divider()
@@ -178,7 +179,7 @@ private fun CatalogSlide() {
         Spacer(Modifier.height(12.dp))
         Text(
             stringResource(R.string.onboard_catalog_names),
-            fontSize = 18.sp,
+            fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = Blue,
             textAlign = TextAlign.Center,
@@ -260,7 +261,7 @@ private fun LevelSlide(onSubscribe: () -> Unit) {
 }
 
 @Composable
-private fun StartSlide(onSubscribe: () -> Unit) {
+private fun StartSlide(onStart: () -> Unit) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Image(painterResource(R.drawable.rocket), contentDescription = null, modifier = Modifier.size(160.dp))
         Spacer(Modifier.height(14.dp))
@@ -268,7 +269,7 @@ private fun StartSlide(onSubscribe: () -> Unit) {
         Spacer(Modifier.height(14.dp))
         Lead(stringResource(R.string.onboard_start_lead))
         Spacer(Modifier.height(24.dp))
-        PrimaryBlue(stringResource(R.string.onboard_go_pro), onSubscribe)
+        PrimaryBlue(stringResource(R.string.onboard_start), onStart)
     }
 }
 

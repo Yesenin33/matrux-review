@@ -1,6 +1,5 @@
 package ru.matrux.app.ui.screens
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -19,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -132,11 +130,7 @@ private fun SectionMark(id: String) {
             .background(Matrux.colors.accentTint),
         contentAlignment = Alignment.Center,
     ) {
-        if (id == "linux") {
-            Image(painterResource(R.drawable.linux_mark), contentDescription = null, modifier = Modifier.size(Matrux.space.logoTile))
-        } else {
-            LucideIcon(sectionIcon(id), Matrux.colors.accent, size = Matrux.space.iconLarge)
-        }
+        LucideIcon(sectionIcon(id), Matrux.colors.accent, size = Matrux.space.iconLarge)
     }
 }
 

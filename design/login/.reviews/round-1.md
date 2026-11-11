@@ -21,7 +21,7 @@
 - Icons: lucide only (render.py:7). Stroke is 1.75 in the output (`stroke-width="1.75"` in src/v2.html and src/v4.html). Sizes are 24 (render.py:85) and 20 (render.py:131), as DESIGN.md:90 requires.
 - Name: "Matrux" matches strings.xml:3. No visible Palma/Палма in render.py. `/root/palma` appears only inside `file://` URLs (render.py:33-34).
 - Strings: "Продолжить с VK ID" and "Запущена" match strings.xml:160-161. "Debian 12" is a real name (ManifestTest.kt:18), and an Arch image exists (`image-build/arch-rootfs/`).
-- No eyebrow text, no caps labels. "XFCE" and "VK ID" are proper names. No penguins, animals, emoji, or VK logo.
+- No eyebrow text, no caps labels. "XFCE" and "VK ID" are proper names. No animals, faces, emoji, or VK logo.
 - Hit areas: the CTA is 56 (render.py:49) and v4 rows are 48 (render.py:122).
 - §1.8 Overlay occlusion: no variant has an overlay at first paint at 390 wide.
 

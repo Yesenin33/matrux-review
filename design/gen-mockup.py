@@ -47,8 +47,8 @@ def parse():
             branch="START" if re.search(r"Branch\.START", s) else "DEEPER",
             count=s.count("KnowledgeEntry("),
         ))
-    order = ["start", "files", "linux", "terms", "packages", "users", "services", "network",
-             "disks", "logs", "scripts", "git", "hardware", "languages"]
+    order = ["start", "linux", "terms", "files", "git", "hardware", "packages", "users",
+             "services", "network", "disks", "logs", "scripts", "languages"]
     secs.sort(key=lambda x: order.index(x["id"]) if x["id"] in order else 99)
     return secs
 
@@ -93,6 +93,10 @@ box-shadow:0 2px 6px rgba(0,0,0,.06),0 18px 40px rgba(0,0,0,.10)}
 .nav svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
 .pill{display:inline-block;font-size:8px;font-weight:600;padding:2px 7px;border-radius:99px;background:#e7f4ec;color:var(--success);white-space:nowrap}
 .pill.pro{background:#ececef;color:var(--muted)}
+.mark{font-family:Mono,monospace;font-size:7.5px;font-weight:500;letter-spacing:.04em;padding:3px 7px;
+border-radius:99px;margin-right:6px}
+.mark.free{background:#e6f4ec;color:var(--success)}
+.mark.pro{background:var(--tint);color:var(--accent)}
 .subrow{background:var(--alt);border-radius:9px;padding:8px 11px;margin-top:6px}
 .subrow.on{background:var(--tint)}
 .btn{height:44px;border-radius:10px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600}
@@ -164,10 +168,13 @@ def count_word(n):
 
 def card_row(s, paid):
     badge = LOCK if (s["pro"] and not paid) else CHEV
+    mark = "pro" if s["pro"] else "free"
+    label = "PRO" if s["pro"] else "FREE"
+    pill = f'<span class="mark {mark}">{label}</span>'
     return (f'<div class="card row">{ic_tile(s["id"])}<div class="grow">'
             f'<div class="body-t strong">{s["title"]}</div>'
             f'<div class="cap" style="margin-top:2px">{s["count"]} {count_word(s["count"])}</div>'
-            f'</div>{badge}</div>')
+            f'</div>{pill}{badge}</div>')
 
 
 def screen_home(secs):

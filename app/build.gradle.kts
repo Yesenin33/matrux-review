@@ -21,15 +21,15 @@ fun secretFrom(path: String): String = path.takeIf { it.isNotBlank() }
     ?.trim()
     .orEmpty()
 
-val storeSdk = prop("palma.storeSdk") == "true"
-val vkidClientId = prop("palma.vkid.clientId")
-val payScheme = prop("palma.payScheme").ifEmpty { "palmapay" }
+val storeSdk = prop("matrux.storeSdk") == "true"
+val vkidClientId = prop("matrux.vkid.clientId")
+val payScheme = prop("matrux.payScheme").ifEmpty { "matruxpay" }
 
-val palmaVersionName = prop("palma.versionName")
-val palmaVersionCode = prop("palma.versionCode").toInt()
+val matruxVersionName = prop("matrux.versionName")
+val matruxVersionCode = prop("matrux.versionCode").toInt()
 
 android {
-    namespace = "ru.palma.app"
+    namespace = "ru.matrux.app"
     lint {
         abortOnError = false
         disable += "ExpiredTargetSdkVersion"
@@ -37,34 +37,34 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "ru.palma.app"
+        applicationId = "ru.matrux.app"
         minSdk = 26
         targetSdk = 30
-        versionCode = palmaVersionCode
-        versionName = palmaVersionName
-        buildConfigField("String", "API_BASE", quoted(prop("palma.apiBase")))
-        buildConfigField("String", "MANIFEST_PUBKEY", quoted(prop("palma.manifestPubkey")))
-        buildConfigField("String", "PRODUCT_PRO_MONTH", quoted(prop("palma.product1m")))
-        buildConfigField("String", "PRODUCT_PRO_QUARTER", quoted(prop("palma.product3m")))
-        buildConfigField("String", "PRODUCT_PRO_HALF_YEAR", quoted(prop("palma.product6m")))
+        versionCode = matruxVersionCode
+        versionName = matruxVersionName
+        buildConfigField("String", "API_BASE", quoted(prop("matrux.apiBase")))
+        buildConfigField("String", "MANIFEST_PUBKEY", quoted(prop("matrux.manifestPubkey")))
+        buildConfigField("String", "PRODUCT_PRO_MONTH", quoted(prop("matrux.product1m")))
+        buildConfigField("String", "PRODUCT_PRO_QUARTER", quoted(prop("matrux.product3m")))
+        buildConfigField("String", "PRODUCT_PRO_HALF_YEAR", quoted(prop("matrux.product6m")))
         buildConfigField("String", "VKID_CLIENT_ID", quoted(vkidClientId))
-        buildConfigField("String", "RUSTORE_APP_ID", quoted(prop("palma.rustore.appId")))
+        buildConfigField("String", "RUSTORE_APP_ID", quoted(prop("matrux.rustore.appId")))
         manifestPlaceholders += mapOf(
-            "rustoreAppId" to prop("palma.rustore.appId"),
+            "rustoreAppId" to prop("matrux.rustore.appId"),
             "payScheme" to payScheme,
             "VKIDClientID" to vkidClientId,
-            "VKIDClientSecret" to secretFrom(prop("palma.vkid.secretFile")),
+            "VKIDClientSecret" to secretFrom(prop("matrux.vkid.secretFile")),
             "VKIDRedirectHost" to "vk.ru",
             "VKIDRedirectScheme" to "vk$vkidClientId",
         )
-        buildConfigField("String", "PRICE_PRO_MONTH", quoted(prop("palma.priceProMonth")))
-        buildConfigField("String", "PRICE_PRO_QUARTER", quoted(prop("palma.priceProQuarter")))
-        buildConfigField("String", "PRICE_PRO_HALF_YEAR", quoted(prop("palma.priceProHalfYear")))
-        buildConfigField("String", "PER_MONTH_PRO_MONTH", quoted(prop("palma.perMonthProMonth")))
-        buildConfigField("String", "PER_MONTH_PRO_QUARTER", quoted(prop("palma.perMonthProQuarter")))
-        buildConfigField("String", "PER_MONTH_PRO_HALF_YEAR", quoted(prop("palma.perMonthProHalfYear")))
-        buildConfigField("int", "TRIAL_DAYS", prop("palma.trialDays").ifEmpty { "0" })
-        buildConfigField("boolean", "TEST_UNLOCKED", prop("palma.testUnlocked").ifEmpty { "false" })
+        buildConfigField("String", "PRICE_PRO_MONTH", quoted(prop("matrux.priceProMonth")))
+        buildConfigField("String", "PRICE_PRO_QUARTER", quoted(prop("matrux.priceProQuarter")))
+        buildConfigField("String", "PRICE_PRO_HALF_YEAR", quoted(prop("matrux.priceProHalfYear")))
+        buildConfigField("String", "PER_MONTH_PRO_MONTH", quoted(prop("matrux.perMonthProMonth")))
+        buildConfigField("String", "PER_MONTH_PRO_QUARTER", quoted(prop("matrux.perMonthProQuarter")))
+        buildConfigField("String", "PER_MONTH_PRO_HALF_YEAR", quoted(prop("matrux.perMonthProHalfYear")))
+        buildConfigField("int", "TRIAL_DAYS", prop("matrux.trialDays").ifEmpty { "0" })
+        buildConfigField("boolean", "TEST_UNLOCKED", prop("matrux.testUnlocked").ifEmpty { "false" })
         resourceConfigurations += listOf("ru")
         ndk {
             abiFilters += listOf("arm64-v8a")
@@ -141,9 +141,9 @@ dependencies {
     implementation("com.github.luben:zstd-jni:1.5.6-3@aar")
 
     if (storeSdk) {
-        implementation(platform("ru.rustore.sdk:bom:${prop("palma.sdk.rustoreBom")}"))
+        implementation(platform("ru.rustore.sdk:bom:${prop("matrux.sdk.rustoreBom")}"))
         implementation("ru.rustore.sdk:pay")
-        implementation("com.vk.id:vkid:${prop("palma.sdk.vkid")}")
+        implementation("com.vk.id:vkid:${prop("matrux.sdk.vkid")}")
     }
 
     testImplementation("junit:junit:4.13.2")

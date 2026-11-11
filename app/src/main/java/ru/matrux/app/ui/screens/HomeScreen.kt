@@ -133,7 +133,7 @@ private fun SectionMark(id: String) {
         contentAlignment = Alignment.Center,
     ) {
         if (id == "linux") {
-            Image(painterResource(R.drawable.penguin_mark), contentDescription = null, modifier = Modifier.size(Matrux.space.logoTile))
+            Image(painterResource(R.drawable.linux_mark), contentDescription = null, modifier = Modifier.size(Matrux.space.logoTile))
         } else {
             LucideIcon(sectionIcon(id), Matrux.colors.accent, size = Matrux.space.iconLarge)
         }

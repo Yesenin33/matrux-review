@@ -27,11 +27,20 @@ cp .env.example .env
 |---|---|
 | `PALMA_ADMIN_TOKEN` | значение заголовка `X-Admin-Token` |
 | `PALMA_SIGNING_KEY` | seed ed25519, 32 байта в base64. Без него сервер не стартует |
-| `RUSTORE_STUB` | `1` — проверка покупок заглушкой. Иначе `/api/sub/verify` отвечает `503 store_unavailable` |
+| `RUSTORE_STUB` | `1` — проверка покупок заглушкой. Без заглушки и без ключа RuStore проверка отвечает `503 store_unavailable` |
 | `PALMA_DATA_DIR` | где лежат `palma.sqlite3`, `images/`, `home/` |
 | `PALMA_HOST`, `PALMA_PORT` | адрес uvicorn |
 | `PALMA_PUBLIC_URL` | префикс для `url` в манифесте, по умолчанию путь относительный |
-| `PALMA_PRODUCT_PRO`, `PALMA_PRODUCT_LIFETIME` | `product_id` в RuStore для Pro и Lifetime |
+| `PALMA_PRODUCT_1M`, `PALMA_PRODUCT_3M`, `PALMA_PRODUCT_6M` | коды подписок Pro на 1, 3 и 6 месяцев в RuStore Console. `PALMA_PRODUCT_PRO` — старое имя для `1M` |
+| `PALMA_PRODUCT_LIFETIME` | `product_id` Lifetime |
+| `PALMA_PACKAGE_NAME` | имя пакета для API подписок RuStore, по умолчанию `ru.palma.app` |
+| `RUSTORE_KEY_ID`, `RUSTORE_KEY_FILE` | `keyId` и путь к файлу приватного ключа API RuStore. Ключ читается из файла и в лог не попадает |
+| `RUSTORE_SANDBOX` | `1` — проверять тестовые платежи (`/public/sandbox/...`) |
+| `RUSTORE_API_BASE` | адрес Public API, по умолчанию `https://public-api.rustore.ru` |
+| `VKID_CLIENT_ID` | id приложения VK ID. Пусто — вход отвечает `503 vkid_unavailable` |
+| `VKID_REDIRECT_URI` | по умолчанию `vk<VKID_CLIENT_ID>://vk.ru/blank.html` |
+| `VKID_STUB` | `1` — вход заглушкой: код `vk-<id>` даёт аккаунт `<id>` |
+| `PALMA_SESSION_DAYS` | срок токена входа, по умолчанию 180 |
 | `PALMA_PRO_PERIOD_DAYS` | оплаченный период, который выдаёт заглушка |
 | `PALMA_HOME_MAX_BYTES`, `PALMA_IMAGE_MAX_BYTES` | лимиты загрузки, сверх них `413` |
 
@@ -95,6 +104,29 @@ curl -s -H "X-Device-Key: $DEVICE_KEY" 'localhost:8000/api/sub/status?device_id=
 - `/api/home/{device_id}`: `POST` multipart с полем `archive`, нужен Pro или Lifetime (`402`
   иначе), ответ `201 {"sha256", "size_bytes", "created_at"}`. `GET` отдаёт последний архив с `Range`,
   в том числе после окончания подписки.
+- `/api/sub/verify` принимает необязательный `invoice_id`: счёт сверяется с `purchase_id` и
+  `product_id` (`409 invoice_mismatch`), неоплаченный — `409 invoice_not_paid`. Покупка, сделанная
+  под аккаунтом (`appUserId` в RuStore), проходит только на устройстве, привязанном к этому
+  аккаунту, иначе `409 purchase_bound_to_other_account`.
+- `/api/sub/status` для устройства, привязанного к аккаунту, учитывает и права аккаунта.
+- Аккаунт. Своих паролей нет, вход только через VK ID. Приложение получает код с PKCE и отдаёт
+  его серверу, обмен на токен VK делает сервер.
+  - `POST /api/account/vkid` `{"code", "code_verifier", "vk_device_id", "state", "device_id"?}`
+    (+ `X-Device-Key`, если передан `device_id`) → `{"token", "account": {"id", "phone"}, "tier",
+    "expires_at", "checked_at"}`. Телефон отдаётся замаскированным. `401 vkid_rejected`,
+    `503 vkid_unavailable`.
+  - Остальные запросы — с `Authorization: Bearer <token>`, иначе `401 unauthorized`. В базе лежит
+    sha256 токена.
+  - `GET /api/account` — статус аккаунта. Подписки, которые кончаются в ближайшие сутки и не
+    проверялись час, перепроверяются в RuStore.
+  - `POST /api/account/devices` `{"device_id"}` + `X-Device-Key` — привязать устройство.
+  - `POST /api/account/logout` `{"device_id"?}` — отозвать токен и отвязать устройство.
+  - `POST /api/account/purchases` `{"invoice_id", "purchase_id"?, "product_id"?}` — проверка счёта
+    (`/public/v2/invoices/{invoiceId}`) и подписки (`/public/v5/subscription/{package}/{product}/{purchaseId}`),
+    сверка `appUserId` с id аккаунта, запись в `entitlements` с `source = purchase`.
+- При привязке устройства его покупки копируются в `entitlements` аккаунта с `source = device`:
+  Pro, купленный без входа, переезжает на новый телефон после входа там.
+- `/api/admin/accounts` — последние 500 аккаунтов: id, замаскированный телефон, число устройств, tier.
 - `/api/admin/subscribers`: `total` — устройства с хотя бы одной покупкой, `pro`, `lifetime`,
   `expiring_7d` — Pro, у которых срок кончается в ближайшие 7 дней.
 - Лог: одна строка на запрос — метод, путь без query, код, время. Тела и заголовки не пишутся.
@@ -109,10 +141,12 @@ app/
   db.py            схема SQLite
   files.py         Range, потоковая отдача, запись по sha256
   signing.py       ed25519
-  rustore.py       заглушка RuStore
+  rustore.py       Public API RuStore и заглушка
+  vkid.py          обмен кода VK ID и заглушка
+  accounts.py      аккаунты, токены, привязка устройств, entitlements
   subscriptions.py tier, привязка покупки, сводка
   devices.py       ключ устройства, проверка X-Device-Key
-  routes/          catalog, devices, subs, home, admin
+  routes/          catalog, devices, subs, account, home, admin
 admin/index.html   админский экран, шрифт Inter в admin/fonts (OFL)
 tests/             pytest
 ```

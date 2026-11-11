@@ -171,6 +171,13 @@ code{font:inherit}
   <p class="empty" id="images-empty" hidden>Образов пока нет. Первый публикуется формой ниже.</p>
   <p class="error" id="images-error" role="alert"></p>
 
+  <div class="card">
+    <h2>Пользователи</h2>
+    <p class="stats" id="users-stats" aria-live="polite">Считаем пользователей</p>
+    <ul class="list" id="accounts" aria-live="polite"></ul>
+    <p class="empty" id="accounts-empty" hidden>Пока никто не входил.</p>
+  </div>
+
   <form id="publish" class="card" novalidate>
     <h2>Новый образ</h2>
     <div class="fields">
@@ -257,6 +264,42 @@ const FIELD_ERRORS = {
 };
 const $ = (id) => document.getElementById(id);
 const number = new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 1 });
+
+const date = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", year: "numeric" });
+
+function formatDate(value) {
+  const parsed = value ? new Date(value) : null;
+  return parsed && !isNaN(parsed) ? date.format(parsed) : "—";
+}
+
+function renderUsers(stats, accounts) {
+  const devices = stats.devices, counted = stats.accounts, subs = stats.subscriptions;
+  const parts = [
+    `${devices.total} ${plural(devices.total, "устройство", "устройства", "устройств")}`,
+    `Pro ${subs.active_total}`,
+    `аккаунтов ${counted.total}`,
+    `из них Pro ${counted.pro}`,
+    `новых за 7 дней ${counted.new_7d}`,
+    `истекло ${subs.expired}`,
+  ];
+  const last = parts.length - 1;
+  $("users-stats").replaceChildren(...parts.flatMap((text, i) => [el("span", "", i < last ? `${text}\u00a0·` : text), " "]));
+  const list = $("accounts");
+  list.replaceChildren();
+  $("accounts-empty").hidden = accounts.length > 0;
+  for (const account of accounts) {
+    const item = el("li", "item");
+    const meta = el("div", "meta");
+    meta.append(el("p", "name", account.phone || `ID ${account.id}`));
+    const paid = account.tier && account.tier !== "free";
+    const line = [paid ? `Pro до ${formatDate(account.expires_at)}` : "без подписки"];
+    line.push(`${account.devices} ${plural(account.devices, "устройство", "устройства", "устройств")}`);
+    line.push(`вошёл ${formatDate(account.created_at)}`);
+    meta.append(el("p", "caption", line.join(" \u00b7 ")));
+    item.append(meta);
+    list.append(item);
+  }
+}
 
 function formatBytes(bytes) {
   if (bytes >= 1024 ** 3) return `${number.format(bytes / 1024 ** 3)}\u00a0ГБ`;
@@ -396,12 +439,15 @@ function actions(image) {
 }
 
 async function refresh() {
-  const [images, stats] = await Promise.all([
+  const [images, stats, users, accounts] = await Promise.all([
     api("GET", "/api/admin/images"),
     api("GET", "/api/admin/subscribers"),
+    api("GET", "/api/admin/stats"),
+    api("GET", "/api/admin/accounts"),
   ]);
   renderImages(images.images);
   renderStats(stats);
+  renderUsers(users, accounts.accounts);
 }
 
 function fieldInput(name) {

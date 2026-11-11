@@ -63,6 +63,24 @@ private fun sectionImage(id: String): Int = when (id) {
     else -> R.drawable.sec_linux
 }
 
+private fun sectionLockIcon(id: String): Lucide = when (id) {
+    "start" -> Lucide.Rocket
+    "linux" -> Lucide.Terminal
+    "terms" -> Lucide.BookOpen
+    "files" -> Lucide.Folder
+    "git" -> Lucide.GitBranch
+    "hardware" -> Lucide.Cpu
+    "packages" -> Lucide.Package
+    "users" -> Lucide.Users
+    "services" -> Lucide.Activity
+    "network" -> Lucide.Globe
+    "disks" -> Lucide.HardDrive
+    "logs" -> Lucide.FileText
+    "scripts" -> Lucide.Code
+    "languages" -> Lucide.FileCode
+    else -> Lucide.BookOpen
+}
+
 data class HomeActions(
     val onSection: (SectionRow) -> Unit = {},
     val onSubscribe: () -> Unit = {},
@@ -94,7 +112,6 @@ fun HomeScreen(sections: List<HomeSection>, actions: HomeActions) {
 
         val pool = basics?.rows.orEmpty() + if (paid) advanced?.rows.orEmpty() else emptyList()
         if (needle.isEmpty()) {
-            Basics(basics, actions)
             if (advanced != null && !paid) Advanced(advanced, actions)
             if (advanced != null && paid) AdvancedOpen(advanced, actions)
         } else {
@@ -143,11 +160,13 @@ private fun Advanced(section: HomeSection, actions: HomeActions) {
     Spacer(Modifier.height(Matrux.space.block))
     SectionHead(
         stringResource(section.title),
-        R.string.section_pro,
+        null,
         stringResource(R.string.pro_buy),
         Matrux.colors.accent,
         Matrux.colors.accentTint,
         actions.onSubscribe,
+        lock = true,
+        hint = stringResource(R.string.home_pro_hint),
     )
     Spacer(Modifier.height(Matrux.space.unit + Matrux.space.unit / 2))
     section.rows.forEachIndexed { index, row ->
@@ -175,36 +194,58 @@ private fun SectionHead(
     tint: androidx.compose.ui.graphics.Color,
     badgeBackground: androidx.compose.ui.graphics.Color,
     onAction: (() -> Unit)?,
+    lock: Boolean = false,
+    hint: String? = null,
 ) {
     val colors = Matrux.colors
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                title,
-                style = Matrux.type.title.copy(fontSize = 17.sp, lineHeight = 22.sp),
-                color = colors.ink,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false),
-            )
-            if (badge != null) {
+    Column(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    title,
+                    style = Matrux.type.title.copy(fontSize = 17.sp, lineHeight = 22.sp),
+                    color = colors.ink,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (lock) {
+                    Spacer(Modifier.width(Matrux.space.unit))
+                    Image(
+                        painterResource(R.drawable.sec_lock_pro),
+                        contentDescription = null,
+                        modifier = Modifier.size(Matrux.space.iconSmall),
+                    )
+                }
+                if (badge != null) {
+                    Spacer(Modifier.width(Matrux.space.unit))
+                    Badge(stringResource(badge), tint)
+                }
+            }
+            if (action != null && onAction != null) {
                 Spacer(Modifier.width(Matrux.space.unit))
-                Badge(stringResource(badge), tint)
+                Text(
+                    action,
+                    style = Matrux.type.caption,
+                    color = colors.surface,
+                    maxLines = 1,
+                    softWrap = false,
+                    modifier = Modifier
+                        .clip(Matrux.shapes.control)
+                        .background(colors.accent)
+                        .clickable(role = Role.Button, onClick = onAction)
+                        .padding(horizontal = Matrux.space.unit, vertical = Matrux.space.unit + 2.dp),
+                )
             }
         }
-        if (action != null && onAction != null) {
-            Spacer(Modifier.width(Matrux.space.unit))
+        if (hint != null) {
+            Spacer(Modifier.height(Matrux.space.unit / 2))
             Text(
-                action,
-                style = Matrux.type.caption,
-                color = colors.surface,
+                hint,
+                style = Matrux.type.body,
+                color = colors.inkSoft,
                 maxLines = 1,
-                softWrap = false,
-                modifier = Modifier
-                    .clip(Matrux.shapes.control)
-                    .background(colors.accent)
-                    .clickable(role = Role.Button, onClick = onAction)
-                    .padding(horizontal = Matrux.space.unit, vertical = Matrux.space.unit + 2.dp),
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -236,7 +277,7 @@ private fun SectionCard(row: SectionRow, found: Int?, onOpen: () -> Unit) {
             .clip(Matrux.shapes.control)
             .background(colors.surface)
             .clickable(role = Role.Button, onClick = onOpen)
-            .padding(horizontal = Matrux.space.unit * 2, vertical = Matrux.space.unit + Matrux.space.unit / 2),
+            .padding(horizontal = Matrux.space.unit * 2, vertical = Matrux.space.unit),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             SectionMark(section.id, row.locked)
@@ -244,7 +285,7 @@ private fun SectionCard(row: SectionRow, found: Int?, onOpen: () -> Unit) {
             Column(Modifier.weight(1f)) {
                 Text(
                     section.title,
-                    style = Matrux.type.title.copy(fontSize = 17.sp, lineHeight = 22.sp),
+                    style = Matrux.type.title.copy(fontSize = 16.sp, lineHeight = 20.sp),
                     color = colors.ink,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -269,18 +310,27 @@ private fun SectionCard(row: SectionRow, found: Int?, onOpen: () -> Unit) {
 @Composable
 private fun SectionMark(id: String, locked: Boolean) {
     val colors = Matrux.colors
-    Box(
-        Modifier
-            .size(Matrux.space.logoTile + 4.dp)
-            .clip(CircleShape)
-            .background(if (locked) colors.muted else colors.accentTint),
-        contentAlignment = Alignment.Center,
-    ) {
-        Image(
-            painterResource(if (locked) R.drawable.sec_lock else sectionImage(id)),
-            contentDescription = null,
-            modifier = Modifier.size(if (locked) Matrux.space.iconLarge else Matrux.space.iconLarge + 2.dp),
+    if (locked) {
+        LucideIcon(
+            sectionLockIcon(id),
+            colors.muted,
+            size = Matrux.space.iconLarge,
+            modifier = Modifier.size(Matrux.space.logoTile),
         )
+    } else {
+        Box(
+            Modifier
+                .size(Matrux.space.logoTile)
+                .clip(Matrux.shapes.control)
+                .background(colors.accentTint),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painterResource(sectionImage(id)),
+                contentDescription = null,
+                modifier = Modifier.size(Matrux.space.iconLarge + 2.dp),
+            )
+        }
     }
 }
 

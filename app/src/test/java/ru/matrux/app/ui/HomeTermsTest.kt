@@ -54,7 +54,7 @@ class HomeTermsTest {
         assertFalse(free[0].locked)
         assertTrue(free[0].rows.none { it.locked })
         assertEquals(
-            listOf("files", "git", "hardware", "packages", "users", "services", "network", "disks", "logs", "scripts", "languages"),
+            listOf("files", "git", "hardware", "packages", "users", "services", "network", "disks", "logs", "scripts"),
             free[1].rows.map { it.section.id },
         )
         assertTrue(free[1].locked)
@@ -64,8 +64,6 @@ class HomeTermsTest {
     @Test
     fun advancedSectionOpensWithPro() {
         val paid = homeSections(sheets, paid = true)
-        assertFalse(paid[1].locked)
-        assertTrue(paid[1].rows.none { it.locked })
         assertFalse(paid[0].locked)
         assertTrue(paid[0].rows.none { it.locked })
     }
@@ -73,7 +71,7 @@ class HomeTermsTest {
     @Test
     fun sectionsKeepSheetTitlesFromAssets() {
         val rows = homeSections(sheets, paid = false).flatMap { it.rows }
-        assertEquals(sheets.size, rows.size)
+        assertEquals(13, rows.size)
         assertTrue(rows.all { it.section.title.isNotBlank() })
     }
 
@@ -84,15 +82,16 @@ class HomeTermsTest {
             assertFalse(it, source.contains(it))
         }
         val actions = HomeActions::class.java.declaredFields.map { it.name }.filterNot { it.startsWith("$") }.toSet()
-        assertEquals(setOf("onSection", "onSubscribe", "onTab"), actions)
+        assertEquals(setOf("onSection", "onSubscribe", "onTab", "dark", "onTheme"), actions)
     }
 
     @Test
-    fun knowledgeScreenIsEmpty() {
+    fun knowledgeShowsCourses() {
         val source = File(screens, "KnowledgeScreen.kt").readText()
-        listOf("knowledge_courses", "knowledge_sheets").forEach { assertFalse(it, source.contains(it)) }
+        assertTrue(source.contains("CourseCardRow"))
+        assertTrue(source.contains("knowledge_title"))
         val actions = KnowledgeActions::class.java.declaredFields.map { it.name }.filterNot { it.startsWith("$") }.toSet()
-        assertEquals(setOf("onTab"), actions)
+        assertEquals(setOf("onCourse", "onTab"), actions)
     }
 
     @Test

@@ -1,0 +1,1765 @@
+{
+  "id": "sqlite",
+  "title": "SQL и SQLite: базы данных с нуля",
+  "description": "Практический курс по SQL на базе SQLite, которая работает прямо в телефоне без сервера. Таблицы, запросы, связи и JOIN, транзакции, индексы, оконные функции, JSON и работа с базой из Python. Весь курс строится вокруг одной базы сервисного центра.",
+  "level": "beginner",
+  "language": "ru",
+  "tier": "pro",
+  "version": 1,
+  "distros": [
+    {
+      "id": "alpine-xfce",
+      "title": "Alpine + XFCE",
+      "pkg": "apk",
+      "shell": "ash",
+      "free": true
+    },
+    {
+      "id": "debian13-xfce",
+      "title": "Debian 13 + XFCE",
+      "pkg": "apt",
+      "shell": "bash",
+      "free": false
+    },
+    {
+      "id": "ubuntu-xfce",
+      "title": "Ubuntu + XFCE",
+      "pkg": "apt",
+      "shell": "bash",
+      "free": false
+    },
+    {
+      "id": "arch-xfce",
+      "title": "Arch Linux + XFCE",
+      "pkg": "pacman",
+      "shell": "bash",
+      "free": false
+    },
+    {
+      "id": "matrux-dev",
+      "title": "Matrux Dev",
+      "pkg": "apk",
+      "shell": "ash",
+      "free": false
+    }
+  ],
+  "default_try_in": [
+    "matrux-dev",
+    "alpine-xfce",
+    "debian13-xfce",
+    "ubuntu-xfce",
+    "arch-xfce"
+  ],
+  "lessons_total": 25,
+  "duration_min_total": 357,
+  "modules": [
+    {
+      "id": "sqlite-m1",
+      "order": 1,
+      "title": "Старт",
+      "description": "Первая база данных, таблицы и четыре главные команды SQL.",
+      "lessons": [
+        {
+          "id": "sqlite-m1-l1",
+          "order": 1,
+          "title": "Что такое база данных и SQLite",
+          "duration_min": 12,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "**База данных** — организованное хранилище информации. Вместо разрозненных файлов данные лежат в **таблицах**: строки — записи, столбцы — их свойства. Почти любое приложение — магазин, мессенджер, игра — хранит данные в базе.\n\n**SQL** — язык запросов к базам данных. Он описывает, *что* нужно получить, а не как это сделать: «покажи все детали дешевле 500 рублей, отсортируй по цене». Язык общий для всех популярных баз, отличаются только детали.\n\n**SQLite** — самая распространённая база данных в мире. Она встроена в каждый телефон на Android и iOS, в браузеры и тысячи приложений. Её особенности:\n\n- **нет сервера**: вся база — один обычный файл;\n- ничего не нужно настраивать;\n- весит меньше мегабайта;\n- поддерживает почти весь стандартный SQL.\n\nДля учёбы на телефоне это идеальный вариант. А знание SQL потом переносится на PostgreSQL и MySQL.\n\n**Установка:**\n\n| Система | Команда |\n|---|---|\n| Alpine, Matrux Dev | `apk add sqlite` |\n| Debian, Ubuntu | `apt install sqlite3` |\n| Arch | `pacman -S sqlite` |\n\n**Запуск:** `sqlite3 имя_файла.db`. Если файла нет, он будет создан.\n\nВнутри оболочки два вида команд:\n\n- **SQL-запросы** — заканчиваются точкой с запятой;\n- **служебные команды** — начинаются с точки и работают только в `sqlite3`.\n\n| Команда | Что делает |\n|---|---|\n| `.help` | список служебных команд |\n| `.tables` | список таблиц |\n| `.schema имя` | как устроена таблица |\n| `.headers on` | показывать названия столбцов |\n| `.mode box` | выводить результат рамкой |\n| `.quit` | выход (или Ctrl+D) |\n\nВесь курс мы ведём базу сервисного центра по ремонту телефонов: склад запчастей, клиенты, мастера и заказы.",
+          "examples": [
+            {
+              "title": "Установка и первый запуск",
+              "lang": "sh",
+              "code": "apk add sqlite\nmkdir -p ~/sql-lab && cd ~/sql-lab\nsqlite3 --version\nsqlite3 service.db",
+              "explain": "В Debian и Ubuntu пакет называется `sqlite3`. Последняя команда откроет оболочку с приглашением `sqlite>`."
+            },
+            {
+              "title": "Первые команды внутри sqlite3",
+              "lang": "text",
+              "code": ".headers on\n.mode box\nSELECT 'Привет, SQL!' AS message, 2 + 3 AS sum, date('now') AS today;\n.tables\n.quit",
+              "explain": "`SELECT` умеет вычислять выражения и без таблиц. `AS` задаёт название столбца в результате."
+            },
+            {
+              "title": "Сохраняем настройки вывода навсегда",
+              "lang": "sh",
+              "code": "printf '.headers on\\n.mode box\\n' > ~/.sqliterc\ncat ~/.sqliterc",
+              "explain": "Команды из `~/.sqliterc` выполняются при каждом запуске `sqlite3`."
+            }
+          ],
+          "practice": {
+            "task": "Запусти SQLite.",
+            "steps": [
+              "Установи SQLite командой для своей системы.",
+              "Создай каталог `~/sql-lab` и открой в нём базу `service.db`.",
+              "Включи заголовки и режим `box`.",
+              "Выполни запрос, который выводит твоё имя, текущую дату и результат `17 * 23`.",
+              "Забудь поставить точку с запятой и нажми Enter — появится приглашение `...>`. Допиши `;`.",
+              "Создай файл `~/.sqliterc` и выйди из оболочки."
+            ],
+            "hint": "Приглашение `...>` означает, что SQLite ждёт окончания запроса. Это не ошибка."
+          },
+          "quiz": [
+            {
+              "question": "Что представляет собой база данных SQLite?",
+              "options": [
+                "Программу-сервер",
+                "Один обычный файл",
+                "Каталог с файлами",
+                "Облачный сервис"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Чем заканчивается SQL-запрос?",
+              "options": [
+                "Точкой",
+                "Точкой с запятой",
+                "Двоеточием",
+                "Ничем"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m1-l2",
+          "order": 2,
+          "title": "Создание таблиц и добавление данных",
+          "duration_min": 15,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "Таблицу создаёт команда **CREATE TABLE**: в скобках перечисляют столбцы и их типы.\n\n```sql\nCREATE TABLE имя (\n    столбец ТИП ограничения,\n    ...\n);\n```\n\n**Типы данных SQLite:**\n\n| Тип | Что хранит |\n|---|---|\n| `INTEGER` | целые числа |\n| `REAL` | дробные числа |\n| `TEXT` | строки |\n| `BLOB` | двоичные данные |\n| `NULL` | отсутствие значения |\n\nОтдельных типов для дат и логических значений нет: даты хранят текстом в формате `ГГГГ-ММ-ДД`, а «да/нет» — числами 1 и 0.\n\n**Первичный ключ** (`PRIMARY KEY`) — столбец, значение которого уникально для каждой строки. Столбец `id INTEGER PRIMARY KEY` SQLite заполняет сам: 1, 2, 3 и так далее.\n\nДанные добавляет **INSERT**:\n\n```sql\nINSERT INTO таблица (столбец1, столбец2) VALUES (значение1, значение2);\n```\n\n- строки пишут в **одинарных** кавычках;\n- одной командой можно вставить несколько строк через запятую;\n- пропущенные столбцы получают `NULL` или значение по умолчанию.\n\nКлючевые слова SQL принято писать заглавными буквами — так запрос легче читать. Регистр для SQLite не важен.\n\n`DROP TABLE имя;` удаляет таблицу вместе с данными. `DROP TABLE IF EXISTS имя;` не выдаст ошибку, если таблицы нет.",
+          "examples": [
+            {
+              "title": "Таблица запчастей",
+              "lang": "sql",
+              "code": "CREATE TABLE parts (\n    id INTEGER PRIMARY KEY,\n    name TEXT NOT NULL,\n    category TEXT NOT NULL,\n    price INTEGER NOT NULL,\n    qty INTEGER NOT NULL DEFAULT 0\n);",
+              "explain": "`NOT NULL` запрещает пустое значение, `DEFAULT 0` задаёт количество по умолчанию."
+            },
+            {
+              "title": "Заполняем склад",
+              "lang": "sql",
+              "code": "INSERT INTO parts (name, category, price, qty)\nVALUES ('Экран 6.1 OLED', 'экраны', 7400, 3);\n\nINSERT INTO parts (name, category, price, qty) VALUES\n    ('Экран 6.5 IPS', 'экраны', 3200, 5),\n    ('Аккумулятор 4500 мА·ч', 'аккумуляторы', 1450, 12),\n    ('Аккумулятор 5000 мА·ч', 'аккумуляторы', 1700, 0),\n    ('Разъём USB-C', 'разъёмы', 380, 25),\n    ('Динамик разговорный', 'звук', 420, 8),\n    ('Микрофон', 'звук', 260, 14),\n    ('Камера основная 50 Мп', 'камеры', 3900, 2),\n    ('Стекло камеры', 'камеры', 310, 0),\n    ('Шлейф кнопок', 'шлейфы', 540, 6);\n\nSELECT * FROM parts;",
+              "explain": "В таблице десять деталей. Столбец `id` заполнился автоматически."
+            }
+          ],
+          "practice": {
+            "task": "Создай склад.",
+            "steps": [
+              "Открой базу: `cd ~/sql-lab && sqlite3 service.db`.",
+              "Создай таблицу `parts` и заполни её по примерам.",
+              "Посмотри список таблиц (`.tables`) и структуру (`.schema parts`).",
+              "Добавь свою деталь, не указывая количество, и убедись, что подставился 0.",
+              "Попробуй добавить деталь без названия — прочитай сообщение об ошибке.",
+              "Удали добавленную деталь командой `DELETE FROM parts WHERE id = 11;` — она понадобится для ровного счёта в следующих уроках."
+            ],
+            "hint": "Ошибка `NOT NULL constraint failed` означает, что обязательный столбец остался пустым."
+          },
+          "quiz": [
+            {
+              "question": "Что делает `INTEGER PRIMARY KEY` у столбца id?",
+              "options": [
+                "Запрещает числа",
+                "Делает значение уникальным и заполняет его автоматически",
+                "Шифрует столбец",
+                "Сортирует таблицу"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "В каких кавычках пишут строки в SQL?",
+              "options": [
+                "В двойных",
+                "В одинарных",
+                "В обратных",
+                "Без кавычек"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m1-l3",
+          "order": 3,
+          "title": "Выборка данных: SELECT",
+          "duration_min": 15,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "**SELECT** — главная команда SQL. Она читает данные и ничего не меняет, поэтому с ней можно экспериментировать без опаски.\n\n```sql\nSELECT столбцы\nFROM таблица\nWHERE условие\nORDER BY столбец\nLIMIT количество;\n```\n\nЧасти идут строго в этом порядке. Обязательны только `SELECT` и `FROM`.\n\n| Часть | Что делает |\n|---|---|\n| `SELECT *` | все столбцы |\n| `SELECT name, price` | только перечисленные |\n| `SELECT price * qty AS total` | вычисляемый столбец с именем |\n| `SELECT DISTINCT category` | только уникальные значения |\n| `WHERE price > 1000` | отбор строк по условию |\n| `ORDER BY price` | сортировка по возрастанию |\n| `ORDER BY price DESC` | по убыванию |\n| `ORDER BY category, price DESC` | по нескольким столбцам |\n| `LIMIT 3` | не больше трёх строк |\n| `LIMIT 3 OFFSET 3` | пропустить три, взять следующие три |\n\nОператоры сравнения: `=`, `!=` (или `<>`), `<`, `>`, `<=`, `>=`.\n\n`SELECT *` удобен для знакомства с таблицей, но в настоящих программах столбцы перечисляют явно: запрос не сломается, если в таблицу добавят новый столбец, и не тянет лишние данные.\n\nБез `ORDER BY` порядок строк не гарантирован. Если порядок важен — всегда указывай сортировку.",
+          "examples": [
+            {
+              "title": "Столбцы и условия",
+              "lang": "sql",
+              "code": "SELECT name, price FROM parts;\n\nSELECT name, price FROM parts WHERE price > 1000;\n\nSELECT name, qty FROM parts WHERE category = 'звук';\n\nSELECT DISTINCT category FROM parts;",
+              "explain": "Дороже 1000 стоят пять деталей. В списке категорий шесть значений."
+            },
+            {
+              "title": "Сортировка, лимит, вычисления",
+              "lang": "sql",
+              "code": "SELECT name, price FROM parts ORDER BY price DESC LIMIT 3;\n\nSELECT name, price, qty, price * qty AS total\nFROM parts\nWHERE qty > 0\nORDER BY total DESC;\n\nSELECT name, category, price\nFROM parts\nORDER BY category, price DESC;",
+              "explain": "Первый запрос — три самые дорогие детали. Второй считает стоимость остатка по каждой позиции."
+            }
+          ],
+          "practice": {
+            "task": "Напиши свои запросы.",
+            "steps": [
+              "Выведи названия и количество всех деталей, отсортированные по названию.",
+              "Выведи детали, которых на складе нет (`qty = 0`).",
+              "Выведи три самые дешёвые детали.",
+              "Выведи детали дешевле 500 рублей, которые есть в наличии.",
+              "Выведи название и цену со скидкой 10% под именем `sale_price`.",
+              "Выведи четвёртую, пятую и шестую детали по убыванию цены (`LIMIT` и `OFFSET`)."
+            ],
+            "hint": "Два условия соединяются через `AND`: `WHERE price < 500 AND qty > 0`. Подробнее — в следующем модуле."
+          },
+          "quiz": [
+            {
+              "question": "Какая часть запроса отбирает строки по условию?",
+              "options": [
+                "SELECT",
+                "WHERE",
+                "ORDER BY",
+                "LIMIT"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Что делает `ORDER BY price DESC`?",
+              "options": [
+                "Сортирует по возрастанию цены",
+                "Сортирует по убыванию цены",
+                "Удаляет дорогие детали",
+                "Считает сумму"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m1-l4",
+          "order": 4,
+          "title": "Изменение и удаление: UPDATE и DELETE",
+          "duration_min": 12,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "**UPDATE** меняет существующие строки:\n\n```sql\nUPDATE таблица SET столбец = значение WHERE условие;\n```\n\n**DELETE** удаляет строки:\n\n```sql\nDELETE FROM таблица WHERE условие;\n```\n\n**Главная опасность обеих команд — забытый WHERE.** Без условия `UPDATE` изменит *все* строки, а `DELETE` очистит всю таблицу. Отмены нет.\n\nПравила безопасности:\n\n1. Сначала напиши `SELECT` с тем же условием и посмотри, какие строки попадут под действие.\n2. Потом замени `SELECT ...` на `UPDATE` или `DELETE`.\n3. Для важных изменений используй транзакции — о них в четвёртом модуле.\n\nВ `SET` можно:\n\n- менять несколько столбцов через запятую;\n- использовать текущее значение: `SET qty = qty - 1`;\n- вычислять: `SET price = round(price * 1.1)`.\n\nПосле изменения оболочка ничего не выводит. Узнать число затронутых строк можно так: `SELECT changes();`.\n\nЧетыре команды — `INSERT`, `SELECT`, `UPDATE`, `DELETE` — покрывают все действия с данными. Их называют **CRUD**: create, read, update, delete.",
+          "examples": [
+            {
+              "title": "Изменяем безопасно: сначала SELECT",
+              "lang": "sql",
+              "code": "INSERT INTO parts (name, category, price, qty)\nVALUES ('Тестовая деталь', 'прочее', 100, 1);\n\nSELECT id, name, price, qty FROM parts WHERE name = 'Тестовая деталь';\n\nUPDATE parts SET price = 150, qty = qty + 4 WHERE name = 'Тестовая деталь';\n\nSELECT changes();\nSELECT id, name, price, qty FROM parts WHERE name = 'Тестовая деталь';",
+              "explain": "Цена стала 150, количество — 5. `changes()` вернёт 1: изменена одна строка."
+            },
+            {
+              "title": "Удаляем",
+              "lang": "sql",
+              "code": "SELECT * FROM parts WHERE category = 'прочее';\n\nDELETE FROM parts WHERE category = 'прочее';\n\nSELECT count(*) FROM parts;",
+              "explain": "В таблице снова десять деталей."
+            }
+          ],
+          "practice": {
+            "task": "Потренируйся на тестовых данных.",
+            "steps": [
+              "Добавь две детали с категорией `тест`.",
+              "Напиши `SELECT`, который показывает только их.",
+              "Увеличь их цену на 20% одним запросом, округлив через `round()`.",
+              "Установи количество 0 у одной из них по `id`.",
+              "Удали обе детали одним запросом.",
+              "Убедись, что в таблице снова десять строк: `SELECT count(*) FROM parts;`."
+            ],
+            "hint": "Если строк не десять, проверь лишние: `SELECT * FROM parts WHERE id > 10;`."
+          },
+          "quiz": [
+            {
+              "question": "Что произойдёт при `DELETE FROM parts;` без WHERE?",
+              "options": [
+                "Ошибка",
+                "Удалятся все строки таблицы",
+                "Удалится первая строка",
+                "Удалится таблица"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Что стоит сделать перед UPDATE?",
+              "options": [
+                "Перезапустить SQLite",
+                "Выполнить SELECT с тем же условием",
+                "Удалить таблицу",
+                "Ничего"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sqlite-m2",
+      "order": 2,
+      "title": "Запросы",
+      "description": "Условия, функции, агрегаты и группировка.",
+      "lessons": [
+        {
+          "id": "sqlite-m2-l1",
+          "order": 1,
+          "title": "Условия отбора",
+          "duration_min": 14,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "Для этого модуля понадобится вторая таблица — журнал ремонтов. Создай её по первому примеру.\n\nУсловия в `WHERE` комбинируют логическими операторами:\n\n| Оператор | Смысл |\n|---|---|\n| `AND` | оба условия истинны |\n| `OR` | хотя бы одно истинно |\n| `NOT` | отрицание |\n\n`AND` выполняется раньше `OR`. Чтобы не ошибиться, ставь скобки: `WHERE (a OR b) AND c`.\n\nСпециальные операторы:\n\n| Запись | Смысл |\n|---|---|\n| `price BETWEEN 1000 AND 5000` | в диапазоне, границы включены |\n| `status IN ('готов', 'выдан')` | одно из перечисленных |\n| `status NOT IN (...)` | ни одно из перечисленных |\n| `device LIKE 'Galaxy%'` | по шаблону |\n| `price IS NULL` | значение отсутствует |\n| `price IS NOT NULL` | значение есть |\n\nШаблоны `LIKE`: `%` — любое количество любых символов, `_` — ровно один символ.\n\n> В SQLite `LIKE` не различает регистр только для латинских букв. Для кириллицы `'экран%'` и `'Экран%'` — разные шаблоны.\n\n**NULL — не значение, а его отсутствие.** С ним не работают обычные сравнения: `price = NULL` никогда не истинно. Проверять нужно только через `IS NULL` и `IS NOT NULL`. Сравнение `price > 1000` тоже пропустит строки с `NULL`.",
+          "examples": [
+            {
+              "title": "Журнал ремонтов",
+              "lang": "sql",
+              "code": "CREATE TABLE repairs (\n    id INTEGER PRIMARY KEY,\n    client TEXT NOT NULL,\n    device TEXT NOT NULL,\n    problem TEXT,\n    price INTEGER,\n    status TEXT NOT NULL DEFAULT 'принят',\n    created TEXT NOT NULL\n);\n\nINSERT INTO repairs (client, device, problem, price, status, created) VALUES\n    ('Анна', 'Pixel 7', 'разбит экран', 8900, 'выдан', '2026-03-02'),\n    ('Борис', 'Galaxy A54', 'не заряжается', 1200, 'выдан', '2026-03-02'),\n    ('Дина', 'iPhone 13', 'быстро садится', 3100, 'выдан', '2026-03-05'),\n    ('Эмиль', 'Redmi Note 12', 'не работает микрофон', 900, 'выдан', '2026-03-09'),\n    ('Анна', 'Pixel 7', 'хрипит динамик', 1100, 'выдан', '2026-03-15'),\n    ('Зоя', 'Galaxy S23', 'разбита камера', 5200, 'в работе', '2026-03-18'),\n    ('Борис', 'Galaxy A54', 'разбит экран', 4600, 'готов', '2026-03-20'),\n    ('Игорь', 'Poco X5', 'не включается', NULL, 'диагностика', '2026-03-21'),\n    ('Дина', 'iPad 9', 'разбит экран', 9800, 'в работе', '2026-03-22'),\n    ('Клим', 'Redmi Note 12', 'не заряжается', 1200, 'принят', '2026-03-23'),\n    ('Анна', 'Galaxy Tab S8', 'не заряжается', 1500, 'принят', '2026-03-24'),\n    ('Марк', 'Pixel 8', 'попала вода', NULL, 'диагностика', '2026-03-24');",
+              "explain": "Двенадцать заказов. У двух цена ещё неизвестна — там `NULL`."
+            },
+            {
+              "title": "Комбинируем условия",
+              "lang": "sql",
+              "code": "SELECT client, device, price FROM repairs\nWHERE status = 'выдан' AND price > 1000;\n\nSELECT client, device, status FROM repairs\nWHERE status IN ('в работе', 'готов');\n\nSELECT client, device, price FROM repairs\nWHERE price BETWEEN 1000 AND 2000;\n\nSELECT client, device FROM repairs\nWHERE device LIKE 'Galaxy%';",
+              "explain": ""
+            },
+            {
+              "title": "Работа с NULL",
+              "lang": "sql",
+              "code": "SELECT client, device FROM repairs WHERE price IS NULL;\n\nSELECT count(*) FROM repairs WHERE price > 0;\n\nSELECT count(*) FROM repairs WHERE price = NULL;",
+              "explain": "Без цены два заказа. Условие `price > 0` находит десять строк из двенадцати. Последний запрос всегда возвращает 0."
+            }
+          ],
+          "practice": {
+            "task": "Отбери нужные заказы.",
+            "steps": [
+              "Создай таблицу `repairs` по первому примеру.",
+              "Найди все заказы Анны.",
+              "Найди заказы с проблемой «разбит экран» дороже 5000.",
+              "Найди заказы за период с 15 по 22 марта включительно.",
+              "Найди заказы на устройства Pixel или Redmi (два `LIKE` через `OR`).",
+              "Найди заказы, которые ещё не выданы и у которых известна цена.",
+              "Найди заказы, где в описании проблемы есть слово «заряжается»."
+            ],
+            "hint": "Даты в формате `ГГГГ-ММ-ДД` сравниваются как строки: `created BETWEEN '2026-03-15' AND '2026-03-22'`. Слово в середине: `LIKE '%заряжается%'`."
+          },
+          "quiz": [
+            {
+              "question": "Как проверить, что в столбце нет значения?",
+              "options": [
+                "price = NULL",
+                "price IS NULL",
+                "price == 0",
+                "price = ''"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Что означает `%` в шаблоне LIKE?",
+              "options": [
+                "Один символ",
+                "Любое количество любых символов",
+                "Процент",
+                "Цифру"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m2-l2",
+          "order": 2,
+          "title": "Функции и выражения",
+          "duration_min": 14,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "В запросах можно вызывать встроенные функции.\n\n**Строки:**\n\n| Функция | Что делает |\n|---|---|\n| `length(s)` | длина |\n| `upper(s)`, `lower(s)` | регистр (только для латиницы) |\n| `substr(s, начало, длина)` | часть строки, счёт с 1 |\n| `replace(s, a, b)` | замена |\n| `trim(s)` | убрать пробелы по краям |\n| `s1 \\|\\| s2` | склейка строк |\n| `instr(s, x)` | позиция подстроки |\n\n**Числа:** `round(x, n)`, `abs(x)`, `min(a, b)`, `max(a, b)`.\n\nДеление двух целых даёт целое: `7 / 2 = 3`. Чтобы получить дробь, один из операндов должен быть дробным: `7 / 2.0`.\n\n**Работа с NULL:**\n\n- `coalesce(a, b, ...)` — первое значение, не равное NULL. Удобно для подстановки по умолчанию;\n- `ifnull(a, b)` — то же для двух аргументов.\n\n**Условное выражение CASE** — «if» внутри запроса:\n\n```sql\nCASE\n    WHEN условие THEN значение\n    WHEN условие THEN значение\n    ELSE значение\nEND\n```\n\n**Даты.** Хранятся текстом `ГГГГ-ММ-ДД`, а работают с ними функции:\n\n| Вызов | Результат |\n|---|---|\n| `date('now')` | сегодняшняя дата |\n| `datetime('now', 'localtime')` | дата и время по местному времени |\n| `date(d, '+7 days')` | сдвиг даты |\n| `strftime('%m', d)` | часть даты: `%Y` год, `%m` месяц, `%d` день, `%w` день недели |\n| `julianday(a) - julianday(b)` | разница в днях |",
+          "examples": [
+            {
+              "title": "Строковые функции",
+              "lang": "sql",
+              "code": "SELECT client, length(device) AS len, upper(device) AS upper_name\nFROM repairs LIMIT 3;\n\nSELECT client || ' — ' || device AS title FROM repairs LIMIT 3;\n\nSELECT name, substr(name, 1, 5) AS short FROM parts LIMIT 3;",
+              "explain": ""
+            },
+            {
+              "title": "NULL и CASE",
+              "lang": "sql",
+              "code": "SELECT client, device, coalesce(price, 0) AS price\nFROM repairs WHERE status = 'диагностика';\n\nSELECT client, price,\n    CASE\n        WHEN price IS NULL THEN 'не оценён'\n        WHEN price >= 5000 THEN 'дорогой'\n        WHEN price >= 1500 THEN 'средний'\n        ELSE 'простой'\n    END AS level\nFROM repairs;",
+              "explain": "Условия в `CASE` проверяются сверху вниз, срабатывает первое подходящее."
+            },
+            {
+              "title": "Даты",
+              "lang": "sql",
+              "code": "SELECT date('now') AS today, date('now', '+14 days') AS in_two_weeks;\n\nSELECT client, created, strftime('%d.%m.%Y', created) AS ru_date\nFROM repairs LIMIT 3;\n\nSELECT client, created,\n    date(created, '+30 days') AS warranty_until,\n    CAST(julianday('2026-03-31') - julianday(created) AS INTEGER) AS days_ago\nFROM repairs WHERE status = 'выдан';",
+              "explain": "`CAST(... AS INTEGER)` превращает дробное число дней в целое."
+            }
+          ],
+          "practice": {
+            "task": "Собери отчёт с вычисляемыми столбцами.",
+            "steps": [
+              "Выведи для каждой детали строку вида `Микрофон (звук)` через склейку.",
+              "Выведи название детали и цену с НДС 20%, округлённую до целого.",
+              "Выведи заказы, подставив вместо пустой цены текст `уточняется` (подсказка: `coalesce(price, 'уточняется')`).",
+              "Добавь к списку деталей столбец `stock`: `нет`, если количество 0, `мало`, если меньше 5, иначе `достаточно`.",
+              "Выведи заказы с днём недели: `strftime('%w', created)` (0 — воскресенье).",
+              "Посчитай, сколько дней прошло с каждого заказа до сегодняшней даты."
+            ],
+            "hint": "Количество дней до сегодня: `CAST(julianday('now') - julianday(created) AS INTEGER)`."
+          },
+          "quiz": [
+            {
+              "question": "Что вернёт `coalesce(NULL, NULL, 5, 7)`?",
+              "options": [
+                "NULL",
+                "5",
+                "7",
+                "12"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Чему равно `7 / 2` в SQLite?",
+              "options": [
+                "3.5",
+                "3",
+                "4",
+                "Ошибка"
+              ],
+              "answer": 1,
+              "explain": "Деление целых даёт целое. Для дроби нужно `7 / 2.0`."
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m2-l3",
+          "order": 3,
+          "title": "Агрегатные функции",
+          "duration_min": 12,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "**Агрегатные функции** сворачивают много строк в одно значение.\n\n| Функция | Что считает |\n|---|---|\n| `count(*)` | количество строк |\n| `count(столбец)` | количество строк, где столбец не NULL |\n| `count(DISTINCT столбец)` | количество разных значений |\n| `sum(столбец)` | сумму |\n| `avg(столбец)` | среднее |\n| `min(столбец)`, `max(столбец)` | минимум и максимум |\n| `group_concat(столбец, ', ')` | склейку значений в строку |\n\nОсобенности:\n\n- **агрегаты пропускают NULL**. Поэтому `count(*)` и `count(price)` могут давать разные числа, а `avg(price)` считает среднее только по известным ценам;\n- `sum` по пустому набору возвращает `NULL`, а не 0. Чтобы получить ноль, используй `total(столбец)` или `coalesce(sum(...), 0)`;\n- агрегаты нельзя использовать в `WHERE` — для этого есть `HAVING` (следующий урок);\n- `WHERE` применяется *до* агрегации: сначала строки отбираются, потом считаются.\n\nНельзя смешивать в `SELECT` агрегат и обычный столбец без группировки: `SELECT client, count(*) FROM repairs` формально выполнится в SQLite, но значение `client` будет взято из произвольной строки. Другие базы на таком запросе выдадут ошибку.",
+          "examples": [
+            {
+              "title": "Считаем",
+              "lang": "sql",
+              "code": "SELECT count(*) AS orders,\n       count(price) AS priced,\n       count(DISTINCT client) AS clients\nFROM repairs;\n\nSELECT sum(price) AS revenue,\n       round(avg(price)) AS average,\n       min(price) AS cheapest,\n       max(price) AS priciest\nFROM repairs;",
+              "explain": "Заказов 12, с ценой — 10, разных клиентов — 8. Сумма 37500, средний чек 3750."
+            },
+            {
+              "title": "Агрегаты с условием",
+              "lang": "sql",
+              "code": "SELECT count(*) AS done, sum(price) AS paid\nFROM repairs WHERE status = 'выдан';\n\nSELECT sum(price * qty) AS stock_value FROM parts;\n\nSELECT group_concat(DISTINCT device) AS devices\nFROM repairs WHERE client = 'Анна';",
+              "explain": "Выдано 5 заказов на 15200. Вторая строка — стоимость всего склада."
+            }
+          ],
+          "practice": {
+            "task": "Посчитай показатели сервиса.",
+            "steps": [
+              "Сколько всего деталей на складе в штуках?",
+              "Сколько позиций отсутствует на складе?",
+              "Какова средняя цена детали в категории `камеры`?",
+              "Сколько заказов поступило после 20 марта?",
+              "Какова выручка по заказам со статусами `готов` и `выдан`?",
+              "Какой самый ранний и самый поздний заказ по дате?",
+              "Сколько разных моделей устройств приносили в ремонт?"
+            ],
+            "hint": "`min` и `max` работают и с датами в формате `ГГГГ-ММ-ДД`, потому что такие строки сортируются правильно."
+          },
+          "quiz": [
+            {
+              "question": "Чем `count(*)` отличается от `count(price)`?",
+              "options": [
+                "Ничем",
+                "count(price) не считает строки, где price равен NULL",
+                "count(*) считает только числа",
+                "count(price) считает сумму"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m2-l4",
+          "order": 4,
+          "title": "Группировка: GROUP BY и HAVING",
+          "duration_min": 15,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "**GROUP BY** делит строки на группы по значению столбца и считает агрегаты для каждой группы отдельно.\n\n```sql\nSELECT category, count(*)\nFROM parts\nGROUP BY category;\n```\n\nПравило: в `SELECT` могут стоять только столбцы из `GROUP BY` и агрегатные функции.\n\n**HAVING** отбирает *группы* — это `WHERE` для результатов агрегации:\n\n| | WHERE | HAVING |\n|---|---|---|\n| Что фильтрует | отдельные строки | группы |\n| Когда работает | до группировки | после |\n| Агрегаты | нельзя | можно |\n\n**Порядок выполнения запроса** отличается от порядка записи. Запомни его — он объясняет почти все ошибки:\n\n1. `FROM` — взять таблицу;\n2. `WHERE` — отобрать строки;\n3. `GROUP BY` — разбить на группы;\n4. `HAVING` — отобрать группы;\n5. `SELECT` — вычислить столбцы;\n6. `ORDER BY` — отсортировать;\n7. `LIMIT` — обрезать.\n\nПоэтому имя, заданное через `AS` в `SELECT`, можно использовать в `ORDER BY`, но в стандартном SQL нельзя в `WHERE`.\n\nГруппировать можно по нескольким столбцам и по выражениям: `GROUP BY strftime('%m', created)`.",
+          "examples": [
+            {
+              "title": "Группы на складе",
+              "lang": "sql",
+              "code": "SELECT category,\n       count(*) AS items,\n       sum(qty) AS pieces,\n       round(avg(price)) AS avg_price\nFROM parts\nGROUP BY category\nORDER BY items DESC, category;",
+              "explain": "По каждой категории — число позиций, штук и средняя цена."
+            },
+            {
+              "title": "Клиенты и выручка",
+              "lang": "sql",
+              "code": "SELECT client,\n       count(*) AS orders,\n       coalesce(sum(price), 0) AS total\nFROM repairs\nGROUP BY client\nORDER BY total DESC;\n\nSELECT client, count(*) AS orders\nFROM repairs\nGROUP BY client\nHAVING count(*) > 1\nORDER BY orders DESC;",
+              "explain": "Постоянных клиентов трое: Анна с тремя заказами, Борис и Дина — с двумя."
+            },
+            {
+              "title": "WHERE и HAVING вместе",
+              "lang": "sql",
+              "code": "SELECT status, count(*) AS orders, sum(price) AS total\nFROM repairs\nWHERE price IS NOT NULL\nGROUP BY status\nHAVING sum(price) > 5000\nORDER BY total DESC;\n\nSELECT created, count(*) AS orders\nFROM repairs\nGROUP BY created\nHAVING count(*) > 1;",
+              "explain": "Сначала `WHERE` убирает заказы без цены, затем строки группируются по статусу, и `HAVING` оставляет группы с суммой больше 5000."
+            }
+          ],
+          "practice": {
+            "task": "Построй сводные отчёты.",
+            "steps": [
+              "Посчитай число заказов по каждой модели устройства.",
+              "Посчитай число заказов и выручку по каждому статусу.",
+              "Найди самую частую проблему (группировка, сортировка, `LIMIT 1`).",
+              "Выведи категории деталей, в которых суммарный остаток меньше 10 штук.",
+              "Посчитай заказы по неделям: `GROUP BY strftime('%W', created)`.",
+              "Найди клиентов, которые потратили больше 5000.",
+              "Выведи категории, где есть хотя бы одна отсутствующая деталь: `HAVING min(qty) = 0`."
+            ],
+            "hint": "Самая частая проблема: `SELECT problem, count(*) AS n FROM repairs GROUP BY problem ORDER BY n DESC LIMIT 1;`."
+          },
+          "quiz": [
+            {
+              "question": "Чем HAVING отличается от WHERE?",
+              "options": [
+                "Ничем",
+                "HAVING фильтрует группы после агрегации",
+                "HAVING работает быстрее",
+                "WHERE фильтрует группы"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Что выполняется раньше?",
+              "options": [
+                "SELECT",
+                "ORDER BY",
+                "WHERE",
+                "LIMIT"
+              ],
+              "answer": 2,
+              "explain": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sqlite-m3",
+      "order": 3,
+      "title": "Связи между таблицами",
+      "description": "Проектирование, ключи, JOIN, подзапросы и CTE.",
+      "lessons": [
+        {
+          "id": "sqlite-m3-l1",
+          "order": 1,
+          "title": "Проектирование: ключи и связи",
+          "duration_min": 15,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "В таблице `repairs` имя клиента записано текстом в каждой строке. Это создаёт проблемы:\n\n- Анна сменила телефон — править нужно три строки;\n- опечатка «Ана» превращается в другого клиента;\n- негде хранить клиента, у которого ещё нет заказов.\n\nРешение — **нормализация**: каждая сущность хранится в своей таблице, а связи задаются через идентификаторы.\n\n```\nclients (id, name, phone)\nmasters (id, name, grade)\njobs    (id, client_id, master_id, device, ...)\n```\n\n- **Первичный ключ** (`PRIMARY KEY`) однозначно определяет строку своей таблицы.\n- **Внешний ключ** (`FOREIGN KEY`) — столбец, который ссылается на первичный ключ другой таблицы: `client_id` в заказе хранит `id` клиента.\n\nВиды связей:\n\n| Связь | Пример | Как хранится |\n|---|---|---|\n| один ко многим | у клиента много заказов | внешний ключ на стороне «многих» |\n| многие ко многим | в заказе много деталей, деталь в разных заказах | отдельная таблица связей |\n| один к одному | у клиента одна карта лояльности | внешний ключ с ограничением UNIQUE |\n\nВнешний ключ защищает целостность: база не позволит создать заказ для несуществующего клиента или удалить клиента, у которого есть заказы.\n\n> В SQLite проверка внешних ключей по умолчанию **выключена**. Её включают командой `PRAGMA foreign_keys = ON;` при каждом подключении к базе. Добавь эту строку в `~/.sqliterc`.",
+          "examples": [
+            {
+              "title": "Новые таблицы",
+              "lang": "sql",
+              "code": "PRAGMA foreign_keys = ON;\n\nCREATE TABLE clients (\n    id INTEGER PRIMARY KEY,\n    name TEXT NOT NULL,\n    phone TEXT\n);\n\nCREATE TABLE masters (\n    id INTEGER PRIMARY KEY,\n    name TEXT NOT NULL,\n    grade TEXT NOT NULL\n);\n\nCREATE TABLE jobs (\n    id INTEGER PRIMARY KEY,\n    client_id INTEGER NOT NULL REFERENCES clients(id),\n    master_id INTEGER REFERENCES masters(id),\n    device TEXT NOT NULL,\n    problem TEXT,\n    price INTEGER,\n    status TEXT NOT NULL DEFAULT 'принят',\n    created TEXT NOT NULL\n);",
+              "explain": "`REFERENCES clients(id)` объявляет внешний ключ. `master_id` может быть пустым: мастер назначается не сразу."
+            },
+            {
+              "title": "Переносим данные из старой таблицы",
+              "lang": "sql",
+              "code": "INSERT INTO clients (name)\nSELECT DISTINCT client FROM repairs ORDER BY client;\n\nINSERT INTO clients (name, phone) VALUES ('Яна', '+7 900 000-00-11');\n\nINSERT INTO masters (name, grade) VALUES\n    ('Олег', 'старший'),\n    ('Вера', 'мастер'),\n    ('Тимур', 'стажёр');\n\nINSERT INTO jobs (id, client_id, master_id, device, problem, price, status, created)\nSELECT r.id, c.id,\n       CASE WHEN r.status IN ('принят', 'диагностика') THEN NULL ELSE r.id % 2 + 1 END,\n       r.device, r.problem, r.price, r.status, r.created\nFROM repairs r JOIN clients c ON c.name = r.client;\n\nSELECT * FROM clients;\nSELECT id, client_id, master_id, device, status FROM jobs;",
+              "explain": "`INSERT ... SELECT` вставляет результат запроса. Клиентов стало девять: восемь из журнала и Яна, у которой заказов пока нет. Слово `JOIN` разберём в следующем уроке."
+            },
+            {
+              "title": "Внешний ключ в действии: эти запросы завершатся ошибкой",
+              "lang": "sql",
+              "code": "INSERT INTO jobs (client_id, device, created) VALUES (999, 'Nokia 3310', '2026-03-25');\n\nDELETE FROM clients WHERE name = 'Анна';",
+              "explain": "Оба запроса вернут `FOREIGN KEY constraint failed`: клиента 999 нет, а у Анны есть заказы."
+            }
+          ],
+          "practice": {
+            "task": "Переведи базу на связанные таблицы.",
+            "steps": [
+              "Включи проверку внешних ключей и добавь эту команду в `~/.sqliterc`.",
+              "Создай таблицы и перенеси данные по примерам.",
+              "Убедись, что в `jobs` двенадцать строк, а в `clients` — девять.",
+              "Попробуй выполнить запросы из третьего примера и прочитай ошибки.",
+              "Добавь клиенту Анна номер телефона через `UPDATE`.",
+              "Добавь новый заказ для клиента Яна (узнай её `id` через `SELECT`).",
+              "Удали этот заказ, чтобы в `jobs` снова осталось двенадцать строк."
+            ],
+            "hint": "Проверить, включены ли внешние ключи: `PRAGMA foreign_keys;` — должно вернуться 1."
+          },
+          "quiz": [
+            {
+              "question": "Что такое внешний ключ?",
+              "options": [
+                "Пароль от базы",
+                "Столбец, ссылающийся на первичный ключ другой таблицы",
+                "Первый столбец таблицы",
+                "Индекс"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Что нужно сделать в SQLite, чтобы внешние ключи проверялись?",
+              "options": [
+                "Ничего",
+                "Выполнить PRAGMA foreign_keys = ON",
+                "Перезагрузить телефон",
+                "Создать индекс"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m3-l2",
+          "order": 2,
+          "title": "Соединение таблиц: INNER JOIN",
+          "duration_min": 15,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "Данные разложены по таблицам — теперь их нужно собирать обратно. Это делает **JOIN**.\n\n```sql\nSELECT столбцы\nFROM таблица1\nJOIN таблица2 ON условие_связи;\n```\n\n**INNER JOIN** (или просто `JOIN`) возвращает только те строки, для которых нашлась пара в обеих таблицах.\n\nУсловие после `ON` почти всегда одно и то же: внешний ключ одной таблицы равен первичному ключу другой.\n\n**Псевдонимы таблиц** делают запрос короче: `FROM jobs j JOIN clients c`. Дальше вместо полных имён пишут `j.device`, `c.name`.\n\nЕсли столбец с одним именем есть в обеих таблицах (например, `id` или `name`), его обязательно указывают с именем таблицы — иначе будет ошибка `ambiguous column name`.\n\nСоединять можно сколько угодно таблиц — каждая добавляется своим `JOIN ... ON`.\n\nПосле соединения работает всё изученное: `WHERE`, `GROUP BY`, агрегаты, сортировка.\n\nКак читать запрос с JOIN: представь одну широкую таблицу, где к каждой строке заказа приклеены столбцы его клиента. Дальше запрос работает с ней как с обычной таблицей.",
+          "examples": [
+            {
+              "title": "Заказы с именами клиентов",
+              "lang": "sql",
+              "code": "SELECT j.id, c.name AS client, j.device, j.status\nFROM jobs j\nJOIN clients c ON c.id = j.client_id\nORDER BY j.id;",
+              "explain": "Вместо номера клиента в результате его имя."
+            },
+            {
+              "title": "Три таблицы сразу",
+              "lang": "sql",
+              "code": "SELECT j.id, c.name AS client, m.name AS master, j.device, j.price\nFROM jobs j\nJOIN clients c ON c.id = j.client_id\nJOIN masters m ON m.id = j.master_id\nORDER BY j.id;",
+              "explain": "Строк только восемь из двенадцати: заказы без назначенного мастера в INNER JOIN не попадают."
+            },
+            {
+              "title": "JOIN вместе с группировкой",
+              "lang": "sql",
+              "code": "SELECT m.name AS master,\n       count(*) AS jobs,\n       sum(j.price) AS total\nFROM jobs j\nJOIN masters m ON m.id = j.master_id\nGROUP BY m.id\nORDER BY total DESC;\n\nSELECT c.name, count(*) AS orders, coalesce(sum(j.price), 0) AS spent\nFROM clients c\nJOIN jobs j ON j.client_id = c.id\nGROUP BY c.id\nORDER BY spent DESC\nLIMIT 3;",
+              "explain": "Выручка по мастерам и три самых «дорогих» клиента."
+            }
+          ],
+          "practice": {
+            "task": "Собери данные из нескольких таблиц.",
+            "steps": [
+              "Выведи все заказы в работе вместе с именем клиента и мастера.",
+              "Выведи заказы мастера Олега с устройством и ценой.",
+              "Выведи имена клиентов, чьи заказы ещё не выданы, без повторов.",
+              "Посчитай для каждого мастера средний чек.",
+              "Выведи заказы дороже 4000 с именем клиента, отсортированные по цене.",
+              "Выведи для каждого клиента дату последнего заказа."
+            ],
+            "hint": "Дата последнего заказа: `max(j.created)` с группировкой по клиенту."
+          },
+          "quiz": [
+            {
+              "question": "Что возвращает INNER JOIN?",
+              "options": [
+                "Все строки обеих таблиц",
+                "Только строки, у которых есть пара в обеих таблицах",
+                "Только первую таблицу",
+                "Случайные строки"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Что обычно пишут в условии ON?",
+              "options": [
+                "Имя базы",
+                "Равенство внешнего ключа и первичного ключа",
+                "Сортировку",
+                "Лимит"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m3-l3",
+          "order": 3,
+          "title": "LEFT JOIN: когда пары может не быть",
+          "duration_min": 14,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "INNER JOIN теряет строки без пары: заказы без мастера, клиентов без заказов. Чтобы их сохранить, используют **LEFT JOIN**.\n\n**LEFT JOIN** возвращает *все* строки левой таблицы (той, что после `FROM`). Если пары в правой таблице нет, её столбцы заполняются `NULL`.\n\n```\nINNER JOIN:  только пересечение\nLEFT JOIN:   вся левая таблица + совпадения из правой\n```\n\nТри типичные задачи:\n\n**1. Показать всё, даже без пары.** Список заказов, где у неназначенных вместо мастера прочерк.\n\n**2. Найти строки без пары.** LEFT JOIN, а затем `WHERE правая.id IS NULL`:\n\n```sql\nSELECT c.name\nFROM clients c\nLEFT JOIN jobs j ON j.client_id = c.id\nWHERE j.id IS NULL;\n```\n\n**3. Посчитать, включая нули.** При INNER JOIN мастер без заказов в отчёт не попадёт. При LEFT JOIN — попадёт с нулём. Важно считать `count(j.id)`, а не `count(*)`: звёздочка посчитает и строку с NULL.\n\n**Ловушка:** условие на правую таблицу в `WHERE` превращает LEFT JOIN обратно в INNER — строки с NULL отсеиваются. Такие условия нужно переносить в `ON`.\n\nВ SQLite есть также `RIGHT JOIN` и `FULL JOIN` (начиная с версии 3.39), но на практике почти всегда хватает LEFT JOIN: достаточно поменять таблицы местами.",
+          "examples": [
+            {
+              "title": "Все заказы, даже без мастера",
+              "lang": "sql",
+              "code": "SELECT j.id, j.device, coalesce(m.name, '—') AS master, j.status\nFROM jobs j\nLEFT JOIN masters m ON m.id = j.master_id\nORDER BY j.id;",
+              "explain": "Все двенадцать заказов на месте. У неназначенных в столбце мастера прочерк."
+            },
+            {
+              "title": "Кто остался без пары",
+              "lang": "sql",
+              "code": "SELECT c.name\nFROM clients c\nLEFT JOIN jobs j ON j.client_id = c.id\nWHERE j.id IS NULL;\n\nSELECT m.name\nFROM masters m\nLEFT JOIN jobs j ON j.master_id = m.id\nWHERE j.id IS NULL;",
+              "explain": "Клиент без заказов — Яна. Мастер без заказов — Тимур."
+            },
+            {
+              "title": "Счёт с нулями и условие в ON",
+              "lang": "sql",
+              "code": "SELECT m.name, count(j.id) AS jobs\nFROM masters m\nLEFT JOIN jobs j ON j.master_id = m.id\nGROUP BY m.id\nORDER BY jobs DESC;\n\nSELECT m.name, count(j.id) AS in_progress\nFROM masters m\nLEFT JOIN jobs j ON j.master_id = m.id AND j.status = 'в работе'\nGROUP BY m.id;",
+              "explain": "У Тимура ноль заказов, но он есть в отчёте. Во втором запросе условие на статус стоит в `ON`, поэтому мастера без заказов «в работе» не пропадают."
+            }
+          ],
+          "practice": {
+            "task": "Найди то, чего нет.",
+            "steps": [
+              "Выведи всех клиентов с количеством заказов, включая тех, у кого их нет.",
+              "Найди заказы, которым не назначен мастер, с именами клиентов.",
+              "Выведи всех мастеров и сумму их заказов; для мастера без заказов должен быть 0.",
+              "Перенеси условие `j.status = 'в работе'` из `ON` в `WHERE` во втором запросе третьего примера и сравни результат.",
+              "Выведи клиентов, у которых нет ни одного выданного заказа."
+            ],
+            "hint": "Последнее задание: `LEFT JOIN jobs j ON j.client_id = c.id AND j.status = 'выдан'`, затем `WHERE j.id IS NULL`."
+          },
+          "quiz": [
+            {
+              "question": "Что вернёт LEFT JOIN для строки левой таблицы без пары?",
+              "options": [
+                "Ничего",
+                "Строку с NULL в столбцах правой таблицы",
+                "Ошибку",
+                "Дубликат строки"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Как найти клиентов без заказов?",
+              "options": [
+                "INNER JOIN",
+                "LEFT JOIN и условие WHERE j.id IS NULL",
+                "DELETE",
+                "GROUP BY"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m3-l4",
+          "order": 4,
+          "title": "Связь «многие ко многим»",
+          "duration_min": 14,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "В одном заказе может использоваться несколько деталей, а одна и та же деталь — в разных заказах. Это связь **многие ко многим**.\n\nВнешним ключом в одной из таблиц её не выразить. Нужна третья таблица — **таблица связей**. Каждая её строка означает: «в этом заказе использована эта деталь».\n\n```\njobs  1 --- *  job_parts  * --- 1  parts\n```\n\n```sql\nCREATE TABLE job_parts (\n    job_id INTEGER NOT NULL REFERENCES jobs(id),\n    part_id INTEGER NOT NULL REFERENCES parts(id),\n    qty INTEGER NOT NULL DEFAULT 1,\n    PRIMARY KEY (job_id, part_id)\n);\n```\n\n**Составной первичный ключ** `PRIMARY KEY (job_id, part_id)` запрещает повторять одну и ту же пару: деталь в заказе указывается один раз, а количество хранится в `qty`.\n\nВ таблице связей можно хранить и свойства самой связи: количество, цену на момент продажи, дату.\n\nЧтобы получить данные, соединяют все три таблицы: заказы → таблица связей → детали.\n\nДругие примеры такой связи: студенты и курсы, товары и заказы, статьи и теги, актёры и фильмы.",
+          "examples": [
+            {
+              "title": "Таблица связей",
+              "lang": "sql",
+              "code": "CREATE TABLE job_parts (\n    job_id INTEGER NOT NULL REFERENCES jobs(id),\n    part_id INTEGER NOT NULL REFERENCES parts(id),\n    qty INTEGER NOT NULL DEFAULT 1,\n    PRIMARY KEY (job_id, part_id)\n);\n\nINSERT INTO job_parts (job_id, part_id, qty) VALUES\n    (1, 1, 1),\n    (2, 5, 1),\n    (3, 3, 1),\n    (4, 7, 1),\n    (5, 6, 1),\n    (6, 8, 1),\n    (6, 9, 1),\n    (7, 2, 1),\n    (9, 1, 1),\n    (9, 10, 2);",
+              "explain": "В заказах 6 и 9 использовано по две разные детали."
+            },
+            {
+              "title": "Какие детали ушли в какой заказ",
+              "lang": "sql",
+              "code": "SELECT j.id, j.device, p.name AS part, jp.qty, p.price * jp.qty AS cost\nFROM jobs j\nJOIN job_parts jp ON jp.job_id = j.id\nJOIN parts p ON p.id = jp.part_id\nORDER BY j.id;",
+              "explain": ""
+            },
+            {
+              "title": "Себестоимость и прибыль по заказам",
+              "lang": "sql",
+              "code": "SELECT j.id, j.device, j.price,\n       sum(p.price * jp.qty) AS parts_cost,\n       j.price - sum(p.price * jp.qty) AS profit\nFROM jobs j\nJOIN job_parts jp ON jp.job_id = j.id\nJOIN parts p ON p.id = jp.part_id\nGROUP BY j.id\nORDER BY profit DESC;\n\nSELECT p.name, sum(jp.qty) AS used\nFROM parts p\nJOIN job_parts jp ON jp.part_id = p.id\nGROUP BY p.id\nORDER BY used DESC, p.name\nLIMIT 3;",
+              "explain": "Первый запрос показывает, сколько сервис зарабатывает на работе сверх стоимости деталей. Второй — самые расходуемые детали."
+            }
+          ],
+          "practice": {
+            "task": "Поработай с тремя таблицами.",
+            "steps": [
+              "Создай таблицу связей и заполни её по примеру.",
+              "Попробуй вставить пару `(1, 1)` второй раз — прочитай ошибку.",
+              "Выведи список деталей, использованных в заказах клиента Дина.",
+              "Найди детали, которые не использовались ни в одном заказе (LEFT JOIN).",
+              "Посчитай, на какую сумму израсходовано деталей каждой категории.",
+              "Выведи заказы, в которых не использовано ни одной детали.",
+              "Найди заказ с самой большой стоимостью деталей."
+            ],
+            "hint": "Неиспользованные детали: `FROM parts p LEFT JOIN job_parts jp ON jp.part_id = p.id WHERE jp.job_id IS NULL`."
+          },
+          "quiz": [
+            {
+              "question": "Как хранят связь «многие ко многим»?",
+              "options": [
+                "Внешним ключом в первой таблице",
+                "В отдельной таблице связей",
+                "В одном текстовом столбце через запятую",
+                "Никак"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Зачем нужен составной первичный ключ в таблице связей?",
+              "options": [
+                "Для скорости",
+                "Чтобы одна и та же пара не повторялась",
+                "Чтобы хранить текст",
+                "Для сортировки"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m3-l5",
+          "order": 5,
+          "title": "Подзапросы и CTE",
+          "duration_min": 15,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "**Подзапрос** — запрос внутри другого запроса, в скобках.\n\n**1. Подзапрос, возвращающий одно значение.** Используется как обычное число:\n\n```sql\nSELECT * FROM parts WHERE price > (SELECT avg(price) FROM parts);\n```\n\n**2. Подзапрос, возвращающий список.** Используется с `IN`:\n\n```sql\nSELECT name FROM clients WHERE id IN (SELECT client_id FROM jobs WHERE price > 5000);\n```\n\n**3. EXISTS** — проверка «есть ли хоть одна строка»:\n\n```sql\nSELECT name FROM clients c\nWHERE EXISTS (SELECT 1 FROM jobs j WHERE j.client_id = c.id);\n```\n\nТакой подзапрос называется **коррелированным**: он ссылается на строку внешнего запроса и выполняется для каждой из них.\n\n> `NOT IN` опасен, если подзапрос может вернуть NULL: тогда результат будет пустым. Надёжнее `NOT EXISTS`.\n\n**CTE** (общее табличное выражение) — именованный подзапрос, вынесенный в начало через `WITH`:\n\n```sql\nWITH имя AS (\n    SELECT ...\n)\nSELECT ... FROM имя;\n```\n\nCTE не делает запрос быстрее, но делает его **читаемым**: сложная задача разбивается на шаги с понятными названиями, каждый шаг можно проверить отдельно. Через запятую можно объявить несколько CTE, и следующие могут использовать предыдущие.\n\nКогда что выбирать: простое условие — подзапрос; многошаговая логика — CTE; получение столбцов из другой таблицы — JOIN.",
+          "examples": [
+            {
+              "title": "Подзапросы",
+              "lang": "sql",
+              "code": "SELECT name, price FROM parts\nWHERE price > (SELECT avg(price) FROM parts)\nORDER BY price DESC;\n\nSELECT name FROM clients\nWHERE id IN (SELECT client_id FROM jobs WHERE price > 5000);\n\nSELECT name FROM clients c\nWHERE NOT EXISTS (SELECT 1 FROM jobs j WHERE j.client_id = c.id);",
+              "explain": "Детали дороже средней цены; клиенты с дорогими заказами; клиенты без заказов."
+            },
+            {
+              "title": "Подзапрос в SELECT",
+              "lang": "sql",
+              "code": "SELECT name, price,\n       price - (SELECT round(avg(price)) FROM parts) AS diff_from_avg\nFROM parts\nORDER BY diff_from_avg DESC\nLIMIT 4;",
+              "explain": ""
+            },
+            {
+              "title": "CTE: отчёт по шагам",
+              "lang": "sql",
+              "code": "WITH spending AS (\n    SELECT client_id,\n           count(*) AS orders,\n           coalesce(sum(price), 0) AS total\n    FROM jobs\n    GROUP BY client_id\n),\naverage AS (\n    SELECT avg(total) AS avg_total FROM spending\n)\nSELECT c.name, s.orders, s.total\nFROM spending s\nJOIN clients c ON c.id = s.client_id\nJOIN average a\nWHERE s.total > a.avg_total\nORDER BY s.total DESC;",
+              "explain": "Первый шаг считает траты каждого клиента, второй — средние траты, итоговый запрос оставляет клиентов выше среднего."
+            }
+          ],
+          "practice": {
+            "task": "Реши задачи подзапросами и CTE.",
+            "steps": [
+              "Найди заказы дороже среднего чека.",
+              "Найди самую дорогую деталь, не используя `ORDER BY` и `LIMIT`.",
+              "Найди клиентов, у которых есть заказы со статусом `в работе`, через `IN`.",
+              "Найди детали, которые использовались в заказах, через `EXISTS`.",
+              "Через CTE посчитай число заказов по мастерам и выведи тех, у кого заказов больше среднего.",
+              "Перепиши запрос «клиенты без заказов» тремя способами: `LEFT JOIN`, `NOT IN`, `NOT EXISTS`."
+            ],
+            "hint": "Самая дорогая деталь: `WHERE price = (SELECT max(price) FROM parts)`."
+          },
+          "quiz": [
+            {
+              "question": "Что такое CTE?",
+              "options": [
+                "Тип данных",
+                "Именованный подзапрос, объявленный через WITH",
+                "Вид индекса",
+                "Команда удаления"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Что проверяет EXISTS?",
+              "options": [
+                "Существование таблицы",
+                "Вернул ли подзапрос хотя бы одну строку",
+                "Наличие индекса",
+                "Тип столбца"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sqlite-m4",
+      "order": 4,
+      "title": "Целостность и скорость",
+      "description": "Ограничения, транзакции, индексы и представления.",
+      "lessons": [
+        {
+          "id": "sqlite-m4-l1",
+          "order": 1,
+          "title": "Ограничения: защита данных на уровне базы",
+          "duration_min": 12,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "Ошибочные данные проще не пустить в базу, чем потом искать и исправлять. Для этого у столбцов есть **ограничения** (constraints).\n\n| Ограничение | Что гарантирует |\n|---|---|\n| `PRIMARY KEY` | уникальный идентификатор строки |\n| `NOT NULL` | значение обязательно |\n| `UNIQUE` | значения в столбце не повторяются |\n| `CHECK (условие)` | значение удовлетворяет условию |\n| `DEFAULT значение` | значение по умолчанию |\n| `REFERENCES таблица(столбец)` | ссылка на существующую строку |\n\nОграничение можно задать для одного столбца или для нескольких сразу — отдельной строкой в конце:\n\n```sql\nUNIQUE (name, city),\nCHECK (end_date >= start_date)\n```\n\nПочему проверки нужны в базе, даже если они есть в программе: с базой может работать несколько программ, скриптов и людей вручную. Правило, записанное в схеме, действует для всех.\n\nДействия внешнего ключа при удалении связанной строки:\n\n| Запись | Поведение |\n|---|---|\n| (по умолчанию) | запретить удаление |\n| `ON DELETE CASCADE` | удалить и зависимые строки |\n| `ON DELETE SET NULL` | обнулить ссылку |\n\n**Особенность SQLite.** Типы столбцов — рекомендация, а не запрет: в столбец `INTEGER` можно записать текст. Чтобы включить строгую проверку типов, добавь `STRICT` после закрывающей скобки `CREATE TABLE` (SQLite 3.37 и новее).",
+          "examples": [
+            {
+              "title": "Таблица поставщиков с ограничениями",
+              "lang": "sql",
+              "code": "CREATE TABLE suppliers (\n    id INTEGER PRIMARY KEY,\n    name TEXT NOT NULL UNIQUE,\n    city TEXT NOT NULL DEFAULT 'не указан',\n    rating INTEGER NOT NULL DEFAULT 3 CHECK (rating BETWEEN 1 AND 5),\n    email TEXT CHECK (email IS NULL OR email LIKE '%_@_%')\n);\n\nINSERT INTO suppliers (name, city, rating, email)\nVALUES ('ТехноДеталь', 'Казань', 5, 'sales@technodetal.example');\n\nINSERT INTO suppliers (name) VALUES ('Запчасть-Опт');\n\nSELECT * FROM suppliers;",
+              "explain": "Второй поставщик получил город и рейтинг по умолчанию."
+            },
+            {
+              "title": "Эти запросы завершатся ошибкой",
+              "lang": "sql",
+              "code": "INSERT INTO suppliers (name, rating) VALUES ('ТехноДеталь', 4);\n\nINSERT INTO suppliers (name, rating) VALUES ('Мир экранов', 9);\n\nINSERT INTO suppliers (name, email) VALUES ('Аккум-Сервис', 'нет почты');",
+              "explain": "По порядку: `UNIQUE constraint failed` (имя занято), `CHECK constraint failed` (рейтинг вне 1–5), `CHECK constraint failed` (в почте нет `@`)."
+            }
+          ],
+          "practice": {
+            "task": "Спроектируй защищённую таблицу.",
+            "steps": [
+              "Создай таблицу `suppliers` и проверь все запросы из примеров.",
+              "Создай таблицу `reviews`: `id`, `job_id` (внешний ключ на `jobs` с `ON DELETE CASCADE`), `stars` (от 1 до 5), `comment`, `created` (по умолчанию `date('now')`).",
+              "Добавь ограничение: на один заказ — не больше одного отзыва.",
+              "Вставь два корректных отзыва.",
+              "Попробуй вставить отзыв с оценкой 0, второй отзыв на тот же заказ и отзыв на несуществующий заказ.",
+              "Удали таблицу `reviews` командой `DROP TABLE reviews;`."
+            ],
+            "hint": "Значение по умолчанию из выражения пишут в скобках: `created TEXT NOT NULL DEFAULT (date('now'))`. Один отзыв на заказ — это `UNIQUE` на `job_id`."
+          },
+          "quiz": [
+            {
+              "question": "Что делает ограничение CHECK?",
+              "options": [
+                "Проверяет орфографию",
+                "Не пускает в таблицу значения, не удовлетворяющие условию",
+                "Создаёт индекс",
+                "Шифрует столбец"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Что делает ON DELETE CASCADE?",
+              "options": [
+                "Запрещает удаление",
+                "Удаляет зависимые строки вместе с родительской",
+                "Создаёт копию",
+                "Обнуляет ссылку"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m4-l2",
+          "order": 2,
+          "title": "Транзакции",
+          "duration_min": 14,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "Представь списание детали под заказ. Нужно два действия: уменьшить остаток на складе и записать деталь в заказ. Если после первого шага программа упадёт, деталь пропадёт со склада, но ни в одном заказе не появится.\n\n**Транзакция** объединяет несколько запросов в одно неделимое действие: либо выполняются все, либо ни один.\n\n```sql\nBEGIN;\n-- запросы\nCOMMIT;      -- сохранить\n```\n\nили\n\n```sql\nBEGIN;\n-- запросы\nROLLBACK;    -- отменить всё с момента BEGIN\n```\n\nСвойства транзакций называют **ACID**:\n\n| Свойство | Смысл |\n|---|---|\n| Atomicity (атомарность) | всё или ничего |\n| Consistency (согласованность) | ограничения не нарушаются |\n| Isolation (изолированность) | незавершённые изменения не видны другим |\n| Durability (надёжность) | после COMMIT данные не потеряются даже при сбое питания |\n\nПрактическая польза:\n\n- **безопасность**: `BEGIN`, опасный `UPDATE` или `DELETE`, проверка через `SELECT`, и только потом `COMMIT`. Если результат неожиданный — `ROLLBACK`;\n- **скорость**: без явной транзакции каждый запрос — отдельная транзакция с записью на диск. Тысяча `INSERT` внутри одной транзакции выполняется в сотни раз быстрее.\n\n**SAVEPOINT имя** создаёт точку внутри транзакции, к которой можно вернуться через `ROLLBACK TO имя`, не отменяя всё.\n\nВ SQLite одновременно писать в базу может только одно соединение. Для телефона и небольших проектов этого достаточно.",
+          "examples": [
+            {
+              "title": "Списание детали одной транзакцией",
+              "lang": "sql",
+              "code": "SELECT qty FROM parts WHERE id = 3;\n\nBEGIN;\nUPDATE parts SET qty = qty - 1 WHERE id = 3;\nINSERT INTO job_parts (job_id, part_id, qty) VALUES (10, 3, 1);\nCOMMIT;\n\nSELECT qty FROM parts WHERE id = 3;\nSELECT * FROM job_parts WHERE job_id = 10;",
+              "explain": "Аккумуляторов было 12, стало 11, и деталь записана в заказ 10. Оба изменения сохранены вместе."
+            },
+            {
+              "title": "Отмена через ROLLBACK",
+              "lang": "sql",
+              "code": "BEGIN;\nUPDATE parts SET price = 0;\nSELECT max(price) AS max_price_inside FROM parts;\nROLLBACK;\n\nSELECT max(price) AS max_price_after FROM parts;",
+              "explain": "Забытый `WHERE` обнулил все цены: внутри транзакции максимум равен 0. После `ROLLBACK` цены вернулись, максимум снова 7400."
+            }
+          ],
+          "practice": {
+            "task": "Используй транзакции как страховку.",
+            "steps": [
+              "Выполни оба примера.",
+              "Начни транзакцию, подними цены всех деталей на 50%, посмотри результат и отмени.",
+              "Начни транзакцию, добавь нового клиента и заказ для него, зафиксируй.",
+              "Начни транзакцию, спиши деталь, которой нет на складе (`qty` станет отрицательным), увидь проблему и отмени.",
+              "Чтобы база сама не допускала отрицательный остаток, нужен `CHECK (qty >= 0)`. Подумай, какую ошибку ты получил бы с ним.",
+              "Удали добавленного клиента и его заказ одной транзакцией."
+            ],
+            "hint": "Порядок удаления важен: сначала заказ, потом клиент — иначе помешает внешний ключ."
+          },
+          "quiz": [
+            {
+              "question": "Что делает ROLLBACK?",
+              "options": [
+                "Сохраняет изменения",
+                "Отменяет все изменения с начала транзакции",
+                "Удаляет базу",
+                "Создаёт копию"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Что означает атомарность транзакции?",
+              "options": [
+                "Запросы выполняются быстро",
+                "Выполняются либо все запросы, либо ни один",
+                "Данные шифруются",
+                "Транзакция занимает мало места"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m4-l3",
+          "order": 3,
+          "title": "Индексы и план запроса",
+          "duration_min": 14,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "Без индекса база ищет строку **полным перебором**: читает таблицу от начала до конца. Для десяти строк это мгновенно, для миллиона — секунды.\n\n**Индекс** — вспомогательная структура, как алфавитный указатель в книге: по значению столбца он сразу даёт место нужных строк.\n\n```sql\nCREATE INDEX idx_jobs_client ON jobs(client_id);\n```\n\nЧто стоит индексировать:\n\n- столбцы, по которым часто ищут в `WHERE`;\n- внешние ключи — по ним идут `JOIN`;\n- столбцы для `ORDER BY`.\n\nПервичный ключ и столбцы с `UNIQUE` получают индекс автоматически.\n\n**Цена индекса:** он занимает место и замедляет запись — при каждом `INSERT`, `UPDATE`, `DELETE` его нужно обновлять. Поэтому индексы создают под реальные запросы, а не на все столбцы подряд.\n\n**Составной индекс** по нескольким столбцам `(status, created)` работает для запросов по `status` и по `status + created`, но не по одному `created`. Порядок столбцов важен: как в телефонной книге, отсортированной по фамилии, затем по имени.\n\n**EXPLAIN QUERY PLAN** перед запросом показывает, как база будет его выполнять:\n\n| В плане | Значение |\n|---|---|\n| `SCAN таблица` | полный перебор |\n| `SEARCH таблица USING INDEX` | поиск по индексу |\n| `USING COVERING INDEX` | все данные взяты из индекса, таблица не читалась |\n\nКогда индекс **не** используется: функция над столбцом (`WHERE upper(name) = ...`), шаблон с процентом в начале (`LIKE '%экран'`), слишком маленькая таблица.\n\n`DROP INDEX имя;` удаляет индекс. `.indexes таблица` показывает список.",
+          "examples": [
+            {
+              "title": "План до и после индекса",
+              "lang": "sql",
+              "code": "EXPLAIN QUERY PLAN\nSELECT * FROM jobs WHERE status = 'в работе';\n\nCREATE INDEX idx_jobs_status ON jobs(status);\n\nEXPLAIN QUERY PLAN\nSELECT * FROM jobs WHERE status = 'в работе';",
+              "explain": "До создания индекса в плане `SCAN jobs`, после — `SEARCH jobs USING INDEX idx_jobs_status`."
+            },
+            {
+              "title": "Индексы для внешних ключей и уникальности",
+              "lang": "sql",
+              "code": "CREATE INDEX idx_jobs_client ON jobs(client_id);\nCREATE INDEX idx_jobs_master ON jobs(master_id);\nCREATE INDEX idx_jobs_status_created ON jobs(status, created);\n\nEXPLAIN QUERY PLAN\nSELECT c.name, j.device\nFROM clients c JOIN jobs j ON j.client_id = c.id\nWHERE c.name = 'Анна';\n\nSELECT name, tbl_name FROM sqlite_master WHERE type = 'index' AND name LIKE 'idx_%';",
+              "explain": "В служебной таблице `sqlite_master` хранится описание всех таблиц и индексов базы."
+            }
+          ],
+          "practice": {
+            "task": "Ускорь запросы и убедись в этом.",
+            "steps": [
+              "Выполни примеры и сравни планы.",
+              "Посмотри план запроса `SELECT * FROM parts WHERE category = 'звук';`.",
+              "Создай индекс по `parts(category)` и посмотри план снова.",
+              "Посмотри план для `WHERE upper(category) = 'ЗВУК'` — индекс не используется.",
+              "Посмотри план для `WHERE name LIKE '%экран%'`.",
+              "Включи замер времени командой `.timer on` и выполни любой запрос.",
+              "Со звёздочкой: создай таблицу на 200 000 строк запросом `CREATE TABLE big AS WITH RECURSIVE n(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM n WHERE x < 200000) SELECT x AS id, x % 1000 AS grp FROM n;`, сравни время `SELECT count(*) FROM big WHERE grp = 7;` до и после индекса по `grp`, затем удали таблицу."
+            ],
+            "hint": "На маленьких таблицах разницы во времени не видно — для этого и нужна таблица `big`."
+          },
+          "quiz": [
+            {
+              "question": "Что означает `SCAN` в плане запроса?",
+              "options": [
+                "Поиск по индексу",
+                "Полный перебор таблицы",
+                "Ошибку",
+                "Сортировку"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Какова цена индекса?",
+              "options": [
+                "Никакой",
+                "Занимает место и замедляет запись",
+                "Замедляет чтение",
+                "Удаляет данные"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m4-l4",
+          "order": 4,
+          "title": "Представления и изменение схемы",
+          "duration_min": 12,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "**Представление** (VIEW) — сохранённый запрос, с которым можно работать как с таблицей.\n\n```sql\nCREATE VIEW имя AS\nSELECT ...;\n```\n\nДанные в представлении не хранятся: при каждом обращении запрос выполняется заново, поэтому результат всегда актуален.\n\nЗачем нужно:\n\n- **упростить** частые сложные запросы: один раз написал JOIN трёх таблиц — дальше пишешь `SELECT * FROM job_report`;\n- **скрыть детали**: программе или коллеге даётся удобная «таблица» вместо схемы из пяти;\n- **единое определение** показателя: формула прибыли записана в одном месте.\n\n`DROP VIEW имя;` удаляет представление, данные при этом не затрагиваются.\n\n**Изменение таблиц: ALTER TABLE.** Требования меняются, и схему приходится дорабатывать.\n\n| Команда | Что делает |\n|---|---|\n| `ALTER TABLE t ADD COLUMN c ТИП` | добавить столбец |\n| `ALTER TABLE t RENAME COLUMN a TO b` | переименовать столбец |\n| `ALTER TABLE t RENAME TO новое_имя` | переименовать таблицу |\n| `ALTER TABLE t DROP COLUMN c` | удалить столбец (SQLite 3.35 и новее) |\n\nВозможности `ALTER TABLE` в SQLite ограничены: нельзя изменить тип столбца или добавить ограничение к существующему. В таких случаях создают новую таблицу, переносят данные через `INSERT ... SELECT`, удаляют старую и переименовывают новую — всё внутри одной транзакции.\n\nПоследовательные изменения схемы в настоящих проектах оформляют как **миграции** — пронумерованные SQL-файлы, которые применяются по порядку.",
+          "examples": [
+            {
+              "title": "Представление для отчёта",
+              "lang": "sql",
+              "code": "CREATE VIEW job_report AS\nSELECT j.id,\n       c.name AS client,\n       coalesce(m.name, '—') AS master,\n       j.device,\n       j.status,\n       j.price,\n       j.created\nFROM jobs j\nJOIN clients c ON c.id = j.client_id\nLEFT JOIN masters m ON m.id = j.master_id;\n\nSELECT * FROM job_report WHERE status = 'в работе';\n\nSELECT master, count(*) AS jobs, sum(price) AS total\nFROM job_report\nGROUP BY master\nORDER BY total DESC;",
+              "explain": "С представлением работают как с обычной таблицей: фильтруют, группируют, соединяют."
+            },
+            {
+              "title": "Дорабатываем схему",
+              "lang": "sql",
+              "code": "ALTER TABLE clients ADD COLUMN city TEXT DEFAULT 'Казань';\nALTER TABLE masters RENAME COLUMN grade TO level;\n\nSELECT name, city FROM clients LIMIT 3;\nSELECT name, level FROM masters;",
+              "explain": "Новый столбец у существующих строк заполнился значением по умолчанию."
+            }
+          ],
+          "practice": {
+            "task": "Добавь представления и доработай схему.",
+            "steps": [
+              "Создай представление `job_report` и выполни запросы из примера.",
+              "Создай представление `stock_alert` с деталями, которых осталось меньше трёх.",
+              "Создай представление `client_stats`: имя клиента, число заказов, сумма, дата последнего заказа.",
+              "Добавь клиенту нового заказа и убедись, что `client_stats` показывает обновлённые данные.",
+              "Добавь в таблицу `parts` столбец `supplier_id` со ссылкой на `suppliers`.",
+              "Назначь поставщика нескольким деталям через `UPDATE`.",
+              "Посмотри список представлений: `SELECT name FROM sqlite_master WHERE type = 'view';`."
+            ],
+            "hint": "Столбец с внешним ключом добавляется так: `ALTER TABLE parts ADD COLUMN supplier_id INTEGER REFERENCES suppliers(id);`."
+          },
+          "quiz": [
+            {
+              "question": "Хранит ли представление данные?",
+              "options": [
+                "Да, копию таблицы",
+                "Нет, запрос выполняется при каждом обращении",
+                "Только индексы",
+                "Только последние результаты"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sqlite-m5",
+      "order": 5,
+      "title": "Продвинутый SQL",
+      "description": "Оконные функции, UPSERT, JSON, импорт и экспорт.",
+      "lessons": [
+        {
+          "id": "sqlite-m5-l1",
+          "order": 1,
+          "title": "Оконные функции",
+          "duration_min": 15,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "`GROUP BY` сворачивает группу в одну строку. **Оконная функция** считает значение по группе, но **сохраняет все строки**. Так можно в одном запросе увидеть и отдельный заказ, и его место в рейтинге, и накопленную сумму.\n\n```sql\nфункция() OVER (PARTITION BY столбец ORDER BY столбец)\n```\n\n- `OVER ()` превращает функцию в оконную;\n- `PARTITION BY` делит строки на группы (необязательно);\n- `ORDER BY` внутри `OVER` задаёт порядок в группе.\n\n**Функции нумерации:**\n\n| Функция | Что возвращает |\n|---|---|\n| `row_number()` | номер строки: 1, 2, 3, 4 |\n| `rank()` | место с пропусками при равенстве: 1, 2, 2, 4 |\n| `dense_rank()` | место без пропусков: 1, 2, 2, 3 |\n\n**Агрегаты как оконные функции:** `sum`, `avg`, `count`, `min`, `max`.\n\n- `sum(price) OVER ()` — общий итог в каждой строке;\n- `sum(price) OVER (PARTITION BY client_id)` — итог по клиенту;\n- `sum(price) OVER (ORDER BY created)` — **нарастающий итог**.\n\n**Функции смещения:**\n\n| Функция | Что возвращает |\n|---|---|\n| `lag(столбец)` | значение из предыдущей строки |\n| `lead(столбец)` | значение из следующей строки |\n| `first_value(столбец)` | первое значение в окне |\n\nОконные функции выполняются после `WHERE` и `GROUP BY`, поэтому в `WHERE` их использовать нельзя. Чтобы отфильтровать по результату (например, «топ-2 в каждой категории»), запрос оборачивают в CTE.",
+          "examples": [
+            {
+              "title": "Рейтинги",
+              "lang": "sql",
+              "code": "SELECT name, category, price,\n       row_number() OVER (ORDER BY price DESC) AS place,\n       rank() OVER (PARTITION BY category ORDER BY price DESC) AS place_in_category\nFROM parts\nORDER BY place;",
+              "explain": "Общий рейтинг по цене и место внутри своей категории."
+            },
+            {
+              "title": "Итоги и доли",
+              "lang": "sql",
+              "code": "SELECT id, created, price,\n       sum(price) OVER (ORDER BY created, id) AS running_total,\n       round(100.0 * price / sum(price) OVER (), 1) AS share_percent\nFROM jobs\nWHERE price IS NOT NULL\nORDER BY created, id;",
+              "explain": "Нарастающая выручка по дням и доля каждого заказа в общей сумме."
+            },
+            {
+              "title": "Самая дорогая деталь в каждой категории и интервалы между заказами",
+              "lang": "sql",
+              "code": "WITH ranked AS (\n    SELECT name, category, price,\n           row_number() OVER (PARTITION BY category ORDER BY price DESC) AS rn\n    FROM parts\n)\nSELECT category, name, price FROM ranked WHERE rn = 1 ORDER BY price DESC;\n\nSELECT client_id, created,\n       lag(created) OVER (PARTITION BY client_id ORDER BY created) AS previous,\n       CAST(julianday(created) - julianday(lag(created) OVER (PARTITION BY client_id ORDER BY created)) AS INTEGER) AS days_between\nFROM jobs\nWHERE client_id IN (SELECT client_id FROM jobs GROUP BY client_id HAVING count(*) > 1)\nORDER BY client_id, created;",
+              "explain": "Первый запрос — классическая задача «лучший в каждой группе». Второй считает, через сколько дней клиент вернулся."
+            }
+          ],
+          "practice": {
+            "task": "Примени оконные функции.",
+            "steps": [
+              "Пронумеруй заказы каждого клиента по дате.",
+              "Для каждого заказа выведи его цену и среднюю цену заказов того же мастера.",
+              "Выведи два самых дорогих заказа каждого мастера.",
+              "Посчитай нарастающее количество заказов по дням.",
+              "Для каждой детали выведи разницу между её ценой и ценой самой дорогой детали в категории (`max(price) OVER (PARTITION BY category)`).",
+              "Найди первый заказ каждого клиента (номер 1 в его окне)."
+            ],
+            "hint": "«Два самых дорогих у каждого мастера» — CTE с `row_number() OVER (PARTITION BY master_id ORDER BY price DESC)` и условие `rn <= 2`."
+          },
+          "quiz": [
+            {
+              "question": "Чем оконная функция отличается от GROUP BY?",
+              "options": [
+                "Ничем",
+                "Сохраняет все строки, добавляя вычисленное значение",
+                "Работает только с датами",
+                "Удаляет дубликаты"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Что делает PARTITION BY?",
+              "options": [
+                "Сортирует результат",
+                "Делит строки на группы для оконной функции",
+                "Удаляет строки",
+                "Создаёт таблицу"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m5-l2",
+          "order": 2,
+          "title": "UPSERT, RETURNING и другие приёмы записи",
+          "duration_min": 12,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "**UPSERT** — «вставить, а если уже есть — обновить». Частая задача: приход детали на склад. Если деталь новая — создать запись, если уже есть — увеличить количество.\n\n```sql\nINSERT INTO таблица (...) VALUES (...)\nON CONFLICT (столбец) DO UPDATE SET ...;\n```\n\n- в `ON CONFLICT` указывают столбец с ограничением `UNIQUE` или первичный ключ;\n- `excluded.столбец` — значение, которое пытались вставить;\n- `ON CONFLICT DO NOTHING` — молча пропустить дубликат.\n\nКороткие формы:\n\n| Команда | Поведение при конфликте |\n|---|---|\n| `INSERT OR IGNORE` | пропустить строку |\n| `INSERT OR REPLACE` | удалить старую строку и вставить новую |\n\n`INSERT OR REPLACE` удаляет прежнюю строку целиком: значения столбцов, которые ты не указал, пропадут, а `id` может измениться. Для обновления надёжнее `ON CONFLICT DO UPDATE`.\n\n**RETURNING** возвращает изменённые строки прямо из `INSERT`, `UPDATE` или `DELETE` (SQLite 3.35 и новее):\n\n```sql\nINSERT INTO clients (name) VALUES ('Нина') RETURNING id;\n```\n\nНе нужен отдельный запрос, чтобы узнать `id` новой записи или увидеть, что именно удалено.\n\n**UPDATE с данными из другой таблицы** (`UPDATE ... FROM`, SQLite 3.33 и новее):\n\n```sql\nUPDATE parts SET qty = qty - jp.qty\nFROM job_parts jp\nWHERE jp.part_id = parts.id AND jp.job_id = 9;\n```\n\n**CREATE TABLE ... AS SELECT** создаёт таблицу из результата запроса — удобно для снимков и резервных копий отдельных таблиц.",
+          "examples": [
+            {
+              "title": "Приход на склад через UPSERT",
+              "lang": "sql",
+              "code": "CREATE UNIQUE INDEX idx_parts_name ON parts(name);\n\nINSERT INTO parts (name, category, price, qty)\nVALUES ('Микрофон', 'звук', 260, 10)\nON CONFLICT (name) DO UPDATE SET qty = qty + excluded.qty;\n\nINSERT INTO parts (name, category, price, qty)\nVALUES ('Вибромотор', 'прочее', 190, 7)\nON CONFLICT (name) DO UPDATE SET qty = qty + excluded.qty;\n\nSELECT name, qty FROM parts WHERE name IN ('Микрофон', 'Вибромотор');",
+              "explain": "Микрофонов было 14, стало 24. Вибромотора не было — он добавлен новой строкой."
+            },
+            {
+              "title": "RETURNING",
+              "lang": "sql",
+              "code": "INSERT INTO clients (name, phone) VALUES ('Нина', '+7 900 000-00-22')\nRETURNING id, name;\n\nUPDATE parts SET price = price + 100\nWHERE category = 'камеры'\nRETURNING name, price;\n\nDELETE FROM clients WHERE name = 'Нина'\nRETURNING id, name;",
+              "explain": "Каждая команда сразу показывает строки, которые она затронула."
+            },
+            {
+              "title": "Снимок таблицы и пропуск дубликатов",
+              "lang": "sql",
+              "code": "CREATE TABLE parts_backup AS SELECT * FROM parts;\nSELECT count(*) FROM parts_backup;\n\nINSERT OR IGNORE INTO parts (name, category, price, qty)\nVALUES ('Микрофон', 'звук', 999, 1);\n\nSELECT name, price FROM parts WHERE name = 'Микрофон';\nDROP TABLE parts_backup;",
+              "explain": "Дубликат молча пропущен: цена микрофона осталась прежней."
+            }
+          ],
+          "practice": {
+            "task": "Отработай приёмы записи.",
+            "steps": [
+              "Выполни примеры.",
+              "Оформи приход трёх деталей одним `INSERT` с `ON CONFLICT`: две существующие и одна новая.",
+              "Добавь клиента и получи его `id` через `RETURNING`.",
+              "Сделай скидку 10% на все детали дороже 3000 и выведи изменённые строки.",
+              "Верни цены обратно тем же способом.",
+              "Создай снимок таблицы `jobs`, измени статус нескольких заказов, сравни со снимком и удали его."
+            ],
+            "hint": "Строки, которые отличаются от снимка: `SELECT * FROM jobs EXCEPT SELECT * FROM jobs_backup;`."
+          },
+          "quiz": [
+            {
+              "question": "Что означает `excluded.qty` в UPSERT?",
+              "options": [
+                "Старое значение в таблице",
+                "Значение, которое пытались вставить",
+                "Удалённое значение",
+                "Ноль"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Что делает RETURNING?",
+              "options": [
+                "Отменяет запрос",
+                "Возвращает строки, затронутые командой",
+                "Создаёт копию",
+                "Завершает транзакцию"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m5-l3",
+          "order": 3,
+          "title": "JSON внутри базы",
+          "duration_min": 12,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "Иногда у записей есть свойства, которые у всех разные и заранее неизвестны: цвет корпуса, объём памяти, комплектация. Заводить столбец под каждое — неудобно. Такие данные можно хранить в одном текстовом столбце в формате **JSON**, а SQLite умеет читать и менять его содержимое.\n\n| Функция | Что делает |\n|---|---|\n| `json_object('ключ', значение, ...)` | собрать объект |\n| `json_array(a, b, c)` | собрать массив |\n| `json_extract(столбец, '$.ключ')` | достать значение по пути |\n| `столбец ->> '$.ключ'` | то же, короткая запись (SQLite 3.38 и новее) |\n| `json_set(столбец, '$.ключ', значение)` | изменить или добавить поле |\n| `json_remove(столбец, '$.ключ')` | удалить поле |\n| `json_valid(текст)` | проверить корректность |\n| `json_each(столбец, '$.массив')` | развернуть массив в строки |\n| `json_group_array(столбец)` | собрать строки в массив |\n| `json_group_object(ключ, значение)` | собрать строки в объект |\n\n**Путь** начинается с `$`: `$.color` — поле, `$.tags[0]` — первый элемент массива, `$.owner.name` — вложенное поле.\n\nКогда JSON уместен, а когда нет:\n\n- **да**: необязательные, разнородные свойства; данные, пришедшие из внешнего API, которые хранятся как есть;\n- **нет**: то, по чему регулярно ищут, сортируют и соединяют таблицы. Это должны быть обычные столбцы — с типами, ограничениями и индексами.\n\nФункции `json_group_array` и `json_object` удобны и без JSON-столбцов: с их помощью запрос сразу возвращает готовый ответ для веб-API.",
+          "examples": [
+            {
+              "title": "Дополнительные свойства заказа",
+              "lang": "sql",
+              "code": "ALTER TABLE jobs ADD COLUMN extra TEXT;\n\nUPDATE jobs SET extra = json_object('color', 'чёрный', 'warranty', 1, 'kit', json_array('чехол', 'коробка'))\nWHERE id = 1;\n\nUPDATE jobs SET extra = json_object('color', 'синий', 'warranty', 0)\nWHERE id = 6;\n\nSELECT id, device,\n       json_extract(extra, '$.color') AS color,\n       json_extract(extra, '$.warranty') AS warranty,\n       json_extract(extra, '$.kit[0]') AS first_item\nFROM jobs\nWHERE extra IS NOT NULL;",
+              "explain": "В одном столбце хранятся разные наборы свойств. `$.kit[0]` — первый элемент вложенного массива."
+            },
+            {
+              "title": "Изменение и разворачивание",
+              "lang": "sql",
+              "code": "UPDATE jobs SET extra = json_set(extra, '$.color', 'серый', '$.note', 'срочно')\nWHERE id = 6;\n\nSELECT extra FROM jobs WHERE id = 6;\n\nSELECT j.id, item.value AS kit_item\nFROM jobs j, json_each(j.extra, '$.kit') AS item\nWHERE j.id = 1;\n\nSELECT id, device FROM jobs\nWHERE json_extract(extra, '$.warranty') = 1;",
+              "explain": "`json_each` превращает массив в строки таблицы — с ними можно работать обычным SQL."
+            },
+            {
+              "title": "Готовый JSON из запроса",
+              "lang": "sql",
+              "code": "SELECT json_object(\n    'client', c.name,\n    'orders', count(j.id),\n    'devices', json_group_array(DISTINCT j.device)\n) AS result\nFROM clients c\nJOIN jobs j ON j.client_id = c.id\nWHERE c.name = 'Анна'\nGROUP BY c.id;",
+              "explain": "Результат можно сразу отдавать в приложение или сохранять в файл."
+            }
+          ],
+          "practice": {
+            "task": "Поработай с JSON.",
+            "steps": [
+              "Выполни примеры.",
+              "Добавь свойства ещё двум заказам, включая поле `memory` с объёмом памяти.",
+              "Выведи заказы с цветом и объёмом памяти; у тех, где поля нет, должен быть `NULL`.",
+              "Измени цвет у одного заказа и удали поле `note` у другого.",
+              "Посчитай, сколько заказов приходится на каждый цвет.",
+              "Собери JSON-массив с названиями всех деталей категории `экраны`.",
+              "Проверь, корректен ли текст `{'a': 1}` с точки зрения JSON: `SELECT json_valid('{''a'': 1}');`."
+            ],
+            "hint": "В JSON строки пишутся только в двойных кавычках, поэтому `json_valid` вернёт 0. Одинарная кавычка внутри SQL-строки удваивается."
+          },
+          "quiz": [
+            {
+              "question": "Что делает `json_extract(extra, '$.color')`?",
+              "options": [
+                "Удаляет поле",
+                "Возвращает значение поля color из JSON",
+                "Создаёт столбец",
+                "Проверяет тип"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Какие данные лучше хранить обычными столбцами, а не в JSON?",
+              "options": [
+                "Редкие необязательные свойства",
+                "То, по чему часто ищут и соединяют таблицы",
+                "Комментарии",
+                "Ответы внешних API"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m5-l4",
+          "order": 4,
+          "title": "Импорт, экспорт и резервные копии",
+          "duration_min": 14,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "Данные редко живут только в базе: их загружают из таблиц и выгружают для отчётов. Оболочка `sqlite3` умеет это служебными командами.\n\n**Экспорт в CSV:**\n\n```\n.headers on\n.mode csv\n.output parts.csv\nSELECT * FROM parts;\n.output stdout\n.mode box\n```\n\n`.output файл` направляет результаты в файл, `.output stdout` возвращает вывод на экран. Короткий вариант для одного запроса: `.once файл`.\n\n**Импорт из CSV:**\n\n```\n.import --csv --skip 1 файл.csv таблица\n```\n\n`--skip 1` пропускает строку заголовков. Если таблицы нет, она будет создана, а первая строка файла станет названиями столбцов (тогда `--skip` не нужен). Все значения импортируются как текст — числа стоит привести отдельным запросом.\n\n**Запросы из терминала**, без входа в оболочку:\n\n```\nsqlite3 service.db \"SELECT count(*) FROM jobs;\"\nsqlite3 -header -csv service.db \"SELECT * FROM parts;\" > parts.csv\nsqlite3 service.db < script.sql\n```\n\nТак SQLite встраивается в shell-скрипты и задания по расписанию.\n\n**Резервные копии:**\n\n| Способ | Команда |\n|---|---|\n| Копия файла базы | `.backup backup.db` |\n| Текстовый дамп (SQL-команды) | `.dump` |\n| Восстановление из дампа | `sqlite3 new.db < dump.sql` |\n| Сжатая чистая копия | `VACUUM INTO 'copy.db';` |\n\nПросто скопировать файл через `cp` можно только когда с базой никто не работает. `.backup` безопасен всегда.\n\nТекстовый дамп удобно хранить в Git: видно, как менялись схема и данные.\n\n**Обслуживание:** `VACUUM;` сжимает файл после удаления большого объёма данных, `PRAGMA integrity_check;` проверяет базу на повреждения.",
+          "examples": [
+            {
+              "title": "Экспорт и импорт внутри sqlite3",
+              "lang": "text",
+              "code": ".headers on\n.mode csv\n.once parts.csv\nSELECT id, name, category, price, qty FROM parts;\n\n.mode box\nCREATE TABLE parts_import (id, name, category, price, qty);\n.import --csv --skip 1 parts.csv parts_import\nSELECT count(*) FROM parts_import;\nDROP TABLE parts_import;",
+              "explain": "Файл `parts.csv` появится в текущем каталоге. `.once` направляет в файл только следующий запрос."
+            },
+            {
+              "title": "Работа из терминала",
+              "lang": "sh",
+              "code": "cd ~/sql-lab\nsqlite3 service.db \"SELECT status, count(*) FROM jobs GROUP BY status;\"\nsqlite3 -header -csv service.db \"SELECT * FROM job_report;\" > report.csv\nhead -n 3 report.csv\nsqlite3 service.db \".backup backup-$(date +%F).db\"\nsqlite3 service.db .dump > dump.sql\ngrep -c \"INSERT INTO\" dump.sql\nls -lh",
+              "explain": "База, копия, дамп и отчёт — обычные файлы, с которыми работают привычные команды Linux."
+            },
+            {
+              "title": "Восстановление и проверка",
+              "lang": "sh",
+              "code": "cd ~/sql-lab\nsqlite3 restored.db < dump.sql\nsqlite3 restored.db \"SELECT count(*) FROM jobs;\"\nsqlite3 restored.db \"PRAGMA integrity_check;\"\nrm restored.db",
+              "explain": "Из текстового дампа получается полная копия базы."
+            }
+          ],
+          "practice": {
+            "task": "Настрой обмен данными и копии.",
+            "steps": [
+              "Выгрузи таблицу `clients` в CSV и посмотри файл командой `cat`.",
+              "Создай в редакторе файл `new_parts.csv` с заголовком и тремя новыми деталями.",
+              "Импортируй его во временную таблицу, проверь содержимое и перенеси строки в `parts` через `INSERT ... SELECT` с приведением типов.",
+              "Выполни из терминала запрос, который считает выручку по мастерам.",
+              "Сделай резервную копию базы и текстовый дамп.",
+              "Напиши shell-скрипт `backup.sh`, который создаёт копию с датой в имени и оставляет только пять последних.",
+              "Восстанови базу из дампа в новый файл и сравни количество строк в таблицах."
+            ],
+            "hint": "Приведение типов при переносе: `CAST(price AS INTEGER)`. Удаление старых копий: `ls -1t backup-*.db | tail -n +6 | xargs -r rm --`."
+          },
+          "quiz": [
+            {
+              "question": "Какой способ копирования безопасен, когда с базой работают?",
+              "options": [
+                "cp service.db copy.db",
+                ".backup copy.db",
+                "mv service.db copy.db",
+                "cat service.db"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Что содержит результат `.dump`?",
+              "options": [
+                "Двоичную копию",
+                "SQL-команды для воссоздания базы",
+                "Список таблиц",
+                "Журнал ошибок"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sqlite-m6",
+      "order": 6,
+      "title": "SQLite и Python",
+      "description": "Работа с базой из программы и итоговый проект.",
+      "lessons": [
+        {
+          "id": "sqlite-m6-l1",
+          "order": 1,
+          "title": "Модуль sqlite3: запросы из Python",
+          "duration_min": 15,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "Запросы в оболочке — это для человека. Программа работает с базой через **драйвер**. В Python драйвер SQLite входит в стандартную библиотеку — модуль `sqlite3`, ставить ничего не нужно.\n\nПорядок работы:\n\n```python\nimport sqlite3\n\ncon = sqlite3.connect(\"service.db\")   # подключение (файл создастся, если его нет)\ncur = con.execute(\"SELECT ...\")       # выполнить запрос\nrows = cur.fetchall()                 # получить результат\ncon.commit()                          # сохранить изменения\ncon.close()                           # закрыть\n```\n\n| Метод | Что делает |\n|---|---|\n| `con.execute(sql, params)` | выполнить один запрос |\n| `con.executemany(sql, список)` | выполнить запрос для каждого набора параметров |\n| `con.executescript(sql)` | выполнить несколько запросов подряд |\n| `cur.fetchone()` | одна строка или None |\n| `cur.fetchall()` | все строки списком |\n| `for row in cur:` | перебор по одной строке |\n| `cur.lastrowid` | id вставленной строки |\n| `cur.rowcount` | число изменённых строк |\n\n**Главное правило: значения передаются параметрами, а не вклеиваются в текст запроса.**\n\n```python\ncon.execute(\"SELECT * FROM parts WHERE name = ?\", (name,))        # правильно\ncon.execute(f\"SELECT * FROM parts WHERE name = '{name}'\")          # опасно\n```\n\nВо втором случае пользователь может ввести `' OR '1'='1` и получить всю таблицу или что-нибудь удалить. Это **SQL-инъекция** — одна из самых распространённых уязвимостей. Параметры полностью от неё защищают.\n\nПараметры бывают позиционные (`?` и кортеж) и именованные (`:name` и словарь).\n\nИмена таблиц и столбцов параметрами передать нельзя — только значения.\n\nСпециальное имя `\":memory:\"` создаёт базу в оперативной памяти: удобно для экспериментов и тестов.",
+          "examples": [
+            {
+              "title": "Чтение данных",
+              "lang": "python",
+              "code": "import sqlite3\nfrom pathlib import Path\n\ndb = Path.home() / \"sql-lab\" / \"service.db\"\ncon = sqlite3.connect(db if db.exists() else \":memory:\")\ncon.execute(\"CREATE TABLE IF NOT EXISTS parts (id INTEGER PRIMARY KEY, name TEXT, category TEXT, price INTEGER, qty INTEGER)\")\n\nfor name, price, qty in con.execute(\n        \"SELECT name, price, qty FROM parts WHERE price > ? ORDER BY price DESC\", (1000,)):\n    print(f\"{name:28} {price:>6} руб. {qty:>3} шт.\")\n\ntotal = con.execute(\"SELECT count(*), coalesce(sum(price * qty), 0) FROM parts\").fetchone()\nprint(\"Позиций:\", total[0], \"на сумму:\", total[1])\ncon.close()",
+              "explain": "Каждая строка результата — кортеж, его удобно распаковывать прямо в цикле. Если базы курса нет, пример создаст пустую таблицу в памяти."
+            },
+            {
+              "title": "Запись и параметры",
+              "lang": "python",
+              "code": "import sqlite3\n\ncon = sqlite3.connect(\":memory:\")\ncon.execute(\"CREATE TABLE notes (id INTEGER PRIMARY KEY, text TEXT NOT NULL, done INTEGER DEFAULT 0)\")\n\ncur = con.execute(\"INSERT INTO notes (text) VALUES (?)\", (\"купить термопасту\",))\nprint(\"id новой записи:\", cur.lastrowid)\n\ncon.executemany(\"INSERT INTO notes (text) VALUES (?)\",\n                [(\"проверить поставку\",), (\"позвонить клиенту\",)])\n\ncur = con.execute(\"UPDATE notes SET done = 1 WHERE text LIKE :pattern\", {\"pattern\": \"%клиент%\"})\nprint(\"изменено строк:\", cur.rowcount)\ncon.commit()\n\nprint(con.execute(\"SELECT id, text, done FROM notes\").fetchall())\ncon.close()",
+              "explain": "Обрати внимание на запятую в `(\"текст\",)` — это кортеж из одного элемента."
+            },
+            {
+              "title": "Почему нельзя вклеивать значения в запрос",
+              "lang": "python",
+              "code": "import sqlite3\n\ncon = sqlite3.connect(\":memory:\")\ncon.execute(\"CREATE TABLE users (name TEXT, secret TEXT)\")\ncon.executemany(\"INSERT INTO users VALUES (?, ?)\", [(\"anna\", \"код 1111\"), (\"boris\", \"код 2222\")])\n\nuser_input = \"nobody' OR '1'='1\"\n\nunsafe = con.execute(f\"SELECT * FROM users WHERE name = '{user_input}'\").fetchall()\nsafe = con.execute(\"SELECT * FROM users WHERE name = ?\", (user_input,)).fetchall()\n\nprint(\"Вклеивание в строку:\", unsafe)\nprint(\"Параметр:\", safe)",
+              "explain": "Небезопасный запрос вернул все секреты, безопасный — пустой список."
+            }
+          ],
+          "practice": {
+            "task": "Подключи Python к своей базе.",
+            "steps": [
+              "Создай `~/sql-lab/report.py`.",
+              "Подключись к `service.db` и выведи все заказы в работе с именами клиентов.",
+              "Спроси у пользователя название категории и выведи детали этой категории через параметр запроса.",
+              "Выведи три самых дорогих заказа.",
+              "Добавь нового клиента, имя которого вводится с клавиатуры, и выведи его `id`.",
+              "Не забудь `con.commit()` — проверь из оболочки `sqlite3`, что клиент сохранился.",
+              "Воспроизведи третий пример и объясни себе, как сработала инъекция."
+            ],
+            "hint": "Без `commit()` изменения исчезнут при закрытии соединения. Это самая частая ошибка новичков."
+          },
+          "quiz": [
+            {
+              "question": "Как правильно передать значение в запрос?",
+              "options": [
+                "Через f-строку",
+                "Параметром: знак ? и кортеж значений",
+                "Склейкой строк",
+                "Через input внутри запроса"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Что произойдёт, если не вызвать `con.commit()` после INSERT?",
+              "options": [
+                "Ничего страшного",
+                "Изменения не сохранятся",
+                "База удалится",
+                "Запрос выполнится дважды"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m6-l2",
+          "order": 2,
+          "title": "Удобная и надёжная работа с базой",
+          "duration_min": 15,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "Несколько приёмов превращают учебный код в рабочий.\n\n**1. Строки как словари.** По умолчанию строка — кортеж, и к столбцам приходится обращаться по номерам. С `row_factory` можно по именам:\n\n```python\ncon.row_factory = sqlite3.Row\nrow[\"name\"]\n```\n\n**2. Транзакции через with.** Соединение работает как контекстный менеджер: при успешном выходе из блока вызывается `commit`, при исключении — `rollback`.\n\n```python\nwith con:\n    con.execute(...)\n    con.execute(...)\n```\n\nВажно: `with con` управляет транзакцией, но **не закрывает** соединение.\n\n**3. Внешние ключи.** `PRAGMA foreign_keys = ON` нужно выполнять после каждого подключения.\n\n**4. Обработка ошибок.**\n\n| Исключение | Когда возникает |\n|---|---|\n| `sqlite3.IntegrityError` | нарушено ограничение: UNIQUE, NOT NULL, CHECK, внешний ключ |\n| `sqlite3.OperationalError` | нет таблицы, ошибка синтаксиса, база занята |\n| `sqlite3.Error` | общий предок всех ошибок модуля |\n\n**5. Одна функция подключения.** Все настройки собираются в одном месте, а остальной код просто вызывает её.\n\n**6. Схема в коде.** `CREATE TABLE IF NOT EXISTS` позволяет программе самой создать базу при первом запуске.\n\n**7. Данные и логика отдельно.** Функции, работающие с базой, не печатают и не спрашивают ввод — они принимают параметры и возвращают результат. Тогда их можно тестировать и использовать повторно.\n\nСоответствие типов: `None` ↔ `NULL`, `int` ↔ `INTEGER`, `float` ↔ `REAL`, `str` ↔ `TEXT`, `bytes` ↔ `BLOB`.",
+          "examples": [
+            {
+              "title": "Подключение со всеми настройками",
+              "lang": "python",
+              "code": "import sqlite3\n\n\ndef connect(path=\":memory:\"):\n    con = sqlite3.connect(path)\n    con.row_factory = sqlite3.Row\n    con.execute(\"PRAGMA foreign_keys = ON\")\n    return con\n\n\ncon = connect()\ncon.executescript(\"\"\"\n    CREATE TABLE IF NOT EXISTS shelves (id INTEGER PRIMARY KEY, title TEXT NOT NULL UNIQUE);\n    CREATE TABLE IF NOT EXISTS boxes (\n        id INTEGER PRIMARY KEY,\n        shelf_id INTEGER NOT NULL REFERENCES shelves(id),\n        label TEXT NOT NULL,\n        items INTEGER NOT NULL DEFAULT 0 CHECK (items >= 0)\n    );\n\"\"\")\n\nwith con:\n    shelf_id = con.execute(\"INSERT INTO shelves (title) VALUES (?)\", (\"Экраны\",)).lastrowid\n    con.executemany(\"INSERT INTO boxes (shelf_id, label, items) VALUES (?, ?, ?)\",\n                    [(shelf_id, \"OLED\", 3), (shelf_id, \"IPS\", 5)])\n\nfor row in con.execute(\"SELECT b.label, b.items, s.title FROM boxes b JOIN shelves s ON s.id = b.shelf_id\"):\n    print(row[\"title\"], row[\"label\"], row[\"items\"], dict(row))",
+              "explain": "`dict(row)` превращает строку в обычный словарь — удобно для вывода в JSON."
+            },
+            {
+              "title": "Транзакция с откатом и обработка ошибок",
+              "lang": "python",
+              "code": "import sqlite3\n\ncon = sqlite3.connect(\":memory:\")\ncon.execute(\"CREATE TABLE stock (name TEXT PRIMARY KEY, qty INTEGER NOT NULL CHECK (qty >= 0))\")\nwith con:\n    con.execute(\"INSERT INTO stock VALUES ('экран', 2)\")\n\n\ndef take(con, name, amount):\n    \"\"\"Списывает amount штук. Возвращает True при успехе.\"\"\"\n    try:\n        with con:\n            cur = con.execute(\"UPDATE stock SET qty = qty - ? WHERE name = ?\", (amount, name))\n            if cur.rowcount == 0:\n                raise LookupError(f\"нет позиции: {name}\")\n        return True\n    except sqlite3.IntegrityError:\n        print(f\"Недостаточно на складе: {name}\")\n    except LookupError as e:\n        print(e)\n    return False\n\n\nprint(take(con, \"экран\", 1))\nprint(take(con, \"экран\", 5))\nprint(take(con, \"батарея\", 1))\nprint(con.execute(\"SELECT * FROM stock\").fetchall())",
+              "explain": "Ограничение `CHECK (qty >= 0)` не даёт уйти в минус: база выбрасывает `IntegrityError`, а `with con` откатывает изменение. Остаток — одна штука."
+            }
+          ],
+          "practice": {
+            "task": "Сделай код работы с базой надёжным.",
+            "steps": [
+              "Создай `~/sql-lab/db.py` с функцией `connect(path)` из первого примера.",
+              "Добавь функцию `add_client(con, name, phone=None)`, которая возвращает `id` нового клиента.",
+              "Добавь функцию `client_jobs(con, client_id)`, которая возвращает список словарей с заказами.",
+              "Добавь функцию `set_status(con, job_id, status)`, которая возвращает `True`, если заказ найден и обновлён.",
+              "В отдельном файле импортируй эти функции и проверь их на базе `service.db`.",
+              "Попробуй добавить заказ несуществующему клиенту и обработай `IntegrityError`.",
+              "Со звёздочкой: напиши тесты pytest для своих функций на базе `:memory:`."
+            ],
+            "hint": "Для тестов создавай в каждом тесте новое подключение `connect(\":memory:\")` и нужные таблицы — тесты не будут влиять друг на друга."
+          },
+          "quiz": [
+            {
+              "question": "Что делает `con.row_factory = sqlite3.Row`?",
+              "options": [
+                "Ускоряет запросы",
+                "Позволяет обращаться к столбцам по имени",
+                "Включает внешние ключи",
+                "Создаёт таблицу"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Что происходит в блоке `with con:` при исключении?",
+              "options": [
+                "commit",
+                "rollback",
+                "Соединение закрывается",
+                "Ничего"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m6-l3",
+          "order": 3,
+          "title": "Итоговый проект: складской учёт",
+          "duration_min": 30,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "Финальная работа — консольное приложение для склада запчастей. В нём сходится весь курс: схема с ограничениями и внешними ключами, транзакции, JOIN, агрегаты, UPSERT, параметры запросов и Python.\n\n**Что умеет программа:**\n\n```\nsklad add \"Экран 6.1 OLED\" экраны 7400 3    # приход (или новая позиция)\nsklad take \"Экран 6.1 OLED\" 1 --note \"заказ 15\"   # списание\nsklad list                                   # остатки\nsklad list --low 3                           # заканчивающиеся позиции\nsklad history \"Экран 6.1 OLED\"               # движение по позиции\nsklad report                                 # сводка по категориям\n```\n\n**Схема из двух таблиц:**\n\n- `items` — позиции склада: название (уникальное), категория, цена, остаток (не меньше нуля);\n- `moves` — журнал движений: позиция, изменение количества (плюс или минус), комментарий, время.\n\n**Ключевые решения:**\n\n1. приход оформлен через UPSERT: новая позиция создаётся, существующая пополняется;\n2. каждое изменение остатка и запись в журнал идут **одной транзакцией** — остаток всегда равен сумме движений;\n3. уйти в минус не даёт ограничение `CHECK` в самой базе, а программа лишь перехватывает ошибку;\n4. все значения передаются параметрами;\n5. функции работы с данными отделены от вывода на экран.\n\nИзучи каркас, запусти его и доработай по заданию.",
+          "examples": [
+            {
+              "title": "sklad — каркас приложения",
+              "lang": "python",
+              "code": "#!/usr/bin/env python3\n\"\"\"Складской учёт на SQLite.\"\"\"\nimport argparse\nimport sqlite3\nimport sys\nfrom pathlib import Path\n\nDB = Path.home() / \"sql-lab\" / \"sklad.db\"\n\nSCHEMA = \"\"\"\nCREATE TABLE IF NOT EXISTS items (\n    id INTEGER PRIMARY KEY,\n    name TEXT NOT NULL UNIQUE,\n    category TEXT NOT NULL,\n    price INTEGER NOT NULL CHECK (price >= 0),\n    qty INTEGER NOT NULL DEFAULT 0 CHECK (qty >= 0)\n);\nCREATE TABLE IF NOT EXISTS moves (\n    id INTEGER PRIMARY KEY,\n    item_id INTEGER NOT NULL REFERENCES items(id),\n    delta INTEGER NOT NULL,\n    note TEXT NOT NULL DEFAULT '',\n    created TEXT NOT NULL DEFAULT (datetime('now', 'localtime'))\n);\nCREATE INDEX IF NOT EXISTS idx_moves_item ON moves(item_id);\n\"\"\"\n\n\ndef connect(path=DB):\n    Path(path).parent.mkdir(parents=True, exist_ok=True)\n    con = sqlite3.connect(path)\n    con.row_factory = sqlite3.Row\n    con.execute(\"PRAGMA foreign_keys = ON\")\n    con.executescript(SCHEMA)\n    return con\n\n\ndef add(con, name, category, price, qty, note=\"приход\"):\n    with con:\n        item_id = con.execute(\n            \"\"\"INSERT INTO items (name, category, price, qty) VALUES (?, ?, ?, ?)\n               ON CONFLICT (name) DO UPDATE SET qty = qty + excluded.qty, price = excluded.price\n               RETURNING id\"\"\",\n            (name, category, price, qty)).fetchone()[\"id\"]\n        con.execute(\"INSERT INTO moves (item_id, delta, note) VALUES (?, ?, ?)\", (item_id, qty, note))\n    return item_id\n\n\ndef take(con, name, qty, note=\"списание\"):\n    row = con.execute(\"SELECT id FROM items WHERE name = ?\", (name,)).fetchone()\n    if row is None:\n        raise LookupError(f\"нет позиции: {name}\")\n    with con:\n        con.execute(\"UPDATE items SET qty = qty - ? WHERE id = ?\", (qty, row[\"id\"]))\n        con.execute(\"INSERT INTO moves (item_id, delta, note) VALUES (?, ?, ?)\", (row[\"id\"], -qty, note))\n\n\ndef stock(con, low=None):\n    sql = \"SELECT name, category, price, qty FROM items\"\n    params = ()\n    if low is not None:\n        sql += \" WHERE qty <= ?\"\n        params = (low,)\n    return con.execute(sql + \" ORDER BY category, name\", params).fetchall()\n\n\ndef history(con, name):\n    return con.execute(\n        \"\"\"SELECT m.created, m.delta, m.note\n           FROM moves m JOIN items i ON i.id = m.item_id\n           WHERE i.name = ? ORDER BY m.id\"\"\", (name,)).fetchall()\n\n\ndef report(con):\n    return con.execute(\n        \"\"\"SELECT category, count(*) AS positions, sum(qty) AS pieces, sum(price * qty) AS value\n           FROM items GROUP BY category ORDER BY value DESC\"\"\").fetchall()\n\n\ndef main(argv=None):\n    parser = argparse.ArgumentParser(description=\"Складской учёт\")\n    sub = parser.add_subparsers(dest=\"cmd\", required=True)\n\n    p = sub.add_parser(\"add\", help=\"приход\")\n    p.add_argument(\"name\")\n    p.add_argument(\"category\")\n    p.add_argument(\"price\", type=int)\n    p.add_argument(\"qty\", type=int)\n\n    p = sub.add_parser(\"take\", help=\"списание\")\n    p.add_argument(\"name\")\n    p.add_argument(\"qty\", type=int)\n    p.add_argument(\"--note\", default=\"списание\")\n\n    p = sub.add_parser(\"list\", help=\"остатки\")\n    p.add_argument(\"--low\", type=int, help=\"показать позиции с остатком не больше N\")\n\n    p = sub.add_parser(\"history\", help=\"движение по позиции\")\n    p.add_argument(\"name\")\n\n    sub.add_parser(\"report\", help=\"сводка по категориям\")\n    args = parser.parse_args(argv)\n\n    con = connect()\n    try:\n        if args.cmd == \"add\":\n            if args.qty <= 0:\n                sys.exit(\"Количество должно быть больше нуля\")\n            add(con, args.name, args.category, args.price, args.qty)\n            print(f\"Приход: {args.name} +{args.qty}\")\n        elif args.cmd == \"take\":\n            if args.qty <= 0:\n                sys.exit(\"Количество должно быть больше нуля\")\n            take(con, args.name, args.qty, args.note)\n            print(f\"Списано: {args.name} -{args.qty}\")\n        elif args.cmd == \"list\":\n            for r in stock(con, args.low):\n                print(f\"{r['name']:28} {r['category']:14} {r['price']:>6} {r['qty']:>4}\")\n        elif args.cmd == \"history\":\n            for r in history(con, args.name):\n                print(f\"{r['created']}  {r['delta']:>+4}  {r['note']}\")\n        elif args.cmd == \"report\":\n            for r in report(con):\n                print(f\"{r['category']:14} позиций: {r['positions']:>2}  штук: {r['pieces']:>3}  сумма: {r['value']:>7}\")\n    except sqlite3.IntegrityError:\n        sys.exit(\"Недостаточно на складе\")\n    except LookupError as e:\n        sys.exit(str(e))\n    finally:\n        con.close()\n\n\nif __name__ == \"__main__\":\n    main()",
+              "explain": "Сохрани как `~/bin/sklad`, сделай исполняемым (`chmod +x ~/bin/sklad`) и добавь `~/bin` в PATH."
+            },
+            {
+              "title": "Проверяем программу и базу",
+              "lang": "sh",
+              "code": "sklad add \"Экран 6.1 OLED\" экраны 7400 3\nsklad add \"Микрофон\" звук 260 14\nsklad add \"Микрофон\" звук 260 10\nsklad take \"Экран 6.1 OLED\" 1 --note \"заказ 15\"\nsklad take \"Экран 6.1 OLED\" 5\nsklad list\nsklad history \"Микрофон\"\nsklad report\nsqlite3 ~/sql-lab/sklad.db \"SELECT i.name, i.qty, sum(m.delta) AS moves_sum FROM items i JOIN moves m ON m.item_id = i.id GROUP BY i.id;\"",
+              "explain": "Пятая команда завершится сообщением «Недостаточно на складе», а остаток не изменится. Последний запрос доказывает главное свойство системы: остаток каждой позиции равен сумме её движений."
+            }
+          ],
+          "practice": {
+            "task": "Доведи проект до конца.",
+            "steps": [
+              "Сохрани каркас, выполни проверочные команды и изучи базу через `sqlite3 ~/sql-lab/sklad.db`.",
+              "Добавь команду `price НАЗВАНИЕ ЦЕНА` для изменения цены без прихода.",
+              "Добавь команду `find ТЕКСТ` — поиск позиций по части названия.",
+              "Добавь в `report` итоговую строку по всему складу.",
+              "Добавь команду `export файл.csv` с выгрузкой остатков.",
+              "Добавь команду `top N` — самые расходуемые позиции по журналу движений.",
+              "Создай представление `v_stock_check`, которое сравнивает остаток с суммой движений, и команду `check`, которая сообщает о расхождениях.",
+              "Напиши тесты pytest: приход новой позиции, пополнение существующей, списание, попытка списать больше остатка, списание несуществующей позиции. Используй `connect(tmp_path / \"test.db\")`.",
+              "Со звёздочкой: добавь таблицу поставщиков и связь позиций с ними."
+            ],
+            "hint": "Самые расходуемые: `SELECT i.name, -sum(m.delta) AS used FROM moves m JOIN items i ON i.id = m.item_id WHERE m.delta < 0 GROUP BY i.id ORDER BY used DESC LIMIT ?`."
+          },
+          "quiz": [
+            {
+              "question": "Почему изменение остатка и запись в журнал идут одной транзакцией?",
+              "options": [
+                "Так быстрее",
+                "Чтобы остаток всегда совпадал с суммой движений",
+                "Иначе не работает UPSERT",
+                "Так требует Python"
+              ],
+              "answer": 1,
+              "explain": ""
+            },
+            {
+              "question": "Что не даёт остатку стать отрицательным?",
+              "options": [
+                "Проверка в функции main",
+                "Ограничение CHECK в таблице",
+                "Индекс",
+                "Внешний ключ"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        },
+        {
+          "id": "sqlite-m6-l4",
+          "order": 4,
+          "title": "Итог курса и что дальше",
+          "duration_min": 10,
+          "try_in": [
+            "matrux-dev",
+            "alpine-xfce",
+            "debian13-xfce",
+            "ubuntu-xfce",
+            "arch-xfce"
+          ],
+          "theory": "Ты прошёл путь от первого `SELECT` до приложения с собственной базой данных.\n\n**Что ты теперь умеешь:**\n\n- создавать таблицы с типами, ключами и ограничениями;\n- читать и изменять данные: `SELECT`, `INSERT`, `UPDATE`, `DELETE`;\n- фильтровать, сортировать, группировать, считать агрегаты;\n- проектировать связанные таблицы и соединять их через `JOIN`;\n- писать подзапросы, CTE и оконные функции;\n- защищать данные транзакциями и ускорять запросы индексами;\n- импортировать, экспортировать и резервировать базу;\n- работать с базой из Python без уязвимостей.\n\n**SQLite в настоящих проектах** используют в мобильных и настольных приложениях, небольших сайтах, для прототипов, тестов и анализа данных. Когда базе нужно много одновременных записей или доступ по сети с нескольких серверов — берут клиент-серверную СУБД.\n\n**Чем отличаются PostgreSQL и MySQL:**\n\n| | SQLite | PostgreSQL, MySQL |\n|---|---|---|\n| Устройство | файл | отдельный сервер |\n| Пользователи и права | нет | есть |\n| Одновременная запись | одно соединение | много |\n| Типы | гибкие | строгие; есть дата, время, логический, массивы |\n| Автонумерация | `INTEGER PRIMARY KEY` | `SERIAL` / `IDENTITY`, `AUTO_INCREMENT` |\n| Параметры в Python | `?` | `%s` |\n\nСам язык SQL — `SELECT`, `JOIN`, `GROUP BY`, оконные функции, транзакции — тот же. Переход занимает дни, а не месяцы.\n\n**Куда двигаться:**\n\n| Направление | Что изучать |\n|---|---|\n| Бэкенд | PostgreSQL, ORM (SQLAlchemy, Django ORM), миграции |\n| Аналитика | сложные оконные функции, pandas, визуализация |\n| Мобильная разработка | Room (Android), работа с SQLite в приложении |\n| Администрирование | репликация, резервное копирование, мониторинг |\n\n**Что стоит изучить в любом случае:** нормальные формы и проектирование схем, уровни изоляции транзакций, чтение планов запросов на больших данных.\n\n**Главный совет:** возьми данные, которые тебе интересны — свои расходы, тренировки, коллекцию, статистику игры — и заведи для них базу. На своих данных вопросы появляются сами, а вместе с ними и навык.",
+          "examples": [
+            {
+              "title": "Шпаргалка: порядок частей запроса",
+              "lang": "text",
+              "code": "WITH prepared AS (              -- 0. вспомогательные запросы\n    SELECT ...\n)\nSELECT столбцы, агрегаты        -- 5. что вывести\nFROM таблица                    -- 1. откуда\nJOIN другая ON условие          -- 1. с чем соединить\nWHERE условие_для_строк         -- 2. какие строки взять\nGROUP BY столбцы                -- 3. как сгруппировать\nHAVING условие_для_групп        -- 4. какие группы оставить\nORDER BY столбцы                -- 6. как отсортировать\nLIMIT количество;               -- 7. сколько строк вернуть",
+              "explain": "Цифры — порядок, в котором база выполняет части запроса."
+            }
+          ],
+          "practice": {
+            "task": "Выпускное задание.",
+            "steps": [
+              "Придумай предметную область, которая интересна тебе: библиотека, тренировки, расходы, коллекция игр, расписание.",
+              "Нарисуй на бумаге или в текстовом файле схему: минимум три таблицы, одна связь «один ко многим» и одна «многие ко многим».",
+              "Создай базу со всеми ограничениями и внешними ключами в файле `schema.sql`.",
+              "Заполни её данными: не меньше десяти строк в основных таблицах.",
+              "Напиши в файле `queries.sql` десять запросов-отчётов: с JOIN, группировкой, подзапросом, CTE и оконной функцией.",
+              "Создай два представления и нужные индексы.",
+              "Напиши небольшую программу на Python, которая добавляет записи и выводит хотя бы один отчёт.",
+              "Сохрани проект в Git: схему, запросы, код и текстовый дамп базы."
+            ],
+            "hint": "Проверка схемы: если одно и то же значение приходится вписывать в несколько строк руками — скорее всего, его нужно вынести в отдельную таблицу."
+          },
+          "quiz": [
+            {
+              "question": "Что из перечисленного одинаково в SQLite и PostgreSQL?",
+              "options": [
+                "Способ установки",
+                "Основной язык запросов: SELECT, JOIN, GROUP BY",
+                "Управление пользователями",
+                "Формат файла базы"
+              ],
+              "answer": 1,
+              "explain": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

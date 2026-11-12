@@ -66,7 +66,7 @@ class AccountRepositoryTest {
     }
 
     private fun repository() = MatruxRepository(
-        api = MatruxApi(server.url("/").toString()),
+        api = MatruxApi(server.url("/").toString(), pinnedKey = ""),
         local = local,
         secrets = secrets,
         pinnedKey = null,
@@ -151,7 +151,7 @@ class AccountRepositoryTest {
     @Test
     fun brokenStoreDoesNotBreakStatus() = runTest {
         val repo = MatruxRepository(
-            MatruxApi(server.url("/").toString()), local, secrets, null, "test",
+            MatruxApi(server.url("/").toString(), pinnedKey = ""), local, secrets, null, "test",
             storePurchases = { error("sdk") }, unlocked = false, clock = { now },
         )
         assertEquals(Tier.FREE, repo.refreshStatus().tier)
@@ -178,8 +178,8 @@ class AccountRepositoryTest {
 
     @Test
     fun unlockedBuildSkipsNetwork() = runTest {
-        val repo = MatruxRepository(MatruxApi(server.url("/").toString()), local, secrets, null, "test", unlocked = true)
-        assertEquals(Tier.LIFETIME, repo.refreshStatus().tier)
+        val repo = MatruxRepository(MatruxApi(server.url("/").toString(), pinnedKey = ""), local, secrets, null, "test", unlocked = true)
+        assertEquals(Tier.PRO, repo.refreshStatus().tier)
         assertTrue(calls.isEmpty())
     }
 }

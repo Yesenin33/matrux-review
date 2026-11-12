@@ -27,6 +27,7 @@ interface LocalState {
     var account: AccountInfo?
     var storeCheckedAt: Long?
     var onboardVersion: Int
+    var theme: String?
 }
 
 class InMemoryLocalState : LocalState {
@@ -41,6 +42,7 @@ class InMemoryLocalState : LocalState {
     override var account: AccountInfo? = null
     override var storeCheckedAt: Long? = null
     override var onboardVersion: Int = 0
+    override var theme: String? = null
 }
 
 class PrefsLocalState(context: Context) : LocalState {
@@ -59,6 +61,10 @@ class PrefsLocalState(context: Context) : LocalState {
     override var onboardVersion: Int
         get() = prefs.getInt("onboard_version", 0)
         set(value) = prefs.edit().putInt("onboard_version", value).apply()
+
+    override var theme: String?
+        get() = prefs.getString("theme", null)
+        set(value) = prefs.edit().putString("theme", value).apply()
 
     override var account: AccountInfo?
         get() = prefs.getString("account", null)?.let { raw ->

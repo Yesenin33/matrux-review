@@ -1,0 +1,76 @@
+{
+ "sources": [
+  {
+   "course": "linux",
+   "author": "Команда Matrux",
+   "title": "Оригинальный курс Matrux: Linux с нуля (собственный контент)",
+   "url": "",
+   "license": "© Matrux, собственный контент",
+   "accessed": "2026-11-11"
+  },
+  {
+   "course": "python",
+   "author": "Евгений Попов",
+   "title": "Руководство по языку Python",
+   "url": "https://metanit.com/python/tutorial/",
+   "license": "© metanit.com, все права защищены",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "python",
+   "author": "Python Software Foundation",
+   "title": "Учебник Python, русская документация",
+   "url": "https://docs.python.org/ru/3/tutorial/",
+   "license": "PSF License v2, примеры кода — Zero Clause BSD",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "python",
+   "author": "younglinux.info",
+   "title": "Python. Введение в программирование",
+   "url": "https://younglinux.info/python/course",
+   "license": "© younglinux.info",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "python",
+   "author": "pythonworld.ru",
+   "title": "Самоучитель Python",
+   "url": "https://pythonworld.ru/samouchitel-python",
+   "license": "© pythonworld.ru",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "python",
+   "author": "Хекслет",
+   "title": "Основы Python",
+   "url": "https://ru.hexlet.io/courses/python-basics",
+   "license": "бесплатный курс, условия Хекслета",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "python",
+   "author": "Тимур Гуев и соавторы",
+   "title": "Поколение Python: курс для начинающих",
+   "url": "https://stepik.org/course/58852/promo",
+   "license": "условия платформы Stepik",
+   "accessed": "2026-11-10"
+  },
+  {
+   "course": "git",
+   "author": "Команда Matrux",
+   "title": "Оригинальный курс Matrux: Git и GitHub (собственный контент)",
+   "url": "",
+   "license": "© Matrux, собственный контент",
+   "accessed": "2026-11-11"
+  },
+  {
+   "course": "sqlite",
+   "author": "Команда Matrux",
+   "title": "Оригинальный курс Matrux: SQL и SQLite (собственный контент)",
+   "url": "",
+   "license": "© Matrux, собственный контент",
+   "accessed": "2026-11-12"
+  }
+ ]
+}

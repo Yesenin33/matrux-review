@@ -1,17 +1,24 @@
 package ru.matrux.app.ui.theme
 
+import android.app.Activity
 import android.provider.Settings
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 
 val LocalMatruxColors = staticCompositionLocalOf { MatruxColors() }
 val LocalMatruxType = staticCompositionLocalOf { MatruxType() }
@@ -29,7 +36,24 @@ object Matrux {
     val motion: MatruxMotion @Composable @ReadOnlyComposable get() = LocalMatruxMotion.current
 }
 
-fun MatruxColors.toScheme(): ColorScheme = lightColorScheme(
+fun MatruxColors.toScheme(dark: Boolean = false): ColorScheme = if (dark) darkColorScheme(
+    primary = accent,
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = accentTint,
+    onPrimaryContainer = ink,
+    secondary = inkSoft,
+    onSecondary = Color(0xFFFFFFFF),
+    background = canvas,
+    onBackground = ink,
+    surface = surface,
+    onSurface = ink,
+    surfaceVariant = surfaceAlt,
+    onSurfaceVariant = muted,
+    outline = hairline,
+    outlineVariant = hairline,
+    error = danger,
+    onError = Color(0xFFFFFFFF),
+) else lightColorScheme(
     primary = accent,
     onPrimary = surface,
     primaryContainer = accentTint,
@@ -69,8 +93,8 @@ fun MatruxShapes.toMaterial(): Shapes = Shapes(
 )
 
 @Composable
-fun MatruxTheme(content: @Composable () -> Unit) {
-    val colors = MatruxColors()
+fun MatruxTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+    val colors = if (dark) DarkColors else LightColors
     val type = MatruxType()
     val shapes = MatruxShapes()
     val context = LocalContext.current
@@ -80,6 +104,15 @@ fun MatruxTheme(content: @Composable () -> Unit) {
         Settings.Global.ANIMATOR_DURATION_SCALE,
         1f,
     ) == 0f
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as? Activity)?.window ?: return@SideEffect
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = !dark
+            controller.isAppearanceLightNavigationBars = !dark
+        }
+    }
     CompositionLocalProvider(
         LocalMatruxColors provides colors,
         LocalMatruxType provides type,
@@ -89,7 +122,7 @@ fun MatruxTheme(content: @Composable () -> Unit) {
         LocalMatruxMotion provides MatruxMotion(reduced = reduced),
     ) {
         MaterialTheme(
-            colorScheme = colors.toScheme(),
+            colorScheme = colors.toScheme(dark),
             typography = type.toTypography(),
             shapes = shapes.toMaterial(),
             content = content,

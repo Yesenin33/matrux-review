@@ -1,28 +1,20 @@
 {
  "courses": [
   {
+   "id": "linux",
+   "file": "linux.json"
+  },
+  {
    "id": "python",
    "file": "python.json"
   },
   {
-   "id": "go",
-   "file": "go.json"
+   "id": "git",
+   "file": "git.json"
   },
   {
-   "id": "html",
-   "file": "html.json"
-  },
-  {
-   "id": "css",
-   "file": "css.json"
-  },
-  {
-   "id": "cpp",
-   "file": "cpp.json"
-  },
-  {
-   "id": "scripts",
-   "file": "scripts.json"
+   "id": "sqlite",
+   "file": "sqlite.json"
   }
  ]
 }

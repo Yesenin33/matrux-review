@@ -61,6 +61,7 @@ fun LessonScreen(ui: LessonUi, actions: LessonActions, draft: String? = null, pi
     var code by rememberSaveable(key) { mutableStateOf(draft ?: ui.starter) }
     var text by rememberSaveable(key) { mutableStateOf(draft.orEmpty()) }
     var chosen by rememberSaveable(key) { mutableIntStateOf(pick) }
+    var picks by rememberSaveable(key) { mutableStateOf(emptyList<Int>()) }
     Column(
         Modifier
             .fillMaxSize()
@@ -88,12 +89,51 @@ fun LessonScreen(ui: LessonUi, actions: LessonActions, draft: String? = null, pi
             Column(verticalArrangement = Arrangement.spacedBy(Matrux.space.unit + Matrux.space.unit / 2)) {
                 lesson.theory.forEach { Text(it, style = Matrux.type.body, color = colors.ink) }
             }
-            Spacer(Modifier.height(Matrux.space.block))
-            Heading(stringResource(R.string.lesson_example))
-            CodeBlock(lesson.example.code, lesson.example.lang)
+            if (lesson.examples.isNotEmpty()) {
+                Spacer(Modifier.height(Matrux.space.block))
+                Heading(stringResource(R.string.lesson_example))
+                lesson.examples.forEachIndexed { index, example ->
+                    if (index > 0) Spacer(Modifier.height(Matrux.space.block))
+                    if (example.title.isNotBlank()) {
+                        Text(example.title, style = Matrux.type.bodyStrong, color = colors.ink)
+                        Spacer(Modifier.height(Matrux.space.unit / 2))
+                    }
+                    CodeBlock(example.code, example.lang)
+                    example.explain?.takeIf { it.isNotBlank() }?.let {
+                        Spacer(Modifier.height(Matrux.space.unit / 2))
+                        Text(it, style = Matrux.type.body, color = colors.inkSoft)
+                    }
+                }
+            } else {
+                Spacer(Modifier.height(Matrux.space.block))
+                Heading(stringResource(R.string.lesson_example))
+                CodeBlock(lesson.example.code, lesson.example.lang)
+            }
             Spacer(Modifier.height(Matrux.space.block))
             Heading(stringResource(R.string.lesson_task))
             Text(lesson.task.prompt, style = Matrux.type.body, color = colors.ink)
+            lesson.practice?.let { practice ->
+                Spacer(Modifier.height(Matrux.space.unit + Matrux.space.unit / 2))
+                Text(stringResource(R.string.lesson_steps), style = Matrux.type.caption, color = colors.muted)
+                Spacer(Modifier.height(Matrux.space.unit / 2))
+                Column(verticalArrangement = Arrangement.spacedBy(Matrux.space.unit / 2)) {
+                    practice.steps.forEachIndexed { index, step ->
+                        Row(verticalAlignment = Alignment.Top) {
+                            Text(
+                                "${index + 1}.",
+                                style = Matrux.type.bodyStrong,
+                                color = colors.ink,
+                                modifier = Modifier.width(Matrux.space.unit * 3),
+                            )
+                            Text(step, style = Matrux.type.body, color = colors.inkSoft, modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+                practice.hint?.takeIf { it.isNotBlank() }?.let {
+                    Spacer(Modifier.height(Matrux.space.unit))
+                    Text(it, style = Matrux.type.body, color = colors.muted)
+                }
+            }
             Spacer(Modifier.height(Matrux.space.unit + Matrux.space.unit / 2))
             when (val task = lesson.task) {
                 is Task.Run -> {
@@ -111,11 +151,25 @@ fun LessonScreen(ui: LessonUi, actions: LessonActions, draft: String? = null, pi
                     }
                 }
                 is Task.Choice -> {
-                    task.code?.let {
-                        CodeBlock(it.code, it.lang)
-                        Spacer(Modifier.height(Matrux.space.unit + Matrux.space.unit / 2))
+                    if (lesson.quiz.size > 1) {
+                        lesson.quiz.forEachIndexed { qIndex, question ->
+                            if (qIndex > 0) Spacer(Modifier.height(Matrux.space.block))
+                            Text(question.question, style = Matrux.type.bodyStrong, color = colors.ink)
+                            Spacer(Modifier.height(Matrux.space.unit))
+                            Options(question.options, picks.getOrNull(qIndex) ?: NO_PICK) { pick ->
+                                val next = picks.toMutableList()
+                                while (next.size <= qIndex) next.add(NO_PICK)
+                                next[qIndex] = pick
+                                picks = next
+                            }
+                        }
+                    } else {
+                        task.code?.let {
+                            CodeBlock(it.code, it.lang)
+                            Spacer(Modifier.height(Matrux.space.unit + Matrux.space.unit / 2))
+                        }
+                        Options(task.options, chosen) { chosen = it }
                     }
-                    Options(task.options, chosen) { chosen = it }
                 }
                 is Task.Output -> {
                     CodeBlock(task.code.code, task.code.lang)
@@ -129,7 +183,7 @@ fun LessonScreen(ui: LessonUi, actions: LessonActions, draft: String? = null, pi
             val running = ui.attempt == Attempt.Running
             val ready = when (lesson.task) {
                 is Task.Run -> code.isNotBlank()
-                is Task.Choice -> chosen != NO_PICK
+                is Task.Choice -> if (lesson.quiz.size > 1) picks.none { it == NO_PICK } else chosen != NO_PICK
                 is Task.Output -> text.isNotBlank()
             }
             PrimaryButton(
@@ -138,7 +192,7 @@ fun LessonScreen(ui: LessonUi, actions: LessonActions, draft: String? = null, pi
                     actions.onCheck(
                         when (lesson.task) {
                             is Task.Run -> Answer.Code(code)
-                            is Task.Choice -> Answer.Pick(chosen)
+                            is Task.Choice -> if (lesson.quiz.size > 1) Answer.Quiz(picks) else Answer.Pick(chosen)
                             is Task.Output -> Answer.Text(text)
                         },
                     )

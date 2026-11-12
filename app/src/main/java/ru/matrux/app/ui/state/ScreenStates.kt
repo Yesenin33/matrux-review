@@ -11,6 +11,7 @@ import ru.matrux.app.learn.Access
 import ru.matrux.app.learn.Course
 import ru.matrux.app.account.AccountInfo
 import ru.matrux.app.data.SubscriptionStatus
+import ru.matrux.app.data.TrustedClock
 import ru.matrux.app.data.Tier
 import ru.matrux.app.install.InstallEstimate
 import ru.matrux.app.shell.LaunchState
@@ -29,23 +30,27 @@ sealed interface SubLine {
     data object Unknown : SubLine
     data object Free : SubLine
     data class ProUntil(val date: LocalDate) : SubLine
-    data object Lifetime : SubLine
     data object Revoked : SubLine
     data class Offline(val checked: LocalDate?) : SubLine
 }
 
-fun subLine(status: SubscriptionStatus?, failure: Failure?, zone: ZoneId): SubLine = when {
+fun subLine(
+    status: SubscriptionStatus?,
+    failure: Failure?,
+    zone: ZoneId,
+    now: Long = TrustedClock.now(),
+): SubLine = when {
     failure == Failure.NoAccess -> SubLine.Revoked
     status == null && failure == Failure.NoConnection -> SubLine.Offline(null)
     status == null -> SubLine.Unknown
-    status.tier == Tier.LIFETIME -> SubLine.Lifetime
+    status.tier == Tier.PRO && status.expiresAt != null && !status.activeAt(now) -> SubLine.Free
     status.tier == Tier.PRO && status.expiresAt != null -> SubLine.ProUntil(status.expiresAt.atZone(zone).toLocalDate())
-    status.tier == Tier.PRO -> SubLine.Lifetime
+    status.tier == Tier.PRO -> SubLine.Free
     failure == Failure.NoConnection -> SubLine.Offline(status.checkedAt?.atZone(zone)?.toLocalDate())
     else -> SubLine.Free
 }
 
-fun SubLine.paidSub(): Boolean = this is SubLine.ProUntil || this is SubLine.Lifetime
+fun SubLine.paidSub(): Boolean = this is SubLine.ProUntil
 
 data class HomeSection(
     val id: String,
@@ -57,7 +62,7 @@ data class HomeSection(
 private val BASICS_SHEETS = listOf("start", "linux", "terms")
 private val ADVANCED_SHEETS = listOf(
     "files", "git", "hardware", "packages", "users", "services",
-    "network", "disks", "logs", "scripts", "languages",
+    "network", "disks", "logs", "scripts",
 )
 
 private fun sheetRows(sections: List<KnowledgeSection>, ids: List<String>, locked: Boolean): List<SectionRow> =
@@ -126,6 +131,7 @@ fun catalogUi(
     bytesPerSecond: Long?,
     installedShas: Map<String, String> = emptyMap(),
     running: Boolean = false,
+    now: Long = TrustedClock.now(),
 ): CatalogUi = when (catalog) {
     Load.Loading -> CatalogUi.Loading
     is Load.Failed -> CatalogUi.Failed(catalog.failure)
@@ -134,7 +140,7 @@ fun catalogUi(
         if (images.isEmpty()) {
             CatalogUi.Empty
         } else {
-            val paid = status?.paid == true && statusFailure != Failure.NoAccess
+            val paid = status?.activeAt(now) == true && statusFailure != Failure.NoAccess
             CatalogUi.Ready(
                 rows = images.map { image ->
                     val marker = installedShas[image.id]
@@ -205,13 +211,14 @@ data class SubscriptionUi(
     val failure: Failure?,
     val billingReady: Boolean = true,
     val account: AccountUi? = null,
+    val now: Long = TrustedClock.now(),
 ) {
-    val paid: Boolean get() = status?.paid == true
+    val paid: Boolean get() = status?.activeAt(now) == true
     val trialAvailable: Boolean get() = !paid && (selectedOffer?.trialDays ?: 0) > 0
     val selectedOffer: PlanOffer? get() = terms.selectedOffer
     val canBuy: Boolean get() = billingReady &&
         selectedOffer?.let { it.productId.isNotBlank() } == true &&
-        !(status?.tier == Tier.LIFETIME) &&
+        !(status?.activeAt(now) ?: false) &&
         !paid
 }
 

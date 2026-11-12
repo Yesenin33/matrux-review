@@ -13,10 +13,12 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
@@ -123,7 +125,7 @@ class MainActivity : ComponentActivity() {
         graph.refresh()
         StoreSdk.handleIntent(this, intent, savedInstanceState == null)
         applyRotationExtra(intent)
-        setContent { MatruxTheme { MatruxApp() } }
+        setContent { Root() }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -210,8 +212,25 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
+    private fun Root() {
+        val theme by graph.theme.collectAsStateWithLifecycle()
+        val dark = when (theme) {
+            "dark" -> true
+            "light" -> false
+            else -> isSystemInDarkTheme()
+        }
+        MatruxTheme(dark = dark) { MatruxApp() }
+    }
+
+    @Composable
     private fun MatruxApp() {
         val graph = graph
+        val themePref by graph.theme.collectAsStateWithLifecycle()
+        val dark = when (themePref) {
+            "dark" -> true
+            "light" -> false
+            else -> isSystemInDarkTheme()
+        }
         val zone = remember { ZoneId.systemDefault() }
         var route by rememberSaveable { mutableStateOf(Route.HOME) }
         var sectionId by rememberSaveable { mutableStateOf("") }
@@ -288,8 +307,10 @@ class MainActivity : ComponentActivity() {
             if (route == Route.DESKTOP) {
                 controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                 controller.hide(WindowInsetsCompat.Type.systemBars())
+                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             } else {
                 controller.show(WindowInsetsCompat.Type.systemBars())
+                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             }
         }
 
@@ -349,7 +370,13 @@ class MainActivity : ComponentActivity() {
                 if (verdict is Verdict.Pass) graph.progress.mark(course.id, lesson.id)
             }
             when (val task = lesson.task) {
-                is Task.Choice -> finish(Grader.choice(task, (answer as Answer.Pick).index))
+                is Task.Choice -> {
+                    if (lesson.quiz.size > 1) {
+                        finish(Grader.quiz(lesson.quiz, (answer as Answer.Quiz).picks))
+                    } else {
+                        finish(Grader.choice(task, (answer as Answer.Pick).index))
+                    }
+                }
                 is Task.Output -> finish(Grader.output(task, (answer as Answer.Text).text))
                 is Task.Run -> {
                     attempt = key to Attempt.Running
@@ -386,6 +413,8 @@ class MainActivity : ComponentActivity() {
                         onSection = openSection,
                         onSubscribe = { route = Route.SUBSCRIPTION },
                         onTab = onTab,
+                        dark = dark,
+                        onTheme = { darkNow -> graph.setTheme(if (darkNow) "dark" else "light") },
                     ),
                 )
                 Route.CATALOG -> CatalogScreen(
@@ -412,7 +441,16 @@ class MainActivity : ComponentActivity() {
                     onRetry = graph::refresh,
                     onTab = onTab,
                 )
-                Route.KNOWLEDGE -> KnowledgeScreen(KnowledgeActions(onTab = onTab))
+                Route.KNOWLEDGE -> KnowledgeScreen(
+                    knowledgeUi(courses, sheets, paid, progress),
+                    KnowledgeActions(
+                        onCourse = { course ->
+                            courseId = course.id
+                            route = Route.COURSE
+                        },
+                        onTab = onTab,
+                    ),
+                )
                 Route.COURSE -> {
                     val course = graph.courses.course(courseId) ?: courses.first()
                     CourseScreen(

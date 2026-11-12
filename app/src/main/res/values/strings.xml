@@ -14,7 +14,6 @@
     <string name="sub_unknown">Подписка ещё не проверена</string>
     <string name="sub_free">Бесплатный доступ</string>
     <string name="sub_pro_until">Pro активна до %1$s</string>
-    <string name="sub_lifetime">Lifetime, без продлений</string>
     <string name="sub_revoked">Доступ отозван</string>
     <string name="sub_offline">Нет связи, подписка проверена %1$s</string>
     <string name="sub_offline_never">Нет связи, подписка не проверена</string>
@@ -100,13 +99,11 @@
     <string name="subs_price_store">цену покажет RuStore</string>
     <string name="subs_pro_1">Все системы каталога</string>
     <string name="subs_pro_2">Резервная копия домашней папки</string>
-    <string name="subs_lifetime">Lifetime</string>
     <string name="subs_lifetime_term">один раз</string>
     <string name="subs_lifetime_1">Всё из Pro, без продлений</string>
     <string name="subs_lifetime_2">Не требует VK ID</string>
     <string name="subs_try">Попробовать %1$d дней</string>
     <string name="subs_buy_pro">Оформить Pro</string>
-    <string name="subs_buy_lifetime">Купить Lifetime</string>
     <string name="subs_busy">Проверяем покупку</string>
     <string name="subs_manage">Отменить подписку</string>
     <string name="subs_current">текущий</string>
@@ -189,6 +186,10 @@
     <string name="eta_sec">%1$d с</string>
 
     <string name="notify_channel">Установка и работа системы</string>
+    <string name="notify_subscription">Подписка</string>
+    <string name="notify_expiry_days">Pro заканчивается через %1$d дн.</string>
+    <string name="notify_expiry_today">Pro заканчивается сегодня</string>
+    <string name="notify_expiry_title">Подписка Pro</string>
     <string name="notify_installing">Установка %1$s</string>
     <string name="notify_session">%1$s работает</string>
     <string name="notify_session_detail">Нажми, чтобы вернуться в систему.</string>
@@ -220,10 +221,10 @@
     </plurals>
 
     <string name="pro_title">Pro</string>
-    <string name="pro_open_1">Базовые знания языков: Python, Go, Node.js</string>
+    <string name="pro_open_1">Курсы Linux, Python, Git и SQL с практикой</string>
     <string name="pro_open_2">Основные команды git — от первого коммита до rebase</string>
     <string name="pro_open_3">Устройство компьютера: процессор, память, шины, питание</string>
-    <string name="pro_open_4">Разделы: файлы, термины, пакеты, права, службы, сеть, диски, логи, скрипты</string>
+    <string name="pro_open_4">Разделы: файлы, устройство компьютера, пакеты, права, службы, сеть, диски, логи, скрипты</string>
     <string name="pro_term_1">1 месяц</string>
     <string name="pro_term_3">3 месяца</string>
     <string name="pro_term_6">6 месяцев</string>
@@ -232,6 +233,7 @@
     <string name="tab_knowledge">Знания</string>
     <string name="knowledge_title">Знания</string>
     <string name="home_title">Главная</string>
+    <string name="home_install_cta">Установите дистрибутив и пользуйтесь Линукс прямо в приложении</string>
     <string name="home_basics">Базовые знания</string>
     <string name="home_advanced">Расширенные знания</string>
     <string name="home_free_badge">бесплатно</string>
@@ -262,6 +264,7 @@
     <string name="course_back">Знания</string>
     <string name="lesson_number">Урок %1$d из %2$d</string>
     <string name="lesson_example">Пример</string>
+    <string name="lesson_steps">Шаги</string>
     <string name="lesson_task">Задача</string>
     <string name="lesson_answer">Твой ответ</string>
     <string name="lesson_check">Проверить</string>
@@ -300,17 +303,17 @@
     <string name="onboard_welcome_title">Добро пожаловать!</string>
     <string name="onboard_welcome_lead">Запускайте полноценный Linux прямо в приложении</string>
     <string name="onboard_catalog_title">Каталог систем</string>
-    <string name="onboard_catalog_names">Alpine, Debian, Ubuntu, Dev + XFCE</string>
+    <string name="onboard_catalog_names">Alpine, Debian, Ubuntu, Arch и Dev</string>
     <string name="onboard_catalog_lead">Установите рабочий стол одним нажатием</string>
     <string name="onboard_basics_title">Базовые знания</string>
-    <string name="onboard_basics_lead">Команды Linux, Python, Go, Node.js, Git и устройство компьютера</string>
+    <string name="onboard_basics_lead">Команды Linux, Python, Git, SQL и устройство компьютера</string>
     <string name="onboard_level_title">Выбирайте свой уровень</string>
     <string name="onboard_level_lead">Больше возможностей для разработки и обучения</string>
     <string name="onboard_free_title">Free</string>
     <string name="onboard_pro_title">Pro</string>
     <string name="onboard_free_1">Alpine и терминал</string>
     <string name="onboard_free_2">Базовые знания</string>
-    <string name="onboard_free_3">Устройство компьютера</string>
+    <string name="onboard_free_3">Основные термины</string>
     <string name="onboard_pro_1">Все системы</string>
     <string name="onboard_pro_2">Языки программирования</string>
     <string name="onboard_pro_3">Git и расширенные знания</string>

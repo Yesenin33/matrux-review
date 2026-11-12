@@ -14,6 +14,26 @@ enum class Runtime(val key: String) {
 
 data class Snippet(val lang: String, val code: String)
 
+data class LessonExample(
+    val title: String,
+    val lang: String,
+    val code: String,
+    val explain: String?,
+)
+
+data class Practice(
+    val task: String,
+    val steps: List<String>,
+    val hint: String?,
+)
+
+data class QuizQuestion(
+    val question: String,
+    val options: List<String>,
+    val answer: Int,
+    val explain: String?,
+)
+
 sealed interface Task {
     val prompt: String
 
@@ -48,6 +68,11 @@ data class Lesson(
     val example: Snippet,
     val task: Task,
     val review: String,
+    val examples: List<LessonExample> = emptyList(),
+    val practice: Practice? = null,
+    val quiz: List<QuizQuestion> = emptyList(),
+    val durationMin: Int = 0,
+    val order: Int = 0,
 )
 
 data class Module(val id: String, val title: String, val lessons: List<Lesson>)
@@ -58,9 +83,13 @@ data class Course(
     val outcome: String,
     val note: String?,
     val modules: List<Module>,
+    val description: String? = null,
+    val distros: List<String> = emptyList(),
+    val level: String? = null,
 ) {
     val lessons: List<Lesson> get() = modules.flatMap { it.lessons }
     val lessonCount: Int get() = modules.sumOf { it.lessons.size }
+    val summary: String get() = description ?: outcome
 
     fun lesson(id: String): Lesson? = lessons.firstOrNull { it.id == id }
 

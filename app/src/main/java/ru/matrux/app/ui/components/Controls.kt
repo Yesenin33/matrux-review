@@ -79,12 +79,12 @@ fun PrimaryButton(
         contentAlignment = Alignment.Center,
     ) {
         if (icon == null) {
-            Text(text, style = Matrux.type.bodyStrong, color = colors.surface)
+            Text(text, style = Matrux.type.bodyStrong, color = colors.onAccent)
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                LucideIcon(icon, colors.surface, size = Matrux.space.iconSmall)
+                LucideIcon(icon, colors.onAccent, size = Matrux.space.iconSmall)
                 Spacer(Modifier.width(Matrux.space.unit))
-                Text(text, style = Matrux.type.bodyStrong, color = colors.surface)
+                Text(text, style = Matrux.type.bodyStrong, color = colors.onAccent)
             }
         }
     }

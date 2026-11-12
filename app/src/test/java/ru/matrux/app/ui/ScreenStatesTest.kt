@@ -1,6 +1,7 @@
 package ru.matrux.app.ui
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import ru.matrux.app.billing.Plan
@@ -40,12 +41,31 @@ class ScreenStatesTest {
     @Test
     fun subscriptionLines() {
         assertEquals(SubLine.Free, subLine(SubscriptionStatus.FREE, null, zone))
-        assertEquals(SubLine.Lifetime, subLine(SubscriptionStatus(Tier.LIFETIME, null, null), null, zone))
         assertEquals(SubLine.Revoked, subLine(pro, Failure.NoAccess, zone))
         assertEquals(SubLine.Offline(null), subLine(null, Failure.NoConnection, zone))
         assertEquals(SubLine.Offline(LocalDate.of(2026, 11, 8)), subLine(SubscriptionStatus.FREE.copy(checkedAt = Instant.parse("2026-11-08T10:00:00Z")), Failure.NoConnection, zone))
         assertEquals(SubLine.ProUntil(LocalDate.of(2026, 12, 15)), subLine(pro, Failure.NoConnection, zone))
         assertEquals(SubLine.Unknown, subLine(null, null, zone))
+    }
+
+    @Test
+    fun expiredProLocksImmediatelyWithoutGrace() {
+        val expired = SubscriptionStatus(Tier.PRO, Instant.parse("2026-12-15T10:00:00Z"), Instant.parse("2026-12-01T00:00:00Z"))
+        val beforeEnd = Instant.parse("2026-12-14T00:00:00Z").toEpochMilli()
+        val afterEnd = Instant.parse("2026-12-15T11:00:00Z").toEpochMilli()
+        assertEquals(SubLine.ProUntil(LocalDate.of(2026, 12, 15)), subLine(expired, Failure.NoConnection, zone, beforeEnd))
+        assertEquals(SubLine.Free, subLine(expired, Failure.NoConnection, zone, afterEnd))
+        assertEquals(SubLine.Free, subLine(expired, null, zone, afterEnd))
+        val locked = catalogUi(catalog, expired, null, null, null, now = afterEnd) as CatalogUi.Ready
+        assertEquals(listOf(false, true), locked.rows.map { it.locked })
+        assertEquals(SystemAction.SUBSCRIBE, locked.rows[1].actions().first())
+        val open = catalogUi(catalog, expired, null, null, null, now = beforeEnd) as CatalogUi.Ready
+        assertEquals(listOf(false, false), open.rows.map { it.locked })
+        assertTrue(expired.endsAt(afterEnd))
+        assertFalse(expired.endsAt(beforeEnd))
+        assertEquals(0L, expired.daysLeft(afterEnd)?.coerceAtLeast(0L))
+        assertEquals(3L, expired.daysLeft(Instant.parse("2026-12-12T10:00:00Z").toEpochMilli()))
+        assertFalse(expired.activeAt(afterEnd))
     }
 
     @Test
@@ -152,7 +172,7 @@ class ScreenStatesTest {
         assertTrue(subs(SubscriptionStatus.FREE, Plan.PRO_MONTH).canBuy)
         assertTrue(subs(SubscriptionStatus.FREE, Plan.PRO_HALF_YEAR).canBuy)
         assertEquals(false, subs(pro, Plan.PRO_MONTH).canBuy)
-        assertEquals(false, subs(SubscriptionStatus(Tier.LIFETIME, null, null), Plan.PRO_HALF_YEAR).canBuy)
+        assertEquals(false, subs(pro, Plan.PRO_HALF_YEAR).copy(now = Instant.parse("2026-11-20T00:00:00Z").toEpochMilli()).canBuy)
     }
 
     @Test

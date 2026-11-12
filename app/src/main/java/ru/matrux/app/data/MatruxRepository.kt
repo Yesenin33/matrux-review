@@ -13,6 +13,8 @@ import java.util.UUID
 
 data class Catalog(val manifest: Manifest, val offline: Boolean)
 
+private const val TEST_UNLOCK_SECONDS = 100L * 365 * 24 * 3600
+
 class MatruxRepository(
     private val api: MatruxApi,
     private val local: LocalState,
@@ -49,7 +51,7 @@ class MatruxRepository(
         val key = registration.deviceKey ?: throw FailureException(Failure.NoAccess)
         local.deviceId = registration.deviceId
         secrets.write(keyName, key)
-        local.cachedStatus = registration.status
+        storeStatus(registration.status)
         return registration.deviceId to key
     }
 
@@ -61,15 +63,20 @@ class MatruxRepository(
 
     val cachedStatus: SubscriptionStatus? get() = local.cachedStatus
 
+    private fun storeStatus(status: SubscriptionStatus) {
+        local.cachedStatus = status
+        TrustedClock.anchor(status.checkedAt?.toEpochMilli())
+    }
+
     suspend fun refreshStatus(): SubscriptionStatus {
         if (unlocked) {
-            val status = SubscriptionStatus(Tier.LIFETIME, null, clock())
-            local.cachedStatus = status
+            val status = SubscriptionStatus(Tier.PRO, clock().plusSeconds(TEST_UNLOCK_SECONDS), clock())
+            storeStatus(status)
             return status
         }
         resyncStore()
         val status = accountStatus() ?: deviceStatus()
-        local.cachedStatus = status
+        storeStatus(status)
         return status
     }
 
@@ -113,7 +120,7 @@ class MatruxRepository(
             val (id, key) = ensureDevice()
             api.verify(id, key, receipt, token)
         }
-        local.cachedStatus = result.status
+        storeStatus(result.status)
         return result
     }
 
@@ -123,7 +130,7 @@ class MatruxRepository(
         val token = state.token ?: throw FailureException(Failure.SignInRejected)
         secrets.write(tokenName, token)
         local.account = state.account
-        local.cachedStatus = state.status
+        storeStatus(state.status)
         local.storeCheckedAt = null
         return state.status
     }

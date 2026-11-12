@@ -92,7 +92,7 @@ class InstallControllerTest {
 
     private fun controller(): InstallController {
         val client = OkHttpClient.Builder().retryOnConnectionFailure(false).build()
-        val repository = MatruxRepository(MatruxApi(server.url("/").toString(), client), local, InMemorySecretStore(), null, null)
+        val repository = MatruxRepository(MatruxApi(server.url("/").toString(), client, pinnedKey = ""), local, InMemorySecretStore(), null, null)
         val storage = object : InstallController.Storage {
             override val downloads = File(temp.root, "downloads")
             override val systems = File(temp.root, "systems")

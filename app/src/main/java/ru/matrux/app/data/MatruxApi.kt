@@ -10,6 +10,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.json.JSONObject
+import ru.matrux.app.BuildConfig
 import ru.matrux.app.account.AccountInfo
 import ru.matrux.app.account.AuthCode
 import ru.matrux.app.account.AuthRequest
@@ -42,7 +43,11 @@ data class AccountState(val account: AccountInfo, val status: SubscriptionStatus
 
 data class Registration(val deviceId: String, val deviceKey: String?, val status: SubscriptionStatus)
 
-class MatruxApi(baseUrl: String, private val client: OkHttpClient = defaultClient()) {
+class MatruxApi(
+    baseUrl: String,
+    private val client: OkHttpClient = defaultClient(),
+    private val pinnedKey: String = BuildConfig.MANIFEST_PUBKEY,
+) {
     private val base: HttpUrl = baseUrl.trimEnd('/').toHttpUrl()
 
     fun resolve(pathOrUrl: String): HttpUrl =
@@ -104,8 +109,20 @@ class MatruxApi(baseUrl: String, private val client: OkHttpClient = defaultClien
     suspend fun status(deviceId: String, key: String): SubscriptionStatus {
         val url = resolve("/api/sub/status").newBuilder().addQueryParameter("device_id", deviceId).build()
         val request = Request.Builder().url(url).header(DEVICE_KEY_HEADER, key).build()
-        return call(request) { SubscriptionStatus.parse(it.body!!.string()) }
+        return call(request) { response -> SubscriptionStatus.parse(signedBody(response)) }
     }
+
+    private fun signedBytes(response: Response): ByteArray {
+        val bytes = response.body?.bytes() ?: ByteArray(0)
+        val pinned = pinnedKey
+        if (pinned.isBlank()) return bytes
+        if (ManifestSignature.check(pinned, response.header(SIGNATURE_HEADER), bytes) != SignatureCheck.VALID) {
+            throw FailureException(Failure.BadSignature)
+        }
+        return bytes
+    }
+
+    private fun signedBody(response: Response): String = signedBytes(response).decodeToString()
 
     suspend fun verify(deviceId: String, key: String, receipt: PurchaseReceipt, token: String? = null): VerifyResult {
         val payload = JSONObject()
@@ -120,7 +137,7 @@ class MatruxApi(baseUrl: String, private val client: OkHttpClient = defaultClien
             .post(payload.toString().toRequestBody(JSON_TYPE))
             .build()
         return call(request) { response ->
-            val body = response.body!!.string()
+            val body = signedBody(response)
             VerifyResult(PurchaseState.valueOf(JSONObject(body).getString("state")), SubscriptionStatus.parse(body))
         }
     }

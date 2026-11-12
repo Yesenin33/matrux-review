@@ -65,7 +65,7 @@ class RepositoryTest {
     }
 
     private fun repository(pinned: String? = null) =
-        MatruxRepository(MatruxApi(server.url("/").toString()), local, secrets, pinned, "test")
+        MatruxRepository(MatruxApi(server.url("/").toString(), pinnedKey = ""), local, secrets, pinned, "test")
 
     @Test
     fun verifiedCatalogIsCachedWithSignature() = runTest {
@@ -149,8 +149,8 @@ class RepositoryTest {
     @Test
     fun statusIsCached() = runTest {
         val status = repository().refreshStatus()
-        assertEquals(Tier.LIFETIME, status.tier)
-        assertEquals(Tier.LIFETIME, local.cachedStatus!!.tier)
+        assertEquals(status.tier, local.cachedStatus!!.tier)
+        if (ru.matrux.app.BuildConfig.TEST_UNLOCKED) assertEquals(Tier.PRO, status.tier)
     }
 
     @Test

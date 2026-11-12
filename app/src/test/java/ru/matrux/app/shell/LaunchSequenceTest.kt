@@ -46,6 +46,19 @@ class LaunchSequenceTest {
     }
 
     @Test
+    fun noAccessStopsLaunchBeforeRootfs() = runTest {
+        val sequence = LaunchSequence(
+            checkSubscription = { throw FailureException(Failure.NoAccess) },
+            prepareRootfs = { calls += "rootfs" },
+            startEngine = { calls += "proot" },
+            startDisplay = { calls += "display"; DisplayMode.X11 },
+        )
+        val states = sequence.run().toList()
+        assertEquals(LaunchState.Failed(LaunchStep.SUBSCRIPTION, Failure.NoAccess), states.last())
+        assertEquals(emptyList<String>(), calls)
+    }
+
+    @Test
     fun unexpectedErrorIsReported() = runTest {
         val last = sequence(display = { throw java.net.ConnectException() }).run().toList().last()
         assertEquals(LaunchState.Failed(LaunchStep.DISPLAY, Failure.NoConnection), last)

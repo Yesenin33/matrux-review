@@ -20,6 +20,7 @@ import ru.matrux.app.data.Failure
 import ru.matrux.app.data.FailureException
 import ru.matrux.app.data.Failures
 import ru.matrux.app.data.LocalState
+import ru.matrux.app.data.TrustedClock
 import ru.matrux.app.data.MatruxRepository
 import ru.matrux.app.install.InstallController
 import ru.matrux.app.shell.DisplayMode
@@ -90,7 +91,7 @@ class SessionController(
     private val engineOutput = StringBuilder()
     @Volatile private var startedGeometry = ""
     @Volatile private var restarting = false
-    private var autoRestarts = 0
+    private var autoRestarts = AUTO_RESTARTS
     private var loggedFrame = ""
 
     fun start() {
@@ -102,7 +103,6 @@ class SessionController(
         }
         val started = clock()
         restarting = false
-        autoRestarts = AUTO_RESTARTS
         startedGeometry = geometry()
         startInput()
         job = scope.launch {
@@ -115,6 +115,7 @@ class SessionController(
             sequence.run().collect { launch ->
                 mutable.value = when (launch) {
                     is LaunchState.Ready -> {
+                        autoRestarts = AUTO_RESTARTS
                         local.installed = system.copy(lastLaunchMillis = clock() - started)
                         SessionState.Live(system.name, system.desktop, launch.mode, launch.offline)
                     }
@@ -131,6 +132,7 @@ class SessionController(
 
     fun stop() {
         restarting = false
+        autoRestarts = AUTO_RESTARTS
         geometryJob?.cancel()
         geometryJob = null
         job?.cancel()
@@ -335,7 +337,15 @@ class SessionController(
         repository.refreshStatus()
         true
     } catch (error: FailureException) {
-        if (error.failure == Failure.NoConnection) false else throw error
+        if (error.failure != Failure.NoConnection) throw error
+        if (offlineDenied()) throw FailureException(Failure.NoAccess)
+        false
+    }
+
+    private fun offlineDenied(): Boolean {
+        if (TrustedClock.wallBehind() > TrustedClock.SKEW_LIMIT_MS) return true
+        val status = repository.cachedStatus ?: return false
+        return status.endsAt(TrustedClock.now())
     }
 
     private fun prepareRootfs(imageId: String) {
@@ -452,7 +462,7 @@ class SessionController(
                 socket = null
                 vnc = null
                 if (reattach()) continue
-                if (process?.isAlive != true && autoRestarts > 0) {
+                if (autoRestarts > 0) {
                     autoRestarts -= 1
                     Log.i(FRAME_TAG, "session lost, restarting ($autoRestarts left)")
                     teardown()
@@ -529,7 +539,7 @@ class SessionController(
         const val ENGINE_SETTLE_MS = 800L
         const val DISPLAY_TIMEOUT_MS = 60_000L
         const val CONNECT_TIMEOUT_MS = 1_000
-        const val REATTACH_TIMEOUT_MS = 60_000L
+        const val REATTACH_TIMEOUT_MS = 90_000L
         const val RETRY_MS = 500L
         const val RESTART_PAUSE_MS = 800L
         const val AUTO_RESTARTS = 2

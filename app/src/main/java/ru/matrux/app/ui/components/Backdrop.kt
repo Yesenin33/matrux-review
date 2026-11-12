@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ImageShader
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.res.imageResource
@@ -23,8 +24,9 @@ fun AppBackdrop(modifier: Modifier = Modifier) {
     val pattern = remember(tile) {
         ShaderBrush(ImageShader(tile, TileMode.Repeated, TileMode.Repeated))
     }
+    val alpha = if (colors.canvas.luminance() < 0.4f) 0.05f else PATTERN_ALPHA
     Canvas(modifier.fillMaxSize()) {
-        drawRect(brush = pattern, alpha = PATTERN_ALPHA)
+        drawRect(brush = pattern, alpha = alpha)
         drawRect(
             brush = Brush.verticalGradient(
                 0f to colors.canvas.copy(alpha = 0f),

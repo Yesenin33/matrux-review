@@ -1,0 +1,213 @@
+{
+ "groups": [
+  {
+   "entries": [
+    {
+     "summary": "Показывает сетевые интерфейсы и их IP-адреса.",
+     "code": "ip -br a",
+     "detail": "inet — IPv4, inet6 — IPv6. -br выводит по строке на интерфейс.",
+     "title": "ip a"
+    },
+    {
+     "summary": "Показывает таблицу маршрутов и шлюз по умолчанию.",
+     "code": "ip r",
+     "detail": "Строка default via указывает, куда уходит трафик в интернет.",
+     "title": "ip r"
+    },
+    {
+     "summary": "Показывает состояние интерфейсов: включён, MAC-адрес, MTU.",
+     "code": "ip -br link",
+     "title": "ip link"
+    },
+    {
+     "summary": "Выводит все IP-адреса машины одной строкой.",
+     "code": "hostname -I",
+     "title": "hostname -I"
+    },
+    {
+     "summary": "Сопоставляет имена и адреса до обращения к DNS.",
+     "code": "cat /etc/hosts",
+     "detail": "Строка 127.0.0.1 site.local направляет имя на свою машину.",
+     "title": "/etc/hosts"
+    },
+    {
+     "summary": "Указывает DNS-серверы, к которым система отправляет запросы.",
+     "code": "cat /etc/resolv.conf",
+     "detail": "Часто создаётся автоматически и перезаписывается, ручные правки теряются.",
+     "title": "/etc/resolv.conf"
+    }
+   ],
+   "title": "Свои адреса"
+  },
+  {
+   "entries": [
+    {
+     "summary": "Отправляет четыре пакета и показывает задержку и потери.",
+     "code": "ping -c 4 1.1.1.1",
+     "detail": "Без -c ping идёт бесконечно. Многие серверы не отвечают на ping, хотя работают.",
+     "title": "ping -c 4"
+    },
+    {
+     "summary": "Запрашивает только заголовки ответа сервера.",
+     "code": "curl -IL https://example.com",
+     "detail": "-L идёт по перенаправлениям, -v показывает весь обмен, включая TLS.",
+     "title": "curl -I"
+    },
+    {
+     "summary": "Скачивает файл по ссылке.",
+     "code": "wget -c https://example.com/file.iso",
+     "detail": "-c докачивает прерванную загрузку, -O задаёт имя файла.",
+     "title": "wget"
+    },
+    {
+     "summary": "Выводит IP-адреса, в которые разрешается имя.",
+     "code": "dig +short example.com @1.1.1.1",
+     "detail": "@1.1.1.1 спрашивает конкретный DNS-сервер, MX и TXT запрашивают другие записи.",
+     "title": "dig +short"
+    },
+    {
+     "summary": "Разрешает имя в адрес и показывает, какой DNS-сервер ответил.",
+     "code": "nslookup example.com",
+     "title": "nslookup"
+    },
+    {
+     "summary": "Показывает маршрут до узла по промежуточным узлам.",
+     "code": "traceroute example.com",
+     "detail": "Звёздочки значат, что узел не отвечает на запросы трассировки, а не обрыв.",
+     "title": "traceroute"
+    },
+    {
+     "summary": "Совмещает ping и traceroute, обновляя потери на каждом узле.",
+     "code": "mtr -rc 20 example.com",
+     "detail": "-r выводит отчёт после заданного числа пакетов.",
+     "title": "mtr"
+    }
+   ],
+   "title": "Проверка"
+  },
+  {
+   "entries": [
+    {
+     "summary": "Показывает, какие программы слушают какие порты.",
+     "code": "sudo ss -tulpn",
+     "detail": "t — TCP, u — UDP, l — только слушающие, p — процесс, n — числа вместо имён. Процессы видны с sudo.",
+     "title": "ss -tulpn"
+    },
+    {
+     "summary": "Показывает все TCP-соединения с их состоянием.",
+     "code": "ss -tan state established",
+     "title": "ss -tan"
+    },
+    {
+     "summary": "Показывает, какой процесс держит указанный порт.",
+     "code": "sudo lsof -i :80",
+     "title": "lsof -i"
+    },
+    {
+     "summary": "Проверяет, открыт ли порт на удалённом узле.",
+     "code": "nc -zv -w 3 example.com 22",
+     "detail": "-z не передаёт данные, -v выводит результат. -w 3 ограничивает ожидание тремя секундами.",
+     "title": "nc -zv"
+    },
+    {
+     "summary": "Открывает порт и выводит всё, что на него приходит.",
+     "code": "nc -l 9000",
+     "detail": "В традиционной версии netcat порт задаётся через -p: nc -l -p 9000.",
+     "title": "nc -l"
+    }
+   ],
+   "title": "Порты"
+  },
+  {
+   "entries": [
+    {
+     "summary": "Открывает оболочку на удалённой машине.",
+     "code": "ssh anna@203.0.113.10",
+     "detail": "Команда после адреса выполняется на сервере без входа в оболочку.",
+     "title": "ssh user@host"
+    },
+    {
+     "summary": "Подключается к ssh на нестандартном порту.",
+     "code": "ssh -p 2222 anna@203.0.113.10",
+     "title": "ssh -p"
+    },
+    {
+     "summary": "Создаёт пару ключей для входа без пароля.",
+     "code": "ssh-keygen -t ed25519 -C \"phone\"",
+     "detail": "Закрытый ключ ~/.ssh/id_ed25519 остаётся на устройстве, на сервер копируется только .pub.",
+     "title": "ssh-keygen -t ed25519"
+    },
+    {
+     "summary": "Дописывает открытый ключ в authorized_keys на сервере.",
+     "code": "ssh-copy-id anna@203.0.113.10",
+     "title": "ssh-copy-id"
+    },
+    {
+     "summary": "Хранит короткие имена серверов с адресом, портом и ключом.",
+     "code": "ssh vps",
+     "detail": "После блока Host vps с HostName, User и Port вход сводится к ssh vps.",
+     "title": "~/.ssh/config"
+    },
+    {
+     "summary": "Копирует файлы по ssh.",
+     "code": "scp -P 2222 site.tar.gz vps:/tmp/",
+     "detail": "-r копирует каталоги, -P задаёт порт заглавной буквой, в отличие от ssh.",
+     "title": "scp"
+    },
+    {
+     "summary": "Синхронизирует каталоги, передавая только изменённые файлы.",
+     "code": "rsync -avz ~/site/ vps:/var/www/site/",
+     "detail": "Слэш в конце источника копирует содержимое, без слэша — сам каталог. --delete удаляет лишнее в цели.",
+     "title": "rsync -avz"
+    },
+    {
+     "summary": "Пробрасывает локальный порт на порт удалённой машины.",
+     "code": "ssh -L 8080:localhost:80 vps",
+     "detail": "После команды localhost:8080 на устройстве ведёт на порт 80 сервера.",
+     "title": "ssh -L"
+    }
+   ],
+   "title": "ssh"
+  },
+  {
+   "entries": [
+    {
+     "summary": "Открывает порт или службу в ufw.",
+     "code": "sudo ufw allow 22/tcp",
+     "detail": "Правила файрвола требуют доступа к ядру, поэтому в proot не применяются. Раздел относится к серверу.",
+     "title": "ufw allow"
+    },
+    {
+     "summary": "Включает файрвол и его автозапуск.",
+     "code": "sudo ufw enable",
+     "detail": "Без правила для ssh удалённое соединение оборвётся сразу после включения.",
+     "title": "ufw enable"
+    },
+    {
+     "summary": "Показывает, включён ли ufw и какие правила действуют.",
+     "code": "sudo ufw status numbered",
+     "detail": "numbered нумерует правила для удаления через ufw delete N.",
+     "title": "ufw status"
+    },
+    {
+     "summary": "Открывает порт в firewalld на Fedora и RHEL.",
+     "code": "sudo firewall-cmd --permanent --add-port=8080/tcp",
+     "detail": "Без --permanent правило пропадает после перезапуска, --reload применяет постоянные правила.",
+     "title": "firewall-cmd --add-port"
+    },
+    {
+     "summary": "Выводит правила iptables по цепочкам.",
+     "code": "sudo iptables -L -n -v",
+     "detail": "-n не разрешает имена, -v показывает счётчики пакетов. В новых системах под ним работает nftables.",
+     "title": "iptables -L"
+    }
+   ],
+   "title": "Файрвол"
+  }
+ ],
+ "id": "network",
+ "title": "Сеть и ssh",
+ "pro": true,
+ "branch": "deeper",
+ "lead": "Адреса, проверка связи, открытые порты, удалённый вход и файрвол."
+}

@@ -98,7 +98,6 @@ fun subLineText(line: SubLine): String = when (line) {
     SubLine.Unknown -> stringResource(R.string.sub_unknown)
     SubLine.Free -> stringResource(R.string.sub_free)
     is SubLine.ProUntil -> stringResource(R.string.sub_pro_until, Format.dayMonth(line.date))
-    SubLine.Lifetime -> stringResource(R.string.sub_lifetime)
     SubLine.Revoked -> stringResource(R.string.sub_revoked)
     is SubLine.Offline -> line.checked?.let { stringResource(R.string.sub_offline, Format.dayMonth(it)) }
         ?: stringResource(R.string.sub_offline_never)

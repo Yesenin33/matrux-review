@@ -85,7 +85,12 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
             signingConfig = if (signing.isNotEmpty()) {
                 signingConfigs.getByName("release")
             } else {
@@ -97,6 +102,13 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    bundle {
+        language { enableSplit = false }
+    }
+    androidResources {
+        generateLocaleConfig = false
     }
 
     composeOptions {

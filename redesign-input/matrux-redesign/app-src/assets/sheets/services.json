@@ -1,0 +1,219 @@
+{
+ "groups": [
+  {
+   "entries": [
+    {
+     "summary": "Показывает состояние службы, её PID и последние строки журнала.",
+     "code": "systemctl status nginx",
+     "detail": "systemd в proot не запускается, поэтому systemctl там отвечает ошибкой. Команды раздела относятся к серверу.",
+     "title": "systemctl status"
+    },
+    {
+     "summary": "Запускает службу сейчас.",
+     "code": "sudo systemctl start nginx",
+     "detail": "После перезагрузки служба не поднимется, если не включена через enable.",
+     "title": "systemctl start"
+    },
+    {
+     "summary": "Останавливает службу.",
+     "code": "sudo systemctl stop nginx",
+     "title": "systemctl stop"
+    },
+    {
+     "summary": "Останавливает и заново запускает службу.",
+     "code": "sudo systemctl restart nginx",
+     "title": "systemctl restart"
+    },
+    {
+     "summary": "Перечитывает настройки службы без остановки.",
+     "code": "sudo systemctl reload nginx",
+     "detail": "Работает, только если служба это поддерживает. reload-or-restart выбирает сам.",
+     "title": "systemctl reload"
+    },
+    {
+     "summary": "Включает автозапуск службы при загрузке.",
+     "code": "sudo systemctl enable --now nginx",
+     "detail": "--now заодно запускает её сразу.",
+     "title": "systemctl enable"
+    },
+    {
+     "summary": "Отключает автозапуск службы.",
+     "code": "sudo systemctl disable --now cups",
+     "detail": "Работающую службу не останавливает. mask запрещает запуск совсем, даже вручную.",
+     "title": "systemctl disable"
+    },
+    {
+     "summary": "Перечисляет службы, которые упали.",
+     "code": "systemctl list-units --failed",
+     "title": "systemctl list-units --failed"
+    },
+    {
+     "summary": "Выводит active или inactive и возвращает код для скриптов.",
+     "code": "systemctl is-active --quiet nginx",
+     "title": "systemctl is-active"
+    }
+   ],
+   "title": "systemctl"
+  },
+  {
+   "entries": [
+    {
+     "summary": "Выводит все процессы с владельцем, PID, долей CPU и памяти.",
+     "code": "ps aux --sort=-%cpu | head",
+     "detail": "--sort=-%cpu сортирует по нагрузке на процессор.",
+     "title": "ps aux"
+    },
+    {
+     "summary": "Показывает процессы в реальном времени, самые тяжёлые сверху.",
+     "code": "top",
+     "detail": "M сортирует по памяти, P — по процессору, k завершает процесс, q — выход.",
+     "title": "top"
+    },
+    {
+     "summary": "Интерактивный top с цветом, деревом процессов и прокруткой.",
+     "code": "htop -u anna",
+     "detail": "F5 показывает дерево, F9 отправляет сигнал. Ставится отдельным пакетом.",
+     "title": "htop"
+    },
+    {
+     "summary": "Находит PID процессов по имени.",
+     "code": "pgrep -af python",
+     "detail": "-a выводит полную командную строку, -f ищет по ней, а не только по имени.",
+     "title": "pgrep"
+    },
+    {
+     "summary": "Просит процесс завершиться сигналом SIGTERM.",
+     "code": "kill -15 4821",
+     "detail": "Процесс успевает сохранить данные и закрыть файлы. kill без флага отправляет именно этот сигнал.",
+     "title": "kill -15"
+    },
+    {
+     "summary": "Немедленно убивает процесс сигналом SIGKILL.",
+     "code": "kill -9 4821",
+     "detail": "Перехватить его нельзя: несохранённые данные теряются, временные файлы остаются. Применяется, когда -15 не помог.",
+     "title": "kill -9"
+    },
+    {
+     "summary": "Завершает процессы, в командной строке которых есть шаблон.",
+     "code": "pkill -f \"node server.js\"",
+     "detail": "Шаблон может совпасть с чужими процессами. Список совпадений заранее показывает pgrep -af.",
+     "title": "pkill -f"
+    },
+    {
+     "summary": "Запускает команду с пониженным приоритетом.",
+     "code": "nice -n 10 tar -czf home.tar.gz ~",
+     "detail": "Шкала от -20 до 19, больше — уступчивее. Отрицательные значения требуют root.",
+     "title": "nice"
+    },
+    {
+     "summary": "Меняет приоритет уже работающего процесса.",
+     "code": "renice -n 15 -p 4821",
+     "title": "renice"
+    }
+   ],
+   "title": "Процессы"
+  },
+  {
+   "entries": [
+    {
+     "summary": "Показывает таймеры systemd, время прошлого и следующего запуска.",
+     "code": "systemctl list-timers --all",
+     "title": "systemctl list-timers"
+    },
+    {
+     "summary": "Открывает расписание текущего пользователя в редакторе.",
+     "code": "crontab -e",
+     "detail": "Строка: минута, час, день месяца, месяц, день недели, команда. В proot cron запускается вручную: sudo cron.",
+     "title": "crontab -e"
+    },
+    {
+     "summary": "Выводит расписание текущего пользователя.",
+     "code": "crontab -l",
+     "detail": "crontab -r удаляет расписание целиком без подтверждения.",
+     "title": "crontab -l"
+    },
+    {
+     "summary": "Пять полей времени и команда.",
+     "code": "30 3 * * 1-5 /home/anna/bin/backup.sh",
+     "detail": "*/15 — каждые 15 единиц, 1-5 — диапазон, 1,3 — список. Окружение cron минимальное, пути нужны полные.",
+     "title": "Строка cron"
+    },
+    {
+     "summary": "Запускает команду один раз после старта cron.",
+     "code": "@reboot /home/anna/bin/start-bot.sh",
+     "detail": "Есть и другие сокращения: @hourly, @daily, @weekly.",
+     "title": "@reboot"
+    }
+   ],
+   "title": "Расписание"
+  },
+  {
+   "entries": [
+    {
+     "summary": "Описание службы и порядок запуска относительно других.",
+     "code": "After=network-online.target",
+     "detail": "Файл кладётся в /etc/systemd/system/имя.service. After= задаёт, после чего стартовать.",
+     "title": "[Unit]"
+    },
+    {
+     "summary": "Команда запуска, пользователь и поведение при падении.",
+     "code": "ExecStart=/usr/bin/python3 /opt/bot/bot.py",
+     "detail": "ExecStart требует полный путь. User= запускает не от root.",
+     "title": "[Service]"
+    },
+    {
+     "summary": "Перезапускает службу, если она завершилась с ошибкой.",
+     "code": "RestartSec=5",
+     "detail": "RestartSec= задаёт паузу перед перезапуском, по умолчанию 100 мс.",
+     "title": "Restart=on-failure"
+    },
+    {
+     "summary": "Указывает, к какой цели привязать службу при enable.",
+     "code": "WantedBy=multi-user.target",
+     "detail": "multi-user.target — обычная загрузка сервера без графики.",
+     "title": "[Install]"
+    },
+    {
+     "summary": "Перечитывает юнит-файлы после создания или правки.",
+     "code": "sudo systemctl daemon-reload",
+     "detail": "Без него systemd продолжает использовать старую версию файла.",
+     "title": "systemctl daemon-reload"
+    }
+   ],
+   "title": "Своя служба"
+  },
+  {
+   "entries": [
+    {
+     "summary": "Показывает лимиты текущей оболочки: файлы, процессы, стек.",
+     "code": "ulimit -a",
+     "title": "ulimit -a"
+    },
+    {
+     "summary": "Показывает или меняет лимит открытых файлов.",
+     "code": "ulimit -n 4096",
+     "detail": "Действует только на текущую оболочку и её потомков. Поднять выше жёсткого лимита может только root.",
+     "title": "ulimit -n"
+    },
+    {
+     "summary": "Запускает команду с ограничением памяти или процессора.",
+     "code": "systemd-run --scope -p MemoryMax=1G make -j4",
+     "detail": "При превышении MemoryMax процесс убивается. CPUQuota=50% ограничивает процессор половиной ядра.",
+     "title": "systemd-run --scope"
+    },
+    {
+     "summary": "Завершает команду, если она работает дольше заданного времени.",
+     "code": "timeout 30s curl -s https://example.com",
+     "detail": "Код выхода 124 означает, что время вышло. -s KILL отправляет SIGKILL вместо SIGTERM.",
+     "title": "timeout"
+    }
+   ],
+   "title": "Ресурсы"
+  }
+ ],
+ "id": "services",
+ "title": "Службы и процессы",
+ "pro": true,
+ "branch": "deeper",
+ "lead": "Запуск и остановка служб, работа с процессами, расписания и ограничения ресурсов."
+}

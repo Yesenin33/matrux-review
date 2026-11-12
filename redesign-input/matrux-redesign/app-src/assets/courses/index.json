@@ -1,0 +1,20 @@
+{
+ "courses": [
+  {
+   "id": "linux",
+   "file": "linux.json"
+  },
+  {
+   "id": "python",
+   "file": "python.json"
+  },
+  {
+   "id": "git",
+   "file": "git.json"
+  },
+  {
+   "id": "sqlite",
+   "file": "sqlite.json"
+  }
+ ]
+}

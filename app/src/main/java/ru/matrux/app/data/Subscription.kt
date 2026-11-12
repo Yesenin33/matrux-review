@@ -4,7 +4,9 @@ import org.json.JSONObject
 import java.time.Instant
 import java.time.OffsetDateTime
 
-enum class Tier { FREE, PRO, LIFETIME }
+enum class Tier { FREE, PRO }
+
+const val EXPIRY_NOTICE_DAYS = 3
 
 data class SubscriptionStatus(
     val tier: Tier,
@@ -12,6 +14,19 @@ data class SubscriptionStatus(
     val checkedAt: Instant?,
 ) {
     val paid: Boolean get() = tier != Tier.FREE
+
+    fun activeAt(nowMillis: Long): Boolean {
+        if (!paid) return false
+        val expires = expiresAt ?: return true
+        return nowMillis <= expires.toEpochMilli()
+    }
+
+    fun endsAt(nowMillis: Long): Boolean = paid && expiresAt != null && !activeAt(nowMillis)
+
+    fun daysLeft(nowMillis: Long): Long? {
+        val expires = expiresAt ?: return null
+        return (expires.toEpochMilli() - nowMillis) / 86_400_000L
+    }
 
     companion object {
         val FREE = SubscriptionStatus(Tier.FREE, null, null)
@@ -21,7 +36,6 @@ data class SubscriptionStatus(
             return SubscriptionStatus(
                 tier = when (json.getString("tier")) {
                     "pro" -> Tier.PRO
-                    "lifetime" -> Tier.LIFETIME
                     else -> Tier.FREE
                 },
                 expiresAt = json.optStringOrNull("expires_at")?.let(::instant),

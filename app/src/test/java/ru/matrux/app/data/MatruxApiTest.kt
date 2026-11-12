@@ -25,7 +25,7 @@ class MatruxApiTest {
 
     @Before fun start() {
         server.start()
-        api = MatruxApi(server.url("/").toString())
+        api = MatruxApi(server.url("/").toString(), pinnedKey = "")
     }
 
     @After fun stop() = server.shutdown()

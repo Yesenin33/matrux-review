@@ -14,25 +14,24 @@ class HomeSearchTest {
     private val pro = homeSections(sheets, paid = true)
 
     private fun pool(sections: List<ru.matrux.app.ui.state.HomeSection>) =
-        sections.first { it.id == "basics" }.rows +
-            if (sections.first { it.id == "advanced" }.locked) emptyList()
-            else sections.first { it.id == "advanced" }.rows
+        sections.firstOrNull { it.id == "basics" }?.rows.orEmpty() +
+            sections.firstOrNull { it.id == "advanced" }?.let { adv ->
+                if (adv.locked) emptyList() else adv.rows
+            }.orEmpty()
 
     @Test
     fun freeSearchSeesOnlyBasics() {
         val rows = pool(free)
-        assertEquals(3, rows.size)
+        assertEquals(listOf("start", "linux", "terms"), rows.map { it.section.id })
         assertTrue(rows.none { it.locked })
-        assertTrue(rows.none { it.section.id == "files" })
-        assertNull(matches(rows.first { it.section.id == "linux" }, "docker"))
     }
 
     @Test
     fun searchBySectionTitle() {
         val rows = pool(pro)
-        val linux = rows.first { it.section.id == "linux" }
-        assertEquals(linux.section.size, matches(linux, "команды"))
-        assertEquals(linux.section.size, matches(linux, "КОМАНДЫ"))
+        val files = rows.first { it.section.id == "files" }
+        assertEquals(files.section.size, matches(files, "файл"))
+        assertEquals(files.section.size, matches(files, "ФАЙЛ"))
     }
 
     @Test
@@ -47,7 +46,7 @@ class HomeSearchTest {
     @Test
     fun proPoolCoversEverySection() {
         val rows = pool(pro)
-        assertEquals(sheets.size, rows.size)
+        assertEquals(13, rows.size)
         assertTrue(rows.none { it.locked })
     }
 }

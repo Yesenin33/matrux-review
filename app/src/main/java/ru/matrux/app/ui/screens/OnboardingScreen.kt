@@ -8,6 +8,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,15 +33,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -59,13 +65,21 @@ import ru.matrux.app.ui.state.Slide
 import ru.matrux.app.ui.theme.Inter
 import ru.matrux.app.ui.theme.Matrux
 
-private val Navy = Color(0xFF0B2A5B)
-private val Sub = Color(0xFF5B6478)
-private val Blue = Color(0xFF1F6FE5)
-private val BlueDeep = Color(0xFF1E5FC9)
-private val DotIdle = Color(0xFFCBD9F0)
-private val Page = Color(0xFFF5F9FF)
-private val Line = Color(0xFFDCE7F8)
+private val OnboardNavy: Color @Composable @ReadOnlyComposable get() = Matrux.colors.ink
+private val OnboardSub: Color @Composable @ReadOnlyComposable get() = Matrux.colors.inkSoft
+private val OnboardBlue: Color @Composable @ReadOnlyComposable get() = Matrux.colors.accent
+private val OnboardBlueDeep: Color @Composable @ReadOnlyComposable get() = Matrux.colors.accentPress
+private val OnboardDotIdle: Color @Composable @ReadOnlyComposable get() = Matrux.colors.hairline
+private val OnboardPage: Color @Composable @ReadOnlyComposable get() = Matrux.colors.canvas
+private val OnboardLine: Color @Composable @ReadOnlyComposable get() = Matrux.colors.hairline
+
+private val Navy: Color @Composable @ReadOnlyComposable get() = OnboardNavy
+private val Sub: Color @Composable @ReadOnlyComposable get() = OnboardSub
+private val Blue: Color @Composable @ReadOnlyComposable get() = OnboardBlue
+private val BlueDeep: Color @Composable @ReadOnlyComposable get() = OnboardBlueDeep
+private val DotIdle: Color @Composable @ReadOnlyComposable get() = OnboardDotIdle
+private val Page: Color @Composable @ReadOnlyComposable get() = OnboardPage
+private val Line: Color @Composable @ReadOnlyComposable get() = OnboardLine
 
 @Composable
 fun OnboardingOverlay(
@@ -98,12 +112,15 @@ fun OnboardingScreen(
     BackHandler { if (pager.currentPage > 0) go(pager.currentPage - 1) }
     val slide = ui.slides[pager.currentPage.coerceIn(0, ui.last)]
 
+    val compact = LocalConfiguration.current.screenHeightDp < 480
+    val pageAlpha = if (Matrux.colors.canvas.luminance() < 0.4f) 0.10f else 0.75f
+
     Box(Modifier.fillMaxSize().background(Page)) {
         Image(
             painterResource(R.drawable.onboard_bg),
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.matchParentSize().graphicsLayer { alpha = 0.75f },
+            modifier = Modifier.matchParentSize().alpha(pageAlpha),
         )
         Column(
             Modifier
@@ -114,13 +131,21 @@ fun OnboardingScreen(
         ) {
             HorizontalPager(pager, Modifier.weight(1f).fillMaxWidth()) { page ->
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    SlideCard(slide = ui.slides[page], onSubscribe = onSubscribe, onStart = onFinish)
+                    SlideCard(slide = ui.slides[page], compact = compact, onSubscribe = onSubscribe, onStart = onFinish)
                 }
             }
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(if (compact) 8.dp else 18.dp))
             Dots(ui.slides.size, pager.currentPage)
-            Spacer(Modifier.height(16.dp))
-            if (slide == Slide.START) {
+            Spacer(Modifier.height(if (compact) 8.dp else 16.dp))
+            if (compact && slide == Slide.LEVEL) {
+                Box(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+                    PrimaryBlue(stringResource(R.string.onboard_buy_pro), onSubscribe)
+                }
+            } else if (compact && slide == Slide.START) {
+                Box(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
+                    PrimaryBlue(stringResource(R.string.onboard_start), onFinish)
+                }
+            } else if (slide == Slide.START) {
                 Spacer(Modifier.height(58.dp))
             } else {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -133,29 +158,58 @@ fun OnboardingScreen(
 }
 
 @Composable
-private fun SlideCard(slide: Slide, onSubscribe: () -> Unit, onStart: () -> Unit) {
+private fun SlideCard(slide: Slide, compact: Boolean, onSubscribe: () -> Unit, onStart: () -> Unit) {
     Surface(
-        color = Color.White,
+        color = Matrux.colors.surface,
         shape = RoundedCornerShape(30.dp),
         shadowElevation = 12.dp,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = if (compact) Modifier.fillMaxSize() else Modifier.fillMaxWidth(),
     ) {
-        Column(Modifier.padding(horizontal = 22.dp, vertical = 28.dp)) {
-            when (slide) {
-                Slide.WELCOME -> WelcomeSlide()
-                Slide.CATALOG -> CatalogSlide()
-                Slide.BASICS -> BasicsSlide()
-                Slide.LEVEL -> LevelSlide(onSubscribe)
-                Slide.START -> StartSlide(onStart)
+        Column(
+            Modifier.padding(horizontal = if (compact) 20.dp else 22.dp, vertical = if (compact) 12.dp else 28.dp),
+        ) {
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                when (slide) {
+                    Slide.WELCOME -> WelcomeSlide(compact)
+                    Slide.CATALOG -> CatalogSlide(compact)
+                    Slide.BASICS -> BasicsSlide(compact)
+                    Slide.LEVEL -> LevelSlide(compact)
+                    Slide.START -> StartSlide(compact)
+                }
+            }
+            if (!compact) {
+                when (slide) {
+                    Slide.LEVEL -> {
+                        Spacer(Modifier.height(20.dp))
+                        PrimaryBlue(stringResource(R.string.onboard_buy_pro), onSubscribe)
+                    }
+                    Slide.START -> {
+                        Spacer(Modifier.height(24.dp))
+                        PrimaryBlue(stringResource(R.string.onboard_start), onStart)
+                    }
+                    else -> Unit
+                }
             }
         }
     }
 }
 
 @Composable
-private fun WelcomeSlide() {
+private fun WelcomeSlide(compact: Boolean) {
+    if (compact) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Image(painterResource(R.drawable.logo_penguin), contentDescription = null, modifier = Modifier.size(104.dp))
+            Spacer(Modifier.width(20.dp))
+            Column(Modifier.weight(1f)) {
+                Title(stringResource(R.string.onboard_welcome_title), 24)
+                Spacer(Modifier.height(10.dp))
+                Lead(stringResource(R.string.onboard_welcome_lead))
+            }
+        }
+        return
+    }
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Image(painterResource(R.drawable.logo_mark), contentDescription = null, modifier = Modifier.size(128.dp))
+        Image(painterResource(R.drawable.logo_penguin), contentDescription = null, modifier = Modifier.size(132.dp))
         Spacer(Modifier.height(30.dp))
         Title(stringResource(R.string.onboard_welcome_title), 28)
         Spacer(Modifier.height(14.dp))
@@ -164,19 +218,19 @@ private fun WelcomeSlide() {
 }
 
 @Composable
-private fun CatalogSlide() {
+private fun CatalogSlide(compact: Boolean) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            Image(painterResource(R.drawable.logo_mark), contentDescription = null, modifier = Modifier.size(58.dp))
-            Image(painterResource(R.drawable.logo_debian), contentDescription = null, modifier = Modifier.size(54.dp))
-            Image(painterResource(R.drawable.logo_ubuntu), contentDescription = null, modifier = Modifier.size(54.dp))
-            Image(painterResource(R.drawable.logo_dev), contentDescription = null, modifier = Modifier.size(54.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (compact) 10.dp else 14.dp)) {
+            Image(painterResource(R.drawable.logo_mark), contentDescription = null, modifier = Modifier.size(if (compact) 44.dp else 58.dp))
+            Image(painterResource(R.drawable.logo_debian), contentDescription = null, modifier = Modifier.size(if (compact) 40.dp else 54.dp))
+            Image(painterResource(R.drawable.logo_ubuntu), contentDescription = null, modifier = Modifier.size(if (compact) 40.dp else 54.dp))
+            Image(painterResource(R.drawable.logo_dev), contentDescription = null, modifier = Modifier.size(if (compact) 40.dp else 54.dp))
         }
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(if (compact) 12.dp else 24.dp))
         Divider()
-        Spacer(Modifier.height(22.dp))
-        Title(stringResource(R.string.onboard_catalog_title), 27)
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(if (compact) 12.dp else 22.dp))
+        Title(stringResource(R.string.onboard_catalog_title), if (compact) 23 else 27)
+        Spacer(Modifier.height(if (compact) 8.dp else 12.dp))
         Text(
             stringResource(R.string.onboard_catalog_names),
             fontSize = 16.sp,
@@ -191,44 +245,46 @@ private fun CatalogSlide() {
 }
 
 @Composable
-private fun BasicsSlide() {
+private fun BasicsSlide(compact: Boolean) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            LucideIcon(Lucide.Terminal, BlueDeep, size = 46.dp)
+            LucideIcon(Lucide.Terminal, BlueDeep, size = if (compact) 36.dp else 46.dp)
             Spacer(Modifier.width(24.dp))
             VerticalLine()
             Spacer(Modifier.width(24.dp))
-            LucideIcon(Lucide.BookOpen, BlueDeep, size = 46.dp)
+            LucideIcon(Lucide.BookOpen, BlueDeep, size = if (compact) 36.dp else 46.dp)
             Spacer(Modifier.width(24.dp))
             VerticalLine()
             Spacer(Modifier.width(24.dp))
-            LucideIcon(Lucide.Code, BlueDeep, size = 46.dp)
+            LucideIcon(Lucide.Code, BlueDeep, size = if (compact) 36.dp else 46.dp)
         }
-        Spacer(Modifier.height(30.dp))
-        Title(stringResource(R.string.onboard_basics_title), 27)
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(if (compact) 14.dp else 30.dp))
+        Title(stringResource(R.string.onboard_basics_title), if (compact) 23 else 27)
+        Spacer(Modifier.height(if (compact) 10.dp else 16.dp))
         Box(Modifier.width(64.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(Blue))
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(if (compact) 12.dp else 20.dp))
         Lead(stringResource(R.string.onboard_basics_lead))
     }
 }
 
 @Composable
-private fun LevelSlide(onSubscribe: () -> Unit) {
+private fun LevelSlide(compact: Boolean) {
     Column(Modifier.fillMaxWidth()) {
-        Image(painterResource(R.drawable.logo_mark), contentDescription = null, modifier = Modifier.size(40.dp))
-        Spacer(Modifier.height(18.dp))
+        if (!compact) {
+            Image(painterResource(R.drawable.logo_mark), contentDescription = null, modifier = Modifier.size(40.dp))
+            Spacer(Modifier.height(18.dp))
+        }
         Text(
             stringResource(R.string.onboard_level_title),
-            fontSize = 25.sp,
-            lineHeight = 32.sp,
+            fontSize = if (compact) 21.sp else 25.sp,
+            lineHeight = if (compact) 27.sp else 32.sp,
             fontWeight = FontWeight.Bold,
             color = Navy,
             fontFamily = Inter,
         )
-        Spacer(Modifier.height(10.dp))
-        Text(stringResource(R.string.onboard_level_lead), fontSize = 16.sp, color = Sub, fontFamily = Inter)
-        Spacer(Modifier.height(22.dp))
+        Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
+        Text(stringResource(R.string.onboard_level_lead), fontSize = if (compact) 14.sp else 16.sp, color = Sub, fontFamily = Inter)
+        Spacer(Modifier.height(if (compact) 12.dp else 22.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             PlanCard(
                 modifier = Modifier.weight(1f),
@@ -241,6 +297,7 @@ private fun LevelSlide(onSubscribe: () -> Unit) {
                     stringResource(R.string.onboard_free_2),
                     stringResource(R.string.onboard_free_3),
                 ),
+                compact = compact,
             )
             PlanCard(
                 modifier = Modifier.weight(1f),
@@ -253,23 +310,20 @@ private fun LevelSlide(onSubscribe: () -> Unit) {
                     stringResource(R.string.onboard_pro_2),
                     stringResource(R.string.onboard_pro_3),
                 ),
+                compact = compact,
             )
         }
-        Spacer(Modifier.height(20.dp))
-        PrimaryBlue(stringResource(R.string.onboard_buy_pro), onSubscribe)
     }
 }
 
 @Composable
-private fun StartSlide(onStart: () -> Unit) {
+private fun StartSlide(compact: Boolean) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Image(painterResource(R.drawable.rocket), contentDescription = null, modifier = Modifier.size(160.dp))
-        Spacer(Modifier.height(14.dp))
-        Title(stringResource(R.string.onboard_start_title), 28)
+        Image(painterResource(R.drawable.rocket), contentDescription = null, modifier = Modifier.size(if (compact) 96.dp else 160.dp))
+        Spacer(Modifier.height(if (compact) 8.dp else 14.dp))
+        Title(stringResource(R.string.onboard_start_title), if (compact) 24 else 28)
         Spacer(Modifier.height(14.dp))
         Lead(stringResource(R.string.onboard_start_lead))
-        Spacer(Modifier.height(24.dp))
-        PrimaryBlue(stringResource(R.string.onboard_start), onStart)
     }
 }
 
@@ -281,24 +335,26 @@ private fun PlanCard(
     name: String,
     price: String,
     features: List<String>,
+    compact: Boolean = false,
 ) {
     Column(
         modifier
             .clip(RoundedCornerShape(20.dp))
-            .background(if (highlighted) Color(0xFFF3F8FF) else Color(0xFFF8FAFE))
-            .padding(horizontal = 10.dp, vertical = 18.dp),
+            .background(if (highlighted) Matrux.colors.accentTint else Matrux.colors.surfaceAlt)
+            .padding(horizontal = 10.dp, vertical = if (compact) 10.dp else 18.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
-            Modifier.size(52.dp).clip(CircleShape).background(if (highlighted) Blue else Color(0xFFE4EDFB)),
+            Modifier.size(if (compact) 36.dp else 52.dp).clip(CircleShape).background(if (highlighted) Blue else Matrux.colors.accentTint),
             contentAlignment = Alignment.Center,
         ) {
-            LucideIcon(icon, if (highlighted) Color.White else Blue, size = 26.dp)
+            LucideIcon(icon, if (highlighted) Color.White else Blue, size = if (compact) 18.dp else 26.dp)
         }
-        Spacer(Modifier.height(14.dp))
-        Text(name, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = if (highlighted) Blue else Navy, fontFamily = Inter)
+        Spacer(Modifier.height(if (compact) 6.dp else 14.dp))
+        Text(name, fontSize = if (compact) 17.sp else 22.sp, fontWeight = FontWeight.Bold, color = if (highlighted) Blue else Navy, fontFamily = Inter)
         Spacer(Modifier.height(2.dp))
-        Text(price, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = if (highlighted) Blue else Navy, fontFamily = Inter)
+        Text(price, fontSize = if (compact) 19.sp else 26.sp, fontWeight = FontWeight.Bold, color = if (highlighted) Blue else Navy, fontFamily = Inter)
+        if (!compact) {
         Spacer(Modifier.height(12.dp))
         Box(Modifier.fillMaxWidth().height(1.dp).background(Line))
         Spacer(Modifier.height(12.dp))
@@ -311,6 +367,7 @@ private fun PlanCard(
                 Text(feature, fontSize = 11.sp, lineHeight = 15.sp, color = Navy, fontFamily = Inter)
             }
         }
+        }
     }
 }
 
@@ -321,7 +378,7 @@ private fun PrimaryBlue(label: String, onClick: () -> Unit) {
             .fillMaxWidth()
             .heightIn(min = 58.dp)
             .clip(RoundedCornerShape(14.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFF2A7BF0), BlueDeep)))
+            .background(Brush.verticalGradient(listOf(Blue, BlueDeep)))
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -339,7 +396,7 @@ private fun RoundNext(onClick: () -> Unit) {
         Modifier
             .size(58.dp)
             .clip(CircleShape)
-            .background(Brush.verticalGradient(listOf(Color(0xFF2A7BF0), BlueDeep)))
+            .background(Brush.verticalGradient(listOf(Blue, BlueDeep)))
             .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

@@ -65,7 +65,7 @@ class FailuresTest {
     fun realHttpCodesFromServer() = runTest {
         val server = MockWebServer()
         server.start()
-        val api = MatruxApi(server.url("/").toString())
+        val api = MatruxApi(server.url("/").toString(), pinnedKey = "")
         val cases = listOf(
             402 to Failure.NeedSubscription,
             403 to Failure.NoAccess,
@@ -85,7 +85,7 @@ class FailuresTest {
         server.start()
         server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
         val client = OkHttpClient.Builder().readTimeout(200, TimeUnit.MILLISECONDS).retryOnConnectionFailure(false).build()
-        val api = MatruxApi(server.url("/").toString(), client)
+        val api = MatruxApi(server.url("/").toString(), client, pinnedKey = "")
         val failure = runCatching { api.pubkey() }.exceptionOrNull() as FailureException
         assertEquals(Failure.NoConnection, failure.failure)
         server.shutdown()
@@ -97,7 +97,7 @@ class FailuresTest {
         server.start()
         val url = server.url("/").toString()
         server.shutdown()
-        val failure = runCatching { MatruxApi(url).pubkey() }.exceptionOrNull() as FailureException
+        val failure = runCatching { MatruxApi(url, pinnedKey = "").pubkey() }.exceptionOrNull() as FailureException
         assertEquals(Failure.NoConnection, failure.failure)
     }
 }

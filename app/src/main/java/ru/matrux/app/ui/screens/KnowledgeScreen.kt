@@ -38,8 +38,10 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import ru.matrux.app.R
+import ru.matrux.app.learn.Course
 import ru.matrux.app.ui.components.Card
 import ru.matrux.app.ui.components.Lucide
 import ru.matrux.app.ui.components.LucideIcon
@@ -50,10 +52,11 @@ import ru.matrux.app.ui.knowledge.KnowledgeSection
 import ru.matrux.app.ui.components.ScreenTitle
 import ru.matrux.app.ui.components.Tab
 import ru.matrux.app.ui.components.TabScreen
+import ru.matrux.app.ui.state.CourseCard
 import ru.matrux.app.ui.state.KnowledgeUi
 import ru.matrux.app.ui.state.SectionRow
-import ru.matrux.app.ui.state.CourseCard
 import ru.matrux.app.ui.theme.Matrux
+import ru.matrux.app.ui.theme.cardShadow
 
 private const val COPY_MS = 1600L
 
@@ -88,15 +91,61 @@ fun courseIcon(id: String): Lucide = when (id) {
 }
 
 data class KnowledgeActions(
+    val onCourse: (Course) -> Unit = {},
     val onTab: (Tab) -> Unit = {},
 )
 
 @Composable
-fun KnowledgeScreen(actions: KnowledgeActions) {
+fun KnowledgeScreen(ui: KnowledgeUi, actions: KnowledgeActions) {
     TabScreen(Tab.KNOWLEDGE, actions.onTab, scroll = true) {
         Spacer(Modifier.height(Matrux.space.unit))
         ScreenTitle(stringResource(R.string.knowledge_title), null)
         Spacer(Modifier.height(Matrux.space.block))
+        ui.courses.forEachIndexed { index, card ->
+            if (index > 0) Spacer(Modifier.height(Matrux.space.unit + Matrux.space.unit / 2))
+            CourseCardRow(card) { actions.onCourse(card.course) }
+        }
+        Spacer(Modifier.height(Matrux.space.block))
+    }
+}
+
+@Composable
+private fun CourseCardRow(card: CourseCard, onOpen: () -> Unit) {
+    val colors = Matrux.colors
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .cardShadow()
+            .clip(Matrux.shapes.control)
+            .background(colors.surface)
+            .clickable(role = Role.Button, onClick = onOpen)
+            .padding(horizontal = Matrux.space.unit * 2, vertical = Matrux.space.unit + Matrux.space.unit / 2),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconTile(courseIcon(card.course.id))
+            Spacer(Modifier.width(Matrux.space.unit * 2))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    card.course.title,
+                    style = Matrux.type.title.copy(fontSize = 16.sp, lineHeight = 20.sp),
+                    color = colors.ink,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(Matrux.space.unit / 2))
+                Text(
+                    lessonsLine(card.total, card.done),
+                    style = Matrux.type.body,
+                    color = colors.muted,
+                )
+            }
+            Spacer(Modifier.width(Matrux.space.unit))
+            if (card.locked) {
+                LucideIcon(Lucide.Lock, colors.muted, size = Matrux.space.iconSmall)
+            } else {
+                LucideIcon(Lucide.ChevronRight, colors.muted, size = Matrux.space.iconSmall)
+            }
+        }
     }
 }
 

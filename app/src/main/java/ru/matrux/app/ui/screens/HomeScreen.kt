@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,12 +26,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -85,6 +89,8 @@ data class HomeActions(
     val onSection: (SectionRow) -> Unit = {},
     val onSubscribe: () -> Unit = {},
     val onTab: (Tab) -> Unit = {},
+    val dark: Boolean = false,
+    val onTheme: (Boolean) -> Unit = {},
 )
 
 @Composable
@@ -97,21 +103,29 @@ fun HomeScreen(sections: List<HomeSection>, actions: HomeActions) {
 
     TabScreen(Tab.HOME, actions.onTab, scroll = true) {
         Spacer(Modifier.height(Matrux.space.unit * 2))
-        Text(stringResource(R.string.home_title), style = Matrux.type.display, color = Matrux.colors.ink)
-        Spacer(Modifier.height(Matrux.space.unit))
-        Box(
-            Modifier
-                .width(48.dp)
-                .height(4.dp)
-                .clip(Matrux.shapes.pill)
-                .background(Matrux.colors.accent),
-        )
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.home_title), style = Matrux.type.display, color = Matrux.colors.ink)
+                Spacer(Modifier.height(Matrux.space.unit))
+                Box(
+                    Modifier
+                        .width(48.dp)
+                        .height(4.dp)
+                        .clip(Matrux.shapes.pill)
+                        .background(Matrux.colors.accent),
+                )
+            }
+            ThemeSwitch(actions.dark, actions.onTheme)
+        }
         Spacer(Modifier.height(Matrux.space.block))
         SearchField(query) { query = it }
         Spacer(Modifier.height(Matrux.space.block))
 
         val pool = basics?.rows.orEmpty() + if (paid) advanced?.rows.orEmpty() else emptyList()
         if (needle.isEmpty()) {
+            InstallCta { actions.onTab(Tab.CATALOG) }
+            Spacer(Modifier.height(Matrux.space.block))
+            Basics(basics, actions)
             if (advanced != null && !paid) Advanced(advanced, actions)
             if (advanced != null && paid) AdvancedOpen(advanced, actions)
         } else {
@@ -187,6 +201,62 @@ private fun AdvancedOpen(section: HomeSection, actions: HomeActions) {
 }
 
 @Composable
+private fun ThemeSwitch(dark: Boolean, onChange: (Boolean) -> Unit) {
+    val colors = Matrux.colors
+    Row(
+        Modifier
+            .clip(Matrux.shapes.pill)
+            .background(colors.surfaceAlt)
+            .border(1.dp, colors.hairline, Matrux.shapes.pill)
+            .padding(3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        ThemeSegment(Lucide.Sun, selected = !dark) { onChange(false) }
+        ThemeSegment(Lucide.Moon, selected = dark) { onChange(true) }
+    }
+}
+
+@Composable
+private fun ThemeSegment(icon: Lucide, selected: Boolean, onClick: () -> Unit) {
+    val colors = Matrux.colors
+    Box(
+        Modifier
+            .size(width = 34.dp, height = 28.dp)
+            .clip(Matrux.shapes.pill)
+            .background(if (selected) colors.surface else Color.Transparent)
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        LucideIcon(icon, if (selected) colors.accent else colors.muted, size = 16.dp)
+    }
+}
+
+@Composable
+private fun InstallCta(onOpen: () -> Unit) {
+    val colors = Matrux.colors
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(Matrux.shapes.control)
+            .background(colors.accent)
+            .clickable(role = Role.Button, onClick = onOpen)
+            .padding(horizontal = Matrux.space.unit * 2, vertical = Matrux.space.unit * 2),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            stringResource(R.string.home_install_cta),
+            style = Matrux.type.bodyStrong.copy(fontSize = 15.sp, lineHeight = 20.sp),
+            color = colors.onAccent,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f, fill = false),
+        )
+        Spacer(Modifier.width(Matrux.space.unit))
+        LucideIcon(Lucide.ChevronRight, colors.onAccent, size = Matrux.space.iconSmall)
+    }
+}
+
+@Composable
 private fun SectionHead(
     title: String,
     badge: Int?,
@@ -227,7 +297,7 @@ private fun SectionHead(
                 Text(
                     action,
                     style = Matrux.type.caption,
-                    color = colors.surface,
+                    color = colors.onAccent,
                     maxLines = 1,
                     softWrap = false,
                     modifier = Modifier
@@ -256,7 +326,7 @@ private fun Badge(text: String, background: androidx.compose.ui.graphics.Color) 
     Text(
         text,
         style = Matrux.type.captionStrong,
-        color = Matrux.colors.surface,
+        color = Matrux.colors.onAccent,
         maxLines = 1,
         softWrap = false,
         modifier = Modifier
@@ -328,6 +398,7 @@ private fun SectionMark(id: String, locked: Boolean) {
             Image(
                 painterResource(sectionImage(id)),
                 contentDescription = null,
+                colorFilter = ColorFilter.tint(colors.accent),
                 modifier = Modifier.size(Matrux.space.iconLarge + 2.dp),
             )
         }

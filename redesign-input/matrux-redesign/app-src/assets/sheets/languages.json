@@ -1,0 +1,312 @@
+{
+ "groups": [
+  {
+   "entries": [
+    {
+     "summary": "Выполняет файл или строку кода интерпретатором Python 3.",
+     "code": "python3 main.py\npython3 -c \"print(2 ** 10)\"",
+     "detail": "Без аргументов открывает интерактивный REPL. Выход из него — exit() или Ctrl+D.",
+     "title": "python3 — запуск"
+    },
+    {
+     "summary": "Базовые типы: int, float, str, bool и None.",
+     "code": "n = 42\npi = 3.14\nname = \"Matrux\"\nready = True\nprint(type(pi), isinstance(n, int))",
+     "detail": "Тип определяется значением, а не объявлением. type(x) показывает тип, isinstance(x, int) проверяет его.",
+     "title": "Типы данных"
+    },
+    {
+     "summary": "Связывает имя со значением и подставляет его в текст.",
+     "code": "user = \"anna\"\ncount = 3\nprint(f\"{user}: {count} файла, всего {count * 2} КБ\")",
+     "detail": "Объявлять переменную заранее не нужно. f-строка вычисляет выражения в фигурных скобках.",
+     "title": "Переменные и f-строки"
+    },
+    {
+     "summary": "Выполняет блок кода только при истинном условии.",
+     "code": "size = 120\nif size > 100:\n    print(\"большой\")\nelif size > 10:\n    print(\"средний\")\nelse:\n    print(\"маленький\")",
+     "detail": "Блок задаётся отступом в четыре пробела. Пустой список, 0, None и пустая строка считаются ложью.",
+     "title": "if / elif / else"
+    },
+    {
+     "summary": "Повторяет блок для каждого элемента или пока условие истинно.",
+     "code": "for i, name in enumerate([\"a\", \"b\"]):\n    print(i, name)\n\nn = 3\nwhile n > 0:\n    n -= 1",
+     "detail": "range(5) даёт числа от 0 до 4. enumerate() возвращает пары индекс и значение.",
+     "title": "for и while"
+    },
+    {
+     "summary": "Объявляет функцию с параметрами и значениями по умолчанию.",
+     "code": "def greet(name: str, lang: str = \"ru\") -> str:\n    return f\"Привет, {name}\" if lang == \"ru\" else f\"Hi, {name}\"\n\nprint(greet(\"Оля\"))",
+     "detail": "Аннотации типов не проверяются при запуске, но помогают редактору и mypy находить ошибки.",
+     "title": "def — функция"
+    },
+    {
+     "summary": "Хранит упорядоченную изменяемую последовательность с доступом по индексу.",
+     "code": "items = [3, 1, 2]\nitems.append(5)\nitems.sort()\nprint(items[-1], items[:2])",
+     "detail": "append добавляет в конец, срез items[1:3] возвращает копию части. Отрицательный индекс считает с конца.",
+     "title": "list — список"
+    },
+    {
+     "summary": "Хранит пары ключ-значение с быстрым поиском по ключу.",
+     "code": "ports = {\"ssh\": 22, \"http\": 80}\nports[\"https\"] = 443\nfor name, port in ports.items():\n    print(name, port)\nprint(ports.get(\"ftp\", 21))",
+     "detail": "get() возвращает значение по умолчанию вместо ошибки KeyError, если ключа нет.",
+     "title": "dict — словарь"
+    },
+    {
+     "summary": "Строит новый список из другого в одну строку.",
+     "code": "squares = [n * n for n in range(10) if n % 2 == 0]\nprint(squares)",
+     "detail": "Порядок: выражение, источник, фильтр. Круглые скобки вместо квадратных дают ленивый генератор для больших данных.",
+     "title": "Генератор списка"
+    },
+    {
+     "summary": "Подключает модуль стандартной библиотеки, пакет или свой файл.",
+     "code": "import json\nfrom pathlib import Path\n\ndata = json.loads('{\"ok\": true}')\nprint(Path.home(), data[\"ok\"])",
+     "detail": "Файл utils.py рядом со скриптом импортируется как import utils. from x import y берёт одно имя.",
+     "title": "import — модули"
+    },
+    {
+     "summary": "Создаёт изолированное окружение для зависимостей проекта.",
+     "code": "python3 -m venv .venv\nsource .venv/bin/activate\ndeactivate",
+     "detail": "После активации pip ставит пакеты в .venv, а не в систему. В Debian 12 и новее системный pip заблокирован.",
+     "title": "python3 -m venv"
+    },
+    {
+     "summary": "Устанавливает пакеты из PyPI в активное окружение.",
+     "code": "pip install requests\npip freeze > requirements.txt\npip install -r requirements.txt",
+     "detail": "pip freeze фиксирует точные версии, pip install -r восстанавливает их на другой машине.",
+     "title": "pip install"
+    },
+    {
+     "summary": "Открывает файл и гарантированно закрывает его после блока.",
+     "code": "with open(\"notes.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"первая строка\\n\")\n\nwith open(\"notes.txt\", encoding=\"utf-8\") as f:\n    for line in f:\n        print(line.strip())",
+     "detail": "Режимы: r — чтение, w — перезапись, a — дозапись. Кодировку encoding=\"utf-8\" указывайте явно.",
+     "title": "with open — файлы"
+    },
+    {
+     "summary": "Перехватывает исключение и продолжает работу программы.",
+     "code": "try:\n    value = int(\"abc\")\nexcept ValueError as e:\n    print(\"не число:\", e)\nfinally:\n    print(\"готово\")",
+     "detail": "Ловите конкретный класс ошибки, а не голый except. Блок finally выполняется всегда.",
+     "title": "try / except"
+    },
+    {
+     "summary": "Запускает конкурентные задачи ввода-вывода в одном потоке.",
+     "code": "import asyncio\n\nasync def job(n):\n    await asyncio.sleep(1)\n    return n\n\nasync def main():\n    print(await asyncio.gather(job(1), job(2)))\n\nasyncio.run(main())",
+     "detail": "Подходит для сети и диска, но не для тяжёлых вычислений. asyncio.gather ждёт несколько корутин сразу.",
+     "title": "async / await"
+    },
+    {
+     "summary": "Запускает код только при прямом вызове файла, а не при импорте.",
+     "code": "def main():\n    print(\"старт\")\n\nif __name__ == \"__main__\":\n    main()",
+     "detail": "Так один файл служит и программой, и модулем, который можно импортировать в тестах.",
+     "title": "if __name__ == \"__main__\""
+    }
+   ],
+   "title": "Python"
+  },
+  {
+   "entries": [
+    {
+     "summary": "Компилирует и сразу запускает программу без сохранения бинарника.",
+     "code": "go run main.go\ngo run .",
+     "detail": "go run . запускает пакет main из текущего каталога со всеми его файлами.",
+     "title": "go run"
+    },
+    {
+     "summary": "Создаёт go.mod — описание модуля и его зависимостей.",
+     "code": "go mod init example.com/hello\ngo mod tidy",
+     "detail": "Имя модуля обычно совпадает с путём репозитория. go mod tidy добавляет недостающие зависимости и убирает лишние.",
+     "title": "go mod init"
+    },
+    {
+     "summary": "Собирает один исполняемый файл без внешних зависимостей.",
+     "code": "go build -o app .\nGOOS=linux GOARCH=arm64 go build -o app-arm64 .",
+     "detail": "GOOS и GOARCH задают целевую платформу: так на ноутбуке собирают бинарник для ARM-сервера.",
+     "title": "go build"
+    },
+    {
+     "summary": "Задаёт точку входа: выполнение начинается с main в пакете main.",
+     "code": "package main\n\nimport \"fmt\"\n\nfunc main() {\n\tfmt.Println(\"Привет\")\n}",
+     "detail": "Импортированный, но неиспользуемый пакет — ошибка компиляции.",
+     "title": "package main и func main"
+    },
+    {
+     "summary": "Статическая типизация: int, float64, string, bool, byte, rune.",
+     "code": "var count int\nvar ratio float64 = 0.5\nvar name string = \"go\"\nfmt.Println(count, ratio, name)",
+     "detail": "Неинициализированная переменная получает нулевое значение: 0, пустую строку, false или nil.",
+     "title": "Типы"
+    },
+    {
+     "summary": "Объявляет переменную с выводом типа внутри функции.",
+     "code": "const limit = 10\nhost := \"localhost\"\nport := 8080\nfmt.Printf(\"%s:%d, лимит %d\\n\", host, port, limit)",
+     "detail": "Объявленная, но неиспользуемая переменная не скомпилируется. const задаёт неизменяемое значение.",
+     "title": "Переменные :="
+    },
+    {
+     "summary": "Проверяет условие, перед которым можно объявить локальную переменную.",
+     "code": "if n, err := strconv.Atoi(\"42\"); err == nil {\n\tfmt.Println(n * 2)\n}",
+     "detail": "Круглые скобки вокруг условия не ставятся, фигурные вокруг тела обязательны.",
+     "title": "if с инициализацией"
+    },
+    {
+     "summary": "Заменяет for, while и бесконечный цикл одной конструкцией.",
+     "code": "for i := 0; i < 3; i++ {\n\tfmt.Println(i)\n}\nfor i, v := range []string{\"a\", \"b\"} {\n\tfmt.Println(i, v)\n}",
+     "detail": "range перебирает срезы, мапы, строки и каналы, отдавая индекс и значение.",
+     "title": "for — единственный цикл"
+    },
+    {
+     "summary": "Объявляет функцию, которая возвращает значение и ошибку.",
+     "code": "func divide(a, b float64) (float64, error) {\n\tif b == 0 {\n\t\treturn 0, errors.New(\"деление на ноль\")\n\t}\n\treturn a / b, nil\n}",
+     "detail": "Пара (результат, error) — стандартный способ сообщить о неудаче в Go вместо исключений.",
+     "title": "func и несколько результатов"
+    },
+    {
+     "summary": "Динамический массив, который растёт через append.",
+     "code": "nums := []int{1, 2, 3}\nnums = append(nums, 4)\nfmt.Println(len(nums), nums[1:3])",
+     "detail": "Срез ссылается на общий массив: изменение элемента в подсрезе меняет оригинал.",
+     "title": "Срез []T"
+    },
+    {
+     "summary": "Хэш-таблица, которая находит значение по ключу за постоянное время.",
+     "code": "ports := map[string]int{\"ssh\": 22}\nports[\"http\"] = 80\nif _, ok := ports[\"ftp\"]; !ok {\n\tfmt.Println(\"ftp не задан\")\n}",
+     "detail": "Второй результат при чтении показывает, есть ли ключ. Запись в nil-мапу вызывает панику — создавайте её через make или литерал.",
+     "title": "map[K]V"
+    },
+    {
+     "summary": "Объединяет поля в тип и привязывает к нему функции.",
+     "code": "type User struct {\n\tName string\n\tAge  int\n}\n\nfunc (u *User) Birthday() {\n\tu.Age++\n}",
+     "detail": "Получатель-указатель *T позволяет методу менять поля. Интерфейсы реализуются неявно, без implements.",
+     "title": "struct и методы"
+    },
+    {
+     "summary": "Проверяет ошибку сразу после вызова и передаёт её выше.",
+     "code": "data, err := os.ReadFile(\"config.json\")\nif err != nil {\n\treturn fmt.Errorf(\"чтение конфига: %w\", err)\n}\nfmt.Println(len(data))",
+     "detail": "fmt.Errorf с %w оборачивает ошибку, errors.Is находит в цепочке исходную причину.",
+     "title": "if err != nil"
+    },
+    {
+     "summary": "Записывает или читает файл целиком одним вызовом.",
+     "code": "if err := os.WriteFile(\"out.txt\", []byte(\"готово\\n\"), 0644); err != nil {\n\tlog.Fatal(err)\n}",
+     "detail": "0644 — права нового файла: владелец пишет, остальные читают. Большие файлы читайте построчно через bufio.Scanner.",
+     "title": "os.WriteFile и os.ReadFile"
+    },
+    {
+     "summary": "Запускает функцию в горутине и передаёт данные через канал.",
+     "code": "ch := make(chan int)\ngo func() {\n\tch <- 42\n}()\nfmt.Println(<-ch)",
+     "detail": "Горутина намного дешевле потока ОС. sync.WaitGroup ждёт завершения группы горутин.",
+     "title": "go и каналы"
+    },
+    {
+     "summary": "Добавляет зависимость, запускает тесты и форматирует код.",
+     "code": "go get github.com/google/uuid@latest\ngo test ./...\ngo fmt ./...",
+     "detail": "./... означает текущий пакет и все вложенные. Тесты лежат в файлах с суффиксом _test.go.",
+     "title": "go get, go test, go fmt"
+    }
+   ],
+   "title": "Go"
+  },
+  {
+   "entries": [
+    {
+     "summary": "Запускает JavaScript вне браузера на движке V8.",
+     "code": "node app.js\nnode --watch app.js",
+     "detail": "node без аргументов открывает REPL. Флаг --watch перезапускает скрипт при изменении файлов.",
+     "title": "node — запуск"
+    },
+    {
+     "summary": "Создаёт package.json с настройками по умолчанию.",
+     "code": "npm init -y\nnpm pkg set type=module",
+     "detail": "Поле \"type\": \"module\" включает синтаксис import вместо require.",
+     "title": "npm init -y"
+    },
+    {
+     "summary": "Ставит пакет в node_modules и записывает его в package.json.",
+     "code": "npm install express\nnpm install -D eslint\nnpm ci",
+     "detail": "-D помечает зависимость только для разработки. npm ci ставит строго по package-lock.json — так надёжнее в CI.",
+     "title": "npm install"
+    },
+    {
+     "summary": "Выполняет скрипт из package.json или пакет без глобальной установки.",
+     "code": "npm run build\nnpx prettier --write .",
+     "detail": "Скрипты описываются в поле scripts. npm test и npm start работают без слова run.",
+     "title": "npm run и npx"
+    },
+    {
+     "summary": "Динамические типы: number, string, boolean, null, undefined, object, bigint.",
+     "code": "const n = 42;\nconst big = 10n ** 20n;\nconsole.log(typeof n, typeof big, 0 === \"0\");",
+     "detail": "typeof null возвращает \"object\" — давняя особенность языка. Сравнивайте через ===, без приведения типов.",
+     "title": "Типы"
+    },
+    {
+     "summary": "Объявляют неизменяемую ссылку и переменную с блочной областью.",
+     "code": "const config = { port: 3000 };\nconfig.port = 8080;\nlet attempts = 0;\nattempts += 1;",
+     "detail": "const запрещает переприсваивание, но не изменение полей объекта. var лучше не использовать.",
+     "title": "const и let"
+    },
+    {
+     "summary": "Подставляет выражения в строку внутри обратных кавычек.",
+     "code": "const user = \"anna\";\nconsole.log(`Привет, ${user}. Сегодня ${new Date().getDate()} число`);",
+     "detail": "Такая строка может занимать несколько строк исходника без символов переноса.",
+     "title": "Шаблонные строки"
+    },
+    {
+     "summary": "Выбирает ветку кода или значение по условию.",
+     "code": "const port = Number(process.env.PORT ?? 3000);\nconst mode = port === 3000 ? \"dev\" : \"prod\";\nif (mode === \"dev\") console.log(\"локальный запуск\");",
+     "detail": "?? подставляет значение по умолчанию только для null и undefined, в отличие от ||, который реагирует и на 0.",
+     "title": "if, ?: и ??"
+    },
+    {
+     "summary": "Перебирает элементы массива или преобразует его целиком.",
+     "code": "const nums = [1, 2, 3, 4];\nfor (const n of nums) console.log(n);\nconst even = nums.filter((n) => n % 2 === 0).map((n) => n * 10);",
+     "detail": "map возвращает новый массив, filter отбирает элементы, reduce сворачивает всё в одно значение.",
+     "title": "for...of и методы массивов"
+    },
+    {
+     "summary": "Объявляет функцию обычным способом или короткой стрелкой.",
+     "code": "function sum(a, b = 0) {\n  return a + b;\n}\nconst double = (x) => x * 2;\nconsole.log(sum(2), double(5));",
+     "detail": "У стрелочной функции нет своего this, поэтому она удобна в колбэках.",
+     "title": "Функции и стрелки"
+    },
+    {
+     "summary": "Хранит данные по ключам и раскладывает их по переменным.",
+     "code": "const user = { name: \"Ира\", role: \"admin\" };\nconst { name, role } = user;\nconst cache = new Map([[\"a\", 1]]);\nconsole.log(name, role, cache.get(\"a\"));",
+     "detail": "Map сохраняет порядок вставки и принимает ключи любого типа, а не только строки.",
+     "title": "Объекты, Map и деструктуризация"
+    },
+    {
+     "summary": "Подключает ES-модуль или отдаёт из файла функции наружу.",
+     "code": "import { readFile } from \"node:fs/promises\";\nimport path from \"node:path\";\nexport const root = path.resolve(\".\");",
+     "detail": "Встроенные модули пишут с префиксом node:. Старый синтаксис CommonJS — require и module.exports.",
+     "title": "import и export"
+    },
+    {
+     "summary": "Читает и пишет файлы асинхронно, не блокируя процесс.",
+     "code": "import { readFile, writeFile } from \"node:fs/promises\";\n\nawait writeFile(\"note.txt\", \"текст\\n\", \"utf8\");\nconst text = await readFile(\"note.txt\", \"utf8\");\nconsole.log(text);",
+     "detail": "await на верхнем уровне работает только в ES-модулях: в файлах .mjs или при \"type\": \"module\".",
+     "title": "fs/promises — файлы"
+    },
+    {
+     "summary": "Ждёт асинхронный результат так, будто код выполняется по порядку.",
+     "code": "const wait = (ms, v) => new Promise((r) => setTimeout(() => r(v), ms));\n\nasync function main() {\n  const [a, b] = await Promise.all([wait(100, 1), wait(50, 2)]);\n  console.log(a + b);\n}\nmain();",
+     "detail": "Promise.all запускает задачи параллельно и ждёт все. Встроенный fetch доступен с Node 18.",
+     "title": "async / await и Promise"
+    },
+    {
+     "summary": "Перехватывает ошибку, в том числе из await.",
+     "code": "try {\n  JSON.parse(\"{oops\");\n} catch (err) {\n  console.error(\"плохой JSON:\", err.message);\n} finally {\n  console.log(\"проверено\");\n}",
+     "detail": "Необработанный отказ промиса завершает процесс Node с ошибкой.",
+     "title": "try / catch"
+    },
+    {
+     "summary": "Поднимает веб-сервер встроенным модулем node:http.",
+     "code": "import http from \"node:http\";\n\nhttp.createServer((req, res) => {\n  res.end(\"ok\");\n}).listen(3000);",
+     "detail": "Точку входа указывают в поле main файла package.json и запускают через npm start.",
+     "title": "HTTP-сервер — точка входа"
+    }
+   ],
+   "title": "Node.js"
+  }
+ ],
+ "id": "languages",
+ "title": "Базовые знания языков программирования",
+ "pro": true,
+ "branch": "deeper",
+ "lead": "Синтаксис и инструменты трёх языков, на которых пишут серверы, CLI и веб."
+}

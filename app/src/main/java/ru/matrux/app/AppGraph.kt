@@ -33,6 +33,7 @@ import ru.matrux.app.data.MatruxRepository
 import ru.matrux.app.data.PrefsLocalState
 import ru.matrux.app.data.ResumableDownloader
 import ru.matrux.app.data.SubscriptionStatus
+import ru.matrux.app.data.TrustedClock
 import ru.matrux.app.install.InstallController
 import ru.matrux.app.learn.CodeRunner
 import ru.matrux.app.learn.CourseLibrary
@@ -46,6 +47,7 @@ import ru.matrux.app.ui.learn.WebChecker
 import ru.matrux.app.session.SessionController
 import ru.matrux.app.shell.NativeX11Server
 import ru.matrux.app.shell.ProotEngine
+import ru.matrux.app.service.ExpiryNotice
 import ru.matrux.app.store.StoreSdk
 import ru.matrux.app.ui.state.Load
 import java.io.File
@@ -54,6 +56,17 @@ class AppGraph(context: Context) {
     private val app = context.applicationContext
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val local = PrefsLocalState(app)
+
+    init {
+        TrustedClock.install(app)
+    }
+    private val themeState = MutableStateFlow(local.theme)
+    val theme: StateFlow<String?> = themeState.asStateFlow()
+
+    fun setTheme(value: String?) {
+        local.theme = value
+        themeState.value = value
+    }
     private val api = MatruxApi(BuildConfig.API_BASE)
     val billing: BillingGateway = StoreSdk.billing(app as Application)
     val auth: AuthGateway = StoreSdk.auth(app as Application)
@@ -182,6 +195,7 @@ class AppGraph(context: Context) {
             statusFailureState.value = Failures.fromThrowable(error)
         }
         accountState.value = repository.account
+        ExpiryNotice.maybeNotify(app, statusState.value ?: repository.cachedStatus)
     }
 
     fun signIn(owner: LifecycleOwner) {

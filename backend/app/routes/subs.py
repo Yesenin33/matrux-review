@@ -10,6 +10,7 @@ from app.context import Context, check_device_id, get_context
 from app.devices import require_device
 from app.errors import ApiError, JsonUtf8Response
 from app.rustore import Invoice, PurchaseNotFound, StoreAnswer, StoreUnavailable
+from app.signed import signed_json
 from app.subscriptions import (
     LIFETIME,
     PRO,
@@ -82,7 +83,7 @@ def status_body(ctx: Context, device_id: str) -> dict:
 def sub_status(request: Request, ctx: Ctx, device_id: Annotated[str | None, Query()] = None) -> JsonUtf8Response:
     device_id = check_device_id(device_id)
     require_device(ctx, device_id, request)
-    return JsonUtf8Response(status_body(ctx, device_id))
+    return signed_json(ctx, status_body(ctx, device_id))
 
 
 @router.post("/verify")
@@ -117,4 +118,4 @@ def sub_verify(payload: VerifyRequest, request: Request, ctx: Ctx) -> JsonUtf8Re
         except DeviceConflict as exc:
             raise ApiError(409, "purchase_bound_to_other_device") from exc
         sync_device(conn, device_id)
-    return JsonUtf8Response({"state": answer.state.value, **status_body(ctx, device_id)})
+    return signed_json(ctx, {"state": answer.state.value, **status_body(ctx, device_id)})

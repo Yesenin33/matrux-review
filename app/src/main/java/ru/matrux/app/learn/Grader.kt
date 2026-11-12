@@ -4,6 +4,7 @@ sealed interface Answer {
     data class Code(val text: String) : Answer
     data class Pick(val index: Int) : Answer
     data class Text(val text: String) : Answer
+    data class Quiz(val picks: List<Int>) : Answer
 }
 
 sealed interface RunOutcome {
@@ -31,6 +32,16 @@ object Grader {
 
     fun choice(task: Task.Choice, pick: Int): Verdict =
         if (pick == task.answer) Verdict.Pass(null) else Verdict.Fail(task.options[task.answer], task.options.getOrNull(pick))
+
+    fun quiz(questions: List<QuizQuestion>, picks: List<Int>): Verdict {
+        val wrong = questions.indices.firstOrNull { picks.getOrNull(it) != questions[it].answer }
+        return if (wrong == null) {
+            Verdict.Pass(null)
+        } else {
+            val q = questions[wrong]
+            Verdict.Fail(q.options[q.answer], q.options.getOrNull(picks.getOrNull(wrong) ?: -1))
+        }
+    }
 
     fun output(task: Task.Output, text: String): Verdict {
         val actual = normalize(text)

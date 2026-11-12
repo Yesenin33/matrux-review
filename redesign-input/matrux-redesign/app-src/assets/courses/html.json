@@ -1,0 +1,314 @@
+{
+ "id": "html",
+ "title": "HTML",
+ "outcome": "Собираешь страницу с формами и доступностью",
+ "modules": [
+  {
+   "id": "start",
+   "title": "Начало",
+   "lessons": [
+    {
+     "id": "skeleton",
+     "title": "Каркас документа",
+     "theory": [
+      "HTML описывает, из чего состоит страница: заголовки, абзацы, ссылки, картинки. Каждый элемент размечается тегами: открывающим <p> и закрывающим </p>, между ними — содержимое.",
+      "Любая страница начинается с одинакового каркаса. <!DOCTYPE html> включает современный режим браузера. <html lang=\"ru\"> сообщает язык — по нему экранный диктор выбирает произношение, а браузер переносы. В <head> лежит служебное: кодировка <meta charset=\"utf-8\">, настройка для телефонов <meta name=\"viewport\"> и заголовок вкладки <title>. Всё видимое — в <body>.",
+      "Атрибуты уточняют элемент и пишутся в открывающем теге: lang=\"ru\", charset=\"utf-8\". Значения берут в кавычки."
+     ],
+     "example": {
+      "lang": "html",
+      "code": "<!DOCTYPE html>\n<html lang=\"ru\">\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <title>Заметки</title>\n  </head>\n  <body>\n    <p>Первая страница.</p>\n  </body>\n</html>"
+     },
+     "task": {
+      "kind": "run",
+      "prompt": "Допиши каркас: укажи язык ru у <html>, кодировку utf-8 и заголовок вкладки Мой список. Результат проверяется в браузере.",
+      "runtime": "web",
+      "starter": "<!DOCTYPE html>\n<html>\n  <head>\n  </head>\n  <body>\n    <p>Скоро здесь будет список.</p>\n  </body>\n</html>\n",
+      "solution": "<!DOCTYPE html>\n<html lang=\"ru\">\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Мой список</title>\n  </head>\n  <body>\n    <p>Скоро здесь будет список.</p>\n  </body>\n</html>\n",
+      "check": "document.documentElement.lang === 'ru' && document.querySelector('meta[charset]') !== null && document.querySelector('meta[charset]').getAttribute('charset').toLowerCase() === 'utf-8' && document.title === 'Мой список'"
+     },
+     "review": "lang ставится на корневой элемент, потому что относится ко всей странице. meta charset лучше писать первой строкой в head: браузер должен узнать кодировку до того, как прочтёт русский текст заголовка. Содержимое title видно на вкладке и в закладках, на самой странице его нет."
+    },
+    {
+     "id": "headings",
+     "title": "Заголовки и абзацы",
+     "theory": [
+      "Заголовки <h1>–<h6> задают структуру страницы, как оглавление книги. <h1> — главный, обычно один на страницу. Ниже идут <h2> для разделов, <h3> для подразделов. Уровни не пропускают: после <h2> идёт <h3>, а не <h4>.",
+      "Заголовок выбирают по смыслу, а не по размеру шрифта — размер потом задаёт CSS. Экранные дикторы позволяют прыгать по заголовкам, и правильная иерархия — это навигация для тех, кто не видит страницу.",
+      "Обычный текст размечают абзацами <p>. Браузер схлопывает пробелы и переводы строк в коде в один пробел, поэтому новый абзац — это новый <p>, а не пустая строка."
+     ],
+     "example": {
+      "lang": "html",
+      "code": "<h1>Поход на выходные</h1>\n<p>Маршрут на два дня вдоль реки.</p>\n<h2>Что взять</h2>\n<p>Палатку, спальник и воду.</p>\n<h2>Где ночевать</h2>\n<p>Стоянка у старого моста.</p>"
+     },
+     "task": {
+      "kind": "run",
+      "prompt": "Размечай текст рецепта: главный заголовок Блины, под ним абзац с описанием, затем два раздела с заголовками второго уровня Состав и Приготовление, в каждом по одному абзацу.",
+      "runtime": "web",
+      "starter": "Блины\nТонкие блины на молоке.\nСостав\nМолоко, яйца, мука.\nПриготовление\nСмешать и жарить.\n",
+      "solution": "<h1>Блины</h1>\n<p>Тонкие блины на молоке.</p>\n<h2>Состав</h2>\n<p>Молоко, яйца, мука.</p>\n<h2>Приготовление</h2>\n<p>Смешать и жарить.</p>\n",
+      "check": "document.querySelectorAll('h1').length === 1 && document.querySelector('h1').textContent.trim() === 'Блины' && document.querySelectorAll('h2').length === 2 && document.querySelectorAll('p').length === 3"
+     },
+     "review": "Один h1 — название всей страницы. Состав и Приготовление — равноправные разделы, поэтому оба h2. Каждый кусок текста — отдельный p. Если бы ты оставил текст без тегов, браузер склеил бы всё в одну строку."
+    }
+   ]
+  },
+  {
+   "id": "text",
+   "title": "Текст, ссылки и изображения",
+   "lessons": [
+    {
+     "id": "emphasis",
+     "title": "Выделение в тексте",
+     "theory": [
+      "<strong> отмечает важное: предупреждение, ключевое условие. <em> ставит смысловое ударение — так меняется интонация фразы. Браузер по умолчанию показывает их жирным и курсивом, но смысл важнее вида: диктор произносит их иначе.",
+      "<b> и <i> дают только внешний вид без смысла — для них почти всегда есть лучший вариант. <code> размечает фрагмент кода, <kbd> — клавиши, <mark> — подсвеченный фрагмент, например найденное слово.",
+      "<br> переносит строку внутри одного смыслового блока: в адресе или стихах. Отступы между абзацами делают через CSS, а не цепочкой <br>."
+     ],
+     "example": {
+      "lang": "html",
+      "code": "<p><strong>Не выключай телефон</strong> во время обновления.</p>\n<p>Это <em>очень</em> долго, если связь плохая.</p>\n<p>Нажми <kbd>Ctrl</kbd> + <kbd>C</kbd>, чтобы остановить <code>ping</code>.</p>"
+     },
+     "task": {
+      "kind": "run",
+      "prompt": "В абзаце выдели слово Внимание как важное, а слово только — смысловым ударением. Команду rm -rf размечай как код.",
+      "runtime": "web",
+      "starter": "<p>Внимание: команда rm -rf удаляет файлы только без возврата.</p>\n",
+      "solution": "<p><strong>Внимание</strong>: команда <code>rm -rf</code> удаляет файлы <em>только</em> без возврата.</p>\n",
+      "check": "document.querySelector('p strong') && document.querySelector('p strong').textContent.trim() === 'Внимание' && document.querySelector('p em') && document.querySelector('p em').textContent.trim() === 'только' && document.querySelector('p code') && document.querySelector('p code').textContent.trim() === 'rm -rf'"
+     },
+     "review": "Все три элемента строчные: они живут внутри абзаца и не начинают новую строку. Важность — strong, ударение — em, команда — code. b и i дали бы тот же вид, но без смысла, и диктор прочёл бы фразу ровно."
+    },
+    {
+     "id": "links",
+     "title": "Ссылки",
+     "theory": [
+      "Ссылка — <a href=\"адрес\">текст</a>. Адрес бывает абсолютным, с протоколом (https://example.org/), и относительным — от текущей страницы (about.html, ../index.html). Ссылка на #id ведёт к элементу с этим id на той же странице.",
+      "Текст ссылки должен объяснять, куда она ведёт. «Здесь» и «подробнее» бесполезны тому, кто слушает список ссылок диктором, — лучше «Тарифы» или «Скачать инструкцию».",
+      "target=\"_blank\" открывает ссылку в новой вкладке; к нему добавляют rel=\"noopener\", чтобы открытая страница не получила доступ к исходной. mailto: и tel: открывают почту и звонок."
+     ],
+     "example": {
+      "lang": "html",
+      "code": "<p><a href=\"https://developer.mozilla.org/ru/\">Документация MDN</a></p>\n<p><a href=\"#faq\">Частые вопросы</a></p>\n<p><a href=\"mailto:help@example.org\">Написать в поддержку</a></p>\n<h2 id=\"faq\">Частые вопросы</h2>"
+     },
+     "task": {
+      "kind": "run",
+      "prompt": "Сделай меню из двух ссылок: Расписание ведёт на якорь #schedule на этой странице, Карта — на https://www.openstreetmap.org/ в новой вкладке с rel=\"noopener\". Ниже добавь заголовок второго уровня с id schedule.",
+      "runtime": "web",
+      "starter": "<p>Расписание · Карта</p>\n",
+      "solution": "<p><a href=\"#schedule\">Расписание</a> · <a href=\"https://www.openstreetmap.org/\" target=\"_blank\" rel=\"noopener\">Карта</a></p>\n<h2 id=\"schedule\">Расписание</h2>\n",
+      "check": "(function(){var a=document.querySelectorAll('a');if(a.length!==2)return false; var s=document.querySelector('a[href=\"#schedule\"]'),m=document.querySelector('a[href=\"https://www.openstreetmap.org/\"]'); return !!s && !!m && m.target==='_blank' && (m.rel||'').indexOf('noopener')>=0 && !!document.getElementById('schedule') && document.getElementById('schedule').tagName==='H2';})()"
+     },
+     "review": "Якорь — это #, за которым id элемента, поэтому у заголовка должен быть id=\"schedule\". Внешняя ссылка открывается отдельно через target=\"_blank\", а rel=\"noopener\" закрывает новой вкладке доступ к нашей странице через window.opener."
+    },
+    {
+     "id": "images",
+     "title": "Изображения",
+     "theory": [
+      "<img src=\"photo.jpg\" alt=\"описание\"> вставляет картинку. Это пустой элемент: закрывающего тега у него нет. width и height в пикселях заранее резервируют место, и страница не прыгает, пока картинка грузится.",
+      "alt — текстовая замена картинки. Его читает диктор, его показывает браузер, если файл не загрузился. Пиши, что на картинке важно для текста. Если изображение чисто декоративное, оставь alt пустым — alt=\"\" — и диктор его пропустит.",
+      "Подпись к иллюстрации размечают парой <figure> и <figcaption>: так подпись связана с картинкой по смыслу."
+     ],
+     "example": {
+      "lang": "html",
+      "code": "<figure>\n  <img src=\"tent.jpg\" alt=\"Палатка на берегу реки на рассвете\" width=\"640\" height=\"420\">\n  <figcaption>Стоянка у старого моста</figcaption>\n</figure>\n<img src=\"divider.png\" alt=\"\">"
+     },
+     "task": {
+      "kind": "run",
+      "prompt": "Оформи схему как иллюстрацию с подписью: внутри <figure> картинка scheme.png шириной 600 и высотой 400 с alt Схема проезда от станции до входа и подпись Как добраться.",
+      "runtime": "web",
+      "starter": "<img src=\"scheme.png\">\n",
+      "solution": "<figure>\n  <img src=\"scheme.png\" alt=\"Схема проезда от станции до входа\" width=\"600\" height=\"400\">\n  <figcaption>Как добраться</figcaption>\n</figure>\n",
+      "check": "(function(){var i=document.querySelector('figure img');var c=document.querySelector('figure figcaption'); return !!i && !!c && i.getAttribute('alt')==='Схема проезда от станции до входа' && i.getAttribute('width')==='600' && i.getAttribute('height')==='400' && c.textContent.trim()==='Как добраться';})()"
+     },
+     "review": "Подпись и картинка лежат внутри одного figure — так браузер и диктор понимают, что подпись относится к ней. alt описывает содержание схемы, а не повторяет подпись: тому, кто не видит картинку, важно, что именно на ней."
+    }
+   ]
+  },
+  {
+   "id": "structures",
+   "title": "Списки и таблицы",
+   "lessons": [
+    {
+     "id": "lists",
+     "title": "Списки",
+     "theory": [
+      "<ul> — список, где порядок не важен: состав, возможности. <ol> — где важен: шаги инструкции, рейтинг. Пункты обоих списков — <li>.",
+      "Список можно вложить: новый <ul> или <ol> ставят внутрь <li>, а не между пунктами. У <ol> есть атрибуты start (с какого числа начать) и reversed (обратный счёт).",
+      "<dl> — список определений: пары термин <dt> и описание <dd>. Подходит для словаря или характеристик товара."
+     ],
+     "example": {
+      "lang": "html",
+      "code": "<ol>\n  <li>Скачай образ</li>\n  <li>Распакуй\n    <ul>\n      <li>на Wi-Fi быстрее</li>\n      <li>нужно 2 ГБ</li>\n    </ul>\n  </li>\n  <li>Запусти</li>\n</ol>"
+     },
+     "task": {
+      "kind": "run",
+      "prompt": "Сделай нумерованный список из трёх шагов: Открой терминал, Введи команду, Нажми ввод. Внутрь второго шага вложи маркированный список из двух пунктов: ls и pwd.",
+      "runtime": "web",
+      "starter": "Открой терминал\nВведи команду: ls или pwd\nНажми ввод\n",
+      "solution": "<ol>\n  <li>Открой терминал</li>\n  <li>Введи команду\n    <ul>\n      <li>ls</li>\n      <li>pwd</li>\n    </ul>\n  </li>\n  <li>Нажми ввод</li>\n</ol>\n",
+      "check": "(function(){var o=document.querySelector('ol');if(!o)return false;var top=o.querySelectorAll(':scope > li'); if(top.length!==3)return false;var u=top[1].querySelector(':scope > ul');return !!u && u.querySelectorAll(':scope > li').length===2;})()"
+     },
+     "review": "Шаги идут по порядку, поэтому ol. Вложенный ul стоит внутри второго li, после текста шага: так он принадлежит именно этому шагу. Если поставить ul между пунктами, список станет невалидным — внутри ol напрямую могут быть только li."
+    },
+    {
+     "id": "tables",
+     "title": "Таблицы",
+     "theory": [
+      "Таблица — для данных, у которых есть строки и столбцы: расписание, сравнение тарифов. Для раскладки страницы таблицы не используют — это работа CSS.",
+      "<table> содержит строки <tr>, строки — ячейки: <th> для заголовков и <td> для данных. Атрибут scope=\"col\" у th говорит, что заголовок относится к столбцу, scope=\"row\" — к строке. <caption> — название таблицы, первым элементом внутри неё.",
+      "<thead> и <tbody> разделяют шапку и тело. Браузер и диктор используют это, чтобы связать каждую ячейку с её заголовками."
+     ],
+     "example": {
+      "lang": "html",
+      "code": "<table>\n  <caption>Размер систем</caption>\n  <thead>\n    <tr><th scope=\"col\">Система</th><th scope=\"col\">Размер</th></tr>\n  </thead>\n  <tbody>\n    <tr><td>Alpine</td><td>25 МБ</td></tr>\n    <tr><td>Debian</td><td>300 МБ</td></tr>\n  </tbody>\n</table>"
+     },
+     "task": {
+      "kind": "run",
+      "prompt": "Собери таблицу с подписью Расписание: шапка из двух заголовков столбцов День и Время, в теле две строки — Понедельник 18:00 и Среда 19:30.",
+      "runtime": "web",
+      "starter": "Расписание\nДень — Время\nПонедельник — 18:00\nСреда — 19:30\n",
+      "solution": "<table>\n  <caption>Расписание</caption>\n  <thead>\n    <tr><th scope=\"col\">День</th><th scope=\"col\">Время</th></tr>\n  </thead>\n  <tbody>\n    <tr><td>Понедельник</td><td>18:00</td></tr>\n    <tr><td>Среда</td><td>19:30</td></tr>\n  </tbody>\n</table>\n",
+      "check": "(function(){var t=document.querySelector('table');if(!t||!t.caption||t.caption.textContent.trim()!=='Расписание')return false; var th=t.querySelectorAll('thead th[scope=\"col\"]');var rows=t.querySelectorAll('tbody tr'); return th.length===2 && rows.length===2 && rows[1].cells[0].textContent.trim()==='Среда' && rows[1].cells[1].textContent.trim()==='19:30';})()"
+     },
+     "review": "caption даёт таблице имя — его диктор объявляет первым. Заголовки столбцов — th со scope=\"col\", данные — td. Разделение на thead и tbody помогает и при печати: шапка повторится на каждой странице."
+    }
+   ]
+  },
+  {
+   "id": "forms",
+   "title": "Формы",
+   "lessons": [
+    {
+     "id": "fields",
+     "title": "Поля и подписи",
+     "theory": [
+      "Форма собирает данные: <form action=\"/send\" method=\"post\"> отправит поля на адрес из action. Поле ввода — <input>, тип задаёт атрибут type: text, email, number, password, date. На телефоне тип ещё и выбирает клавиатуру: для email появится @.",
+      "У каждого поля должна быть подпись <label>. Связь — через for у подписи и id у поля. Тогда нажатие на подпись ставит курсор в поле, а диктор читает подпись вместе с полем. Подсказка placeholder подписью не считается: она исчезает при вводе.",
+      "name — имя, под которым значение уйдёт на сервер. required не даст отправить пустое поле, minlength и max задают ограничения — браузер проверит их сам."
+     ],
+     "example": {
+      "lang": "html",
+      "code": "<form action=\"/subscribe\" method=\"post\">\n  <label for=\"mail\">Почта</label>\n  <input id=\"mail\" name=\"mail\" type=\"email\" required>\n  <button type=\"submit\">Подписаться</button>\n</form>"
+     },
+     "task": {
+      "kind": "run",
+      "prompt": "Сделай форму входа: поле логина (тип text, id login, name login) с подписью Логин и поле пароля (тип password, id pass, name pass) с подписью Пароль. Оба поля обязательны.",
+      "runtime": "web",
+      "starter": "<form action=\"/login\" method=\"post\">\n  Логин <input>\n  Пароль <input>\n</form>\n",
+      "solution": "<form action=\"/login\" method=\"post\">\n  <label for=\"login\">Логин</label>\n  <input id=\"login\" name=\"login\" type=\"text\" required>\n  <label for=\"pass\">Пароль</label>\n  <input id=\"pass\" name=\"pass\" type=\"password\" required>\n</form>\n",
+      "check": "(function(){var l=document.getElementById('login'),p=document.getElementById('pass'); if(!l||!p)return false;var ll=document.querySelector('label[for=\"login\"]'),pl=document.querySelector('label[for=\"pass\"]'); return l.type==='text' && p.type==='password' && l.name==='login' && p.name==='pass' && l.required && p.required && !!ll && !!pl && ll.textContent.trim()==='Логин' && pl.textContent.trim()==='Пароль';})()"
+     },
+     "review": "Подпись связана с полем парой for и id — проверка ищет именно label[for=\"login\"]. type=\"password\" прячет символы при вводе. required включает проверку браузером: форма не уйдёт, пока поля пустые, и никакого кода для этого писать не нужно."
+    },
+    {
+     "id": "choice",
+     "title": "Выбор и отправка",
+     "theory": [
+      "Переключатели type=\"radio\" дают выбрать один вариант из нескольких. Группа задаётся общим name: в группе с одним name выбран только один. value — то, что уйдёт на сервер.",
+      "Флажки type=\"checkbox\" независимы: можно отметить любые. checked делает вариант выбранным заранее. Группу связанных полей оборачивают в <fieldset> с заголовком <legend> — диктор прочтёт его перед вариантами.",
+      "<select> с вариантами <option> — выпадающий список. Кнопка отправки — <button type=\"submit\">: внутри формы она отправляет данные, по клавише ввод тоже."
+     ],
+     "example": {
+      "lang": "html",
+      "code": "<form>\n  <fieldset>\n    <legend>Тариф</legend>\n    <input type=\"radio\" id=\"m1\" name=\"plan\" value=\"1\" checked>\n    <label for=\"m1\">1 месяц</label>\n    <input type=\"radio\" id=\"m3\" name=\"plan\" value=\"3\">\n    <label for=\"m3\">3 месяца</label>\n  </fieldset>\n  <button type=\"submit\">Продолжить</button>\n</form>"
+     },
+     "task": {
+      "kind": "run",
+      "prompt": "Сделай группу Доставка из двух переключателей с общим name delivery: Курьер (value courier, выбран заранее) и Самовывоз (value pickup), у каждого своя подпись. Добавь кнопку отправки Оформить.",
+      "runtime": "web",
+      "starter": "<form>\n  Доставка: Курьер / Самовывоз\n</form>\n",
+      "solution": "<form>\n  <fieldset>\n    <legend>Доставка</legend>\n    <input type=\"radio\" id=\"courier\" name=\"delivery\" value=\"courier\" checked>\n    <label for=\"courier\">Курьер</label>\n    <input type=\"radio\" id=\"pickup\" name=\"delivery\" value=\"pickup\">\n    <label for=\"pickup\">Самовывоз</label>\n  </fieldset>\n  <button type=\"submit\">Оформить</button>\n</form>\n",
+      "check": "(function(){var r=document.querySelectorAll('input[type=\"radio\"][name=\"delivery\"]');if(r.length!==2)return false; var c=document.querySelector('input[value=\"courier\"]'),p=document.querySelector('input[value=\"pickup\"]'); var b=document.querySelector('form button[type=\"submit\"]');var lg=document.querySelector('fieldset legend'); return !!c && !!p && c.checked && !p.checked && !!c.id && !!p.id && !!document.querySelector('label[for=\"'+c.id+'\"]') && !!document.querySelector('label[for=\"'+p.id+'\"]') && !!b && b.textContent.trim()==='Оформить' && !!lg && lg.textContent.trim()==='Доставка';})()"
+     },
+     "review": "Общий name делает переключатели одной группой — выбрать оба нельзя. checked задаёт вариант по умолчанию. fieldset с legend объединяет группу под одним названием, а у каждого переключателя своя подпись через for и id."
+    }
+   ]
+  },
+  {
+   "id": "meaning",
+   "title": "Семантика и доступность",
+   "lessons": [
+    {
+     "id": "semantics",
+     "title": "Семантика",
+     "theory": [
+      "Семантические элементы называют области страницы по смыслу. <header> — шапка, <nav> — основная навигация, <main> — главное содержимое (один на страницу), <footer> — подвал. Внутри main — <article> для самостоятельного материала и <section> для раздела с заголовком. <aside> — дополнительное: врезка, список похожих статей.",
+      "Для браузера <div> и <main> выглядят одинаково, но смысл разный. Поисковики понимают, где главное, а экранный диктор позволяет одной командой перейти к навигации или к основному тексту.",
+      "<div> и <span> остаются для случаев, когда смысла нет и нужна только обёртка для оформления."
+     ],
+     "example": {
+      "lang": "html",
+      "code": "<header>\n  <nav><a href=\"/\">Главная</a> <a href=\"/blog\">Блог</a></nav>\n</header>\n<main>\n  <article>\n    <h1>Как я перенёс заметки</h1>\n    <p>Три шага и один скрипт.</p>\n  </article>\n</main>\n<footer>2026</footer>"
+     },
+     "task": {
+      "kind": "run",
+      "prompt": "Замени обёртки div на семантические элементы: шапка с навигацией, основное содержимое со статьёй и подвал.",
+      "runtime": "web",
+      "starter": "<div class=\"top\">\n  <div class=\"menu\"><a href=\"/\">Главная</a></div>\n</div>\n<div class=\"content\">\n  <div class=\"post\">\n    <h1>Новости</h1>\n    <p>Вышла новая версия.</p>\n  </div>\n</div>\n<div class=\"bottom\">Контакты</div>\n",
+      "solution": "<header>\n  <nav><a href=\"/\">Главная</a></nav>\n</header>\n<main>\n  <article>\n    <h1>Новости</h1>\n    <p>Вышла новая версия.</p>\n  </article>\n</main>\n<footer>Контакты</footer>\n",
+      "check": "!!document.querySelector('header nav a') && document.querySelectorAll('main').length===1 && !!document.querySelector('main article h1') && !!document.querySelector('footer') && document.querySelectorAll('div').length===0"
+     },
+     "review": "Каждый div получил элемент по смыслу: верх — header, меню — nav, содержимое — main, пост — article, низ — footer. Классы top и content больше не нужны: элемент сам говорит, что он такое."
+    },
+    {
+     "id": "a11y",
+     "title": "Доступность",
+     "theory": [
+      "Доступная страница работает для всех: для тех, кто пользуется экранным диктором, клавиатурой вместо мыши, крупным шрифтом. Большая часть доступности достаётся бесплатно, если использовать элементы по назначению.",
+      "Кнопка — это <button>: она получает фокус с клавиатуры, нажимается пробелом и вводом, объявляется диктором как кнопка. <div> с обработчиком нажатия ничего из этого не умеет. Ссылка ведёт на другую страницу, кнопка выполняет действие.",
+      "Ещё три правила: у картинок осмысленный alt, у полей связанная подпись, заголовки идут без пропуска уровней. Атрибуты aria- нужны только там, где подходящего элемента нет."
+     ],
+     "example": {
+      "lang": "html",
+      "code": "<button type=\"button\">Скопировать</button>\n<label for=\"q\">Поиск</label>\n<input id=\"q\" type=\"search\">\n<img src=\"chart.png\" alt=\"Загрузки выросли с 200 до 340 за месяц\">"
+     },
+     "task": {
+      "kind": "choice",
+      "prompt": "Какой вариант кнопки «Удалить» доступен с клавиатуры и понятен экранному диктору без дополнительного кода?",
+      "options": [
+       "<div class=\"btn\" onclick=\"remove()\">Удалить</div>",
+       "<button type=\"button\" onclick=\"remove()\">Удалить</button>",
+       "<span onclick=\"remove()\">Удалить</span>",
+       "<a onclick=\"remove()\">Удалить</a>"
+      ],
+      "answer": 1,
+      "code": {
+       "lang": "html",
+       "code": "<p>Файл report.txt</p>\n<!-- сюда кнопка удаления -->"
+      }
+     },
+     "review": "button сразу получает фокус клавишей Tab, срабатывает от ввода и пробела, а диктор называет его кнопкой. div и span не фокусируются и молчат о своей роли. a без href тоже не получает фокус, а с href стала бы ссылкой — для действия на странице это неверный элемент."
+    }
+   ]
+  },
+  {
+   "id": "project",
+   "title": "Своя страница",
+   "lessons": [
+    {
+     "id": "page",
+     "title": "Своя страница",
+     "theory": [
+      "Соберём визитку из всего, что было: каркас, семантические области, заголовки, список, ссылка и форма обратной связи с подписанным полем.",
+      "Начни с каркаса: язык, кодировка, заголовок вкладки. Затем header с именем в h1, main с разделом «Навыки» (h2 и список) и разделом «Связаться» (h2 и форма), footer со ссылкой на почту.",
+      "Проверка смотрит на структуру, а не на текст: можешь писать о себе что угодно."
+     ],
+     "example": {
+      "lang": "html",
+      "code": "<header><h1>Анна Смирнова</h1></header>\n<main>\n  <section>\n    <h2>Навыки</h2>\n    <ul><li>Python</li><li>Linux</li></ul>\n  </section>\n</main>\n<footer><a href=\"mailto:anna@example.org\">anna@example.org</a></footer>"
+     },
+     "task": {
+      "kind": "run",
+      "prompt": "Собери визитку: lang ru и title у документа; header с h1; main с двумя section, в каждой h2; в первой — список минимум из трёх пунктов, во второй — форма с полем email, подписью к нему и кнопкой отправки; footer со ссылкой mailto.",
+      "runtime": "web",
+      "starter": "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n  </head>\n  <body>\n  </body>\n</html>\n",
+      "solution": "<!DOCTYPE html>\n<html lang=\"ru\">\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Анна Смирнова</title>\n  </head>\n  <body>\n    <header><h1>Анна Смирнова</h1></header>\n    <main>\n      <section>\n        <h2>Навыки</h2>\n        <ul><li>Python</li><li>Linux</li><li>Git</li></ul>\n      </section>\n      <section>\n        <h2>Связаться</h2>\n        <form action=\"/send\" method=\"post\">\n          <label for=\"mail\">Почта</label>\n          <input id=\"mail\" name=\"mail\" type=\"email\" required>\n          <button type=\"submit\">Отправить</button>\n        </form>\n      </section>\n    </main>\n    <footer><a href=\"mailto:anna@example.org\">anna@example.org</a></footer>\n  </body>\n</html>\n",
+      "check": "(function(){var d=document;if(d.documentElement.lang!=='ru'||!d.title)return false; if(!d.querySelector('header h1'))return false;var s=d.querySelectorAll('main section');if(s.length<2)return false; if(!s[0].querySelector('h2')||!s[1].querySelector('h2'))return false;if(s[0].querySelectorAll('li').length<3)return false; var e=s[1].querySelector('form input[type=\"email\"]');if(!e||!e.id||!d.querySelector('label[for=\"'+e.id+'\"]'))return false; if(!s[1].querySelector('form button[type=\"submit\"], form input[type=\"submit\"]'))return false; return !!d.querySelector('footer a[href^=\"mailto:\"]');})()"
+     },
+     "review": "Структура читается сверху вниз: шапка с именем, главное содержимое из двух разделов, подвал. Каждый раздел начинается с h2 — по ним диктор строит оглавление. Поле почты связано с подписью через id, тип email включает проверку адреса и нужную клавиатуру на телефоне."
+    }
+   ]
+  }
+ ]
+}

@@ -39,7 +39,7 @@ android {
     defaultConfig {
         applicationId = "ru.matrux.app"
         minSdk = 26
-        targetSdk = 30
+        targetSdk = 34
         versionCode = matruxVersionCode
         versionName = matruxVersionName
         buildConfigField("String", "API_BASE", quoted(prop("matrux.apiBase")))

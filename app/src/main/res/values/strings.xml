@@ -325,4 +325,13 @@
     <string name="onboard_start">Начать</string>
     <string name="onboard_position">%1$d из %2$d</string>
     <string name="offer_sheets">Шпаргалки целиком</string>
+    <string name="tab_">PC game</string>
+    <string name="_title">PC game</string>
+    <string name="_sub">Windows-игры прямо в приложении</string>
+    <string name="_add">Добавить игру</string>
+    <string name="_empty">Нажмите «Добавить игру» и выберите exe с телефона. Игра появится в этом списке.</string>
+    <string name="_delete_title">Удалить игру?</string>
+    <string name="_delete_yes">Удалить</string>
+    <string name="_delete_no">Отмена</string>
+    <string name="_run_pending">%1$s добавлена. Запуск подключим на следующем шаге.</string>
 </resources>

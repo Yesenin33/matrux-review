@@ -31,6 +31,7 @@ import ru.matrux.app.ui.theme.Matrux
 enum class Tab(val label: Int, val icon: Lucide) {
     HOME(R.string.tab_home, Lucide.House),
     CATALOG(R.string.tab_catalog, Lucide.List),
+    (R.string.tab_, Lucide.Joystick),
     KNOWLEDGE(R.string.tab_knowledge, Lucide.BookOpen),
     SUBSCRIPTION(R.string.tab_subscription, Lucide.CreditCard),
 }

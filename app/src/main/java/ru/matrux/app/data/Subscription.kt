@@ -25,7 +25,9 @@ data class SubscriptionStatus(
 
     fun daysLeft(nowMillis: Long): Long? {
         val expires = expiresAt ?: return null
-        return (expires.toEpochMilli() - nowMillis) / 86_400_000L
+        val left = expires.toEpochMilli() - nowMillis
+        if (left <= 0) return 0
+        return (left + 86_399_999L) / 86_400_000L
     }
 
     companion object {

@@ -100,13 +100,21 @@ import ru.matrux.app.ui.theme.Matrux
 import ru.matrux.app.ui.theme.MatruxTheme
 import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import ru.matrux.app.data.
+import ru.matrux.app.data.Store
+import ru.matrux.app.data.PeIcon
+import ru.matrux.app.ui.screens.Screen
+import java.io.File
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-enum class Route { HOME, CATALOG, INSTALL, KNOWLEDGE, SUBSCRIPTION, LAUNCH, DESKTOP, SECTION, COURSE, LESSON, SOURCES }
+enum class Route { HOME, CATALOG, , INSTALL, KNOWLEDGE, SUBSCRIPTION, LAUNCH, DESKTOP, SECTION, COURSE, LESSON, SOURCES }
 
 private const val STUCK_MS = 25_000L
 private const val AUTOTEST_EXTRA = "matrux_autotest"
@@ -330,10 +338,43 @@ class MainActivity : ComponentActivity() {
             if (stuck) report = withContext(Dispatchers.IO) { graph.session.diagnostics() }
         }
 
+        val context = LocalContext.current
+        val  = remember { Store(context) }
+        var s by remember { mutableStateOf(.games()) }
+
+        val pickExe = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            if (uri != null) {
+                val name = (context, uri) ?: "game.exe"
+                val tmp = File(context.cacheDir, "pc-import.tmp")
+                runCatching {
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        tmp.outputStream().use { output -> input.copyTo(output) }
+                    }
+                    val icon = PeIcon.extractPng(tmp)
+                    .import(
+                        name = name.removeSuffix(".exe").removeSuffix(".EXE"),
+                        open = { out -> tmp.inputStream().use { it.copyTo(out) } },
+                        iconBytes = icon,
+                    )
+                }
+                tmp.delete()
+                s = .games()
+            }
+        }
+
+        val open: () -> Unit = { game ->
+            android.widget.Toast.makeText(
+                context,
+                context.getString(R.string._run_pending, game.name),
+                android.widget.Toast.LENGTH_SHORT,
+            ).show()
+        }
+
         val onTab: (Tab) -> Unit = { tab ->
             route = when (tab) {
                 Tab.HOME -> Route.HOME
                 Tab.CATALOG -> if (install is InstallState.Running || install is InstallState.Failed) Route.INSTALL else Route.CATALOG
+                Tab. -> Route.
                 Tab.KNOWLEDGE -> Route.KNOWLEDGE
                 Tab.SUBSCRIPTION -> Route.SUBSCRIPTION
             }
@@ -416,6 +457,17 @@ class MainActivity : ComponentActivity() {
                         dark = dark,
                         onTheme = { darkNow -> graph.setTheme(if (darkNow) "dark" else "light") },
                     ),
+                )
+                Route. -> Screen(
+                    games = s,
+                    iconPath = { game -> .iconFile(game)?.absolutePath },
+                    onTab = onTab,
+                    onAdd = { pickExe.launch(arrayOf("*/*")) },
+                    onOpen = { game -> open(game) },
+                    onDelete = { game ->
+                        .remove(game)
+                        s = .games()
+                    },
                 )
                 Route.CATALOG -> CatalogScreen(
                     catalogUi(catalog, status, statusFailure, graph.local.installed?.imageId, graph.local.bytesPerSecond, installedShas, running),
@@ -654,3 +706,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+private fun (context: android.content.Context, uri: android.net.Uri): String? =
+    runCatching {
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val index = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                if (index >= 0) cursor.getString(index) else null
+            } else {
+                null
+            }
+        }
+    }.getOrNull()

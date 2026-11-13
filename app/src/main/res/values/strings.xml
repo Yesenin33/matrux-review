@@ -333,5 +333,22 @@
     <string name="_delete_title">Удалить игру?</string>
     <string name="_delete_yes">Удалить</string>
     <string name="_delete_no">Отмена</string>
+    <string name="_probe">Проверить контейнер</string>
     <string name="_run_pending">%1$s добавлена. Запуск подключим на следующем шаге.</string>
+    <string name="sub_lifetime">Lifetime, без продлений</string>
+    <string name="subs_lifetime">Lifetime</string>
+    <string name="subs_buy_lifetime">Купить Lifetime</string>
+    <string name="terminal_host">matrux@%1$s</string>
+    <string name="terminal_host_none">matrux</string>
+    <string name="theme_light">Светлая тема</string>
+    <string name="theme_dark">Тёмная тема</string>
+    <string name="install_label_downloaded">Скачано</string>
+    <string name="install_label_unpacked">Распаковано</string>
+    <string name="install_label_eta">Осталось</string>
+    <string name="install_of">%1$s из %2$s</string>
+    <string name="install_size">Размер</string>
+    <string name="install_state_running">Устанавливается</string>
+    <string name="offer_close">Закрыть</string>
+    <string name="onboard_term_cmd">uname -o</string>
+    <string name="onboard_term_out">GNU/Linux</string>
 </resources>

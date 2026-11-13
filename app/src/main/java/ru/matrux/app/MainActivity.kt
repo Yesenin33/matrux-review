@@ -3,7 +3,6 @@ package ru.matrux.app
 import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
 import android.content.pm.PackageManager
@@ -58,6 +57,9 @@ import ru.matrux.app.ui.screens.DesktopUi
 import ru.matrux.app.ui.screens.InputMode
 import ru.matrux.app.ui.screens.HomeActions
 import ru.matrux.app.ui.screens.HomeScreen
+import ru.matrux.app.ui.screens.HomeSystem
+import ru.matrux.app.ui.systemHost
+import ru.matrux.app.ui.systemLogo
 import ru.matrux.app.ui.screens.InstallActions
 import ru.matrux.app.ui.screens.InstallScreen
 import ru.matrux.app.ui.screens.LaunchScreen
@@ -98,16 +100,18 @@ import ru.matrux.app.ui.state.paidSub
 import ru.matrux.app.ui.state.subLine
 import ru.matrux.app.ui.theme.Matrux
 import ru.matrux.app.ui.theme.MatruxTheme
-import java.time.ZoneId
-import kotlinx.coroutines.Dispatchers
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
 import ru.matrux.app.data.
+import ru.matrux.app.ui.screens.Screen
 import ru.matrux.app.data.Store
 import ru.matrux.app.data.PeIcon
-import ru.matrux.app.ui.screens.Screen
+import ru.matrux.app..RuntimeProbe
 import java.io.File
+import java.time.ZoneId
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -362,6 +366,15 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        var probeText by remember { mutableStateOf<String?>(null) }
+        val onProbe: () -> Unit = {
+            scope.launch {
+                probeText = "проверяю контейнер…"
+                val result = withContext(Dispatchers.IO) { RuntimeProbe.run(context) }
+                probeText = result.output
+            }
+        }
+
         val open: () -> Unit = { game ->
             android.widget.Toast.makeText(
                 context,
@@ -448,16 +461,6 @@ class MainActivity : ComponentActivity() {
             label = "route",
         ) { current ->
             when (current) {
-                Route.HOME -> HomeScreen(
-                    homeSections(sheets, paid),
-                    HomeActions(
-                        onSection = openSection,
-                        onSubscribe = { route = Route.SUBSCRIPTION },
-                        onTab = onTab,
-                        dark = dark,
-                        onTheme = { darkNow -> graph.setTheme(if (darkNow) "dark" else "light") },
-                    ),
-                )
                 Route. -> Screen(
                     games = s,
                     iconPath = { game -> .iconFile(game)?.absolutePath },
@@ -467,6 +470,31 @@ class MainActivity : ComponentActivity() {
                     onDelete = { game ->
                         .remove(game)
                         s = .games()
+                    },
+                    onProbe = onProbe,
+                    probe = probeText,
+                )
+                Route.HOME -> HomeScreen(
+                    homeSections(sheets, paid),
+                    HomeActions(
+                        onSection = openSection,
+                        onSubscribe = { route = Route.SUBSCRIPTION },
+                        onTab = onTab,
+                        dark = dark,
+                        onTheme = { darkNow -> graph.setTheme(if (darkNow) "dark" else "light") },
+                        onLaunch = {
+                            launch()
+                            route = Route.LAUNCH
+                        },
+                        onOpenSystem = { route = if (session is SessionState.Live) Route.DESKTOP else Route.LAUNCH },
+                    ),
+                    system = installedSystem?.let {
+                        HomeSystem(
+                            name = it.name,
+                            host = systemHost(it.imageId),
+                            running = running,
+                            logo = systemLogo(it.imageId, it.name),
+                        )
                     },
                 )
                 Route.CATALOG -> CatalogScreen(
@@ -500,6 +528,7 @@ class MainActivity : ComponentActivity() {
                             courseId = course.id
                             route = Route.COURSE
                         },
+                        onSources = { route = Route.SOURCES },
                         onTab = onTab,
                     ),
                 )
@@ -567,6 +596,10 @@ class MainActivity : ComponentActivity() {
                         },
                         onCatalog = { route = Route.CATALOG },
                         onTab = onTab,
+                        onSubscribe = {
+                            graph.installs.dismiss()
+                            route = Route.SUBSCRIPTION
+                        },
                     ),
                 )
                 Route.SUBSCRIPTION -> SubscriptionScreen(
@@ -593,6 +626,7 @@ class MainActivity : ComponentActivity() {
                         state = launching?.launch ?: LaunchState.Running(ru.matrux.app.shell.LaunchStep.SUBSCRIPTION),
                         onRetry = ::launch,
                         onBack = { route = Route.CATALOG },
+                        logo = installedSystem?.let { systemLogo(it.imageId, it.name) },
                     )
                 }
                 Route.DESKTOP -> {

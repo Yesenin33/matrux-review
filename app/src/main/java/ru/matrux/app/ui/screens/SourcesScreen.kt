@@ -34,7 +34,7 @@ fun SourcesScreen(courses: List<Course>, sources: List<Source>, actions: Sources
     Column(
         Modifier
             .fillMaxSize()
-            .background(colors.surface)
+            .background(colors.canvas)
             .statusBarsPadding(),
     ) {
         BackRow(stringResource(R.string.course_back), actions.onBack)
@@ -46,8 +46,6 @@ fun SourcesScreen(courses: List<Course>, sources: List<Source>, actions: Sources
                 .padding(bottom = Matrux.space.block),
         ) {
             Text(stringResource(R.string.sources_title), style = Matrux.type.display, color = colors.ink)
-            Spacer(Modifier.height(Matrux.space.unit))
-            Text(stringResource(R.string.sources_lead), style = Matrux.type.body, color = colors.inkSoft)
             courses.forEach { course ->
                 val own = sources.filter { it.course == course.id }
                 if (own.isEmpty()) return@forEach

@@ -3,6 +3,7 @@ package ru.matrux.app.ui.learn
 import android.annotation.SuppressLint
 import android.webkit.WebView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import ru.matrux.app.ui.theme.Matrux
 
@@ -33,22 +35,23 @@ fun CodeBlock(code: String, lang: String, modifier: Modifier = Modifier) {
         modifier
             .fillMaxWidth()
             .clip(Matrux.shapes.control)
-            .background(colors.canvas)
+            .background(colors.terminal)
+            .border(1.dp, colors.terminalEdge, Matrux.shapes.control)
             .horizontalScroll(rememberScrollState())
             .padding(horizontal = Matrux.space.unit + Matrux.space.unit / 2, vertical = Matrux.space.unit + Matrux.space.unit / 2),
     ) {
-        Text(Highlight.annotate(code, lang, colors.accent), style = Matrux.type.code, color = colors.ink, softWrap = false)
+        Text(Highlight.annotate(code, lang, colors.terminalOk), style = Matrux.type.code, color = colors.terminalInk, softWrap = false)
     }
 }
 
 @Composable
 fun CodeEditor(value: String, lang: String, onChange: (String) -> Unit, modifier: Modifier = Modifier, lines: Int = EDITOR_LINES) {
     val colors = Matrux.colors
-    val accent = colors.accent
+    val accent = colors.terminalOk
     BasicTextField(
         value = value,
         onValueChange = onChange,
-        textStyle = Matrux.type.code.copy(color = colors.ink),
+        textStyle = Matrux.type.code.copy(color = colors.terminalInk),
         cursorBrush = SolidColor(accent),
         minLines = lines,
         keyboardOptions = KeyboardOptions(
@@ -60,7 +63,8 @@ fun CodeEditor(value: String, lang: String, onChange: (String) -> Unit, modifier
         modifier = modifier
             .fillMaxWidth()
             .clip(Matrux.shapes.control)
-            .background(colors.canvas)
+            .background(colors.terminal)
+            .border(1.dp, colors.terminalEdge, Matrux.shapes.control)
             .padding(horizontal = Matrux.space.unit + Matrux.space.unit / 2, vertical = Matrux.space.unit + Matrux.space.unit / 2),
     )
 }

@@ -61,6 +61,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.min
 import ru.matrux.app.R
@@ -70,7 +71,7 @@ import ru.matrux.app.shell.DisplayMode
 import ru.matrux.app.ui.Keys
 import ru.matrux.app.ui.components.Lucide
 import ru.matrux.app.ui.components.LucideIcon
-import ru.matrux.app.ui.components.PrimaryButton
+import ru.matrux.app.ui.components.TerminalButton
 import ru.matrux.app.ui.components.Tappable
 import ru.matrux.app.ui.failureBody
 import ru.matrux.app.ui.theme.Matrux
@@ -564,15 +565,8 @@ private fun Lost(failure: Failure, actions: DesktopActions) {
             verticalArrangement = Arrangement.spacedBy(Matrux.space.unit),
         ) {
             Text(stringResource(R.string.desktop_lost_title), style = Matrux.type.title, color = Color.White)
-            Text(
-                failureBody(failure),
-                style = Matrux.type.body,
-                color = Color.White.copy(alpha = 0.7f),
-                maxLines = 6,
-                overflow = TextOverflow.Ellipsis,
-            )
             Spacer(Modifier.height(Matrux.space.unit))
-            PrimaryButton(stringResource(R.string.desktop_restart), actions.onRestart)
+            TerminalButton(stringResource(R.string.desktop_restart), actions.onRestart)
         }
     }
 }
@@ -587,11 +581,11 @@ private fun Report(report: String, actions: DesktopActions) {
         verticalArrangement = Arrangement.spacedBy(Matrux.space.unit),
     ) {
         Text(stringResource(R.string.desktop_stuck_title), style = Matrux.type.title, color = Color.White)
-        PrimaryButton(stringResource(R.string.desktop_restart), actions.onRestart)
+        TerminalButton(stringResource(R.string.desktop_restart), actions.onRestart)
         Ghost(stringResource(R.string.desktop_report_refresh), actions.onReport)
         Text(
             report.ifBlank { stringResource(R.string.desktop_stuck_empty) },
-            style = Matrux.type.caption,
+            style = Matrux.type.code.copy(fontSize = 12.sp, lineHeight = 18.sp),
             color = Color.White.copy(alpha = 0.75f),
             maxLines = 30,
             overflow = TextOverflow.Ellipsis,

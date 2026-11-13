@@ -7,9 +7,9 @@ import androidx.compose.ui.unit.dp
 
 @Immutable
 data class MatruxShapes(
-    val radiusCard: Dp = 20.dp,
-    val radiusControl: Dp = 12.dp,
-    val radiusSegment: Dp = 8.dp,
+    val radiusCard: Dp = 18.dp,
+    val radiusControl: Dp = 14.dp,
+    val radiusSegment: Dp = 9.dp,
     val radiusPill: Dp = 999.dp,
 ) {
     val card get() = RoundedCornerShape(radiusCard)
@@ -21,10 +21,10 @@ data class MatruxShapes(
 @Immutable
 data class MatruxSpace(
     val unit: Dp = 8.dp,
-    val page: Dp = 20.dp,
+    val page: Dp = 16.dp,
     val block: Dp = 24.dp,
-    val card: Dp = 20.dp,
-    val button: Dp = 56.dp,
+    val card: Dp = 16.dp,
+    val button: Dp = 52.dp,
     val touch: Dp = 48.dp,
     val iconSmall: Dp = 20.dp,
     val iconLarge: Dp = 24.dp,
@@ -32,9 +32,9 @@ data class MatruxSpace(
     val progress: Dp = 8.dp,
     val ring: Dp = 120.dp,
     val ringStroke: Dp = 8.dp,
-    val logoTile: Dp = 44.dp,
+    val logoTile: Dp = 36.dp,
     val logoMark: Dp = 28.dp,
-    val navBar: Dp = 72.dp,
+    val navBar: Dp = 64.dp,
     val panel: Dp = 56.dp,
     val avatar: Dp = 88.dp,
     val avatarRing: Dp = 8.dp,
@@ -43,13 +43,17 @@ data class MatruxSpace(
     val heroArtAlpha: Float = 0.05f,
     val lift: Dp = 12.dp,
     val trackInset: Dp = 4.dp,
-    val scrimAlpha: Float = 0.32f,
+    val scrimAlpha: Float = 0.36f,
     val lessonMark: Dp = 28.dp,
     val preview: Dp = 240.dp,
     val onboardArt: Dp = 136.dp,
     val onboardMark: Dp = 96.dp,
     val onboardRow: Dp = 40.dp,
     val dot: Dp = 8.dp,
+    val row: Dp = 48.dp,
+    val rowInset: Dp = 64.dp,
+    val tile: Dp = 32.dp,
+    val logo: Dp = 56.dp,
 )
 
 @Immutable

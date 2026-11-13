@@ -136,3 +136,12 @@ fun imageDescription(image: ru.matrux.app.data.ImageInfo): Int? = when (image.id
     "dev", "debian-dev", "razrabotka" -> R.string.image_dev
     else -> null
 }
+
+/** Логотип системы по идентификатору и названию: для «Главной» и экрана запуска. */
+fun systemLogo(imageId: String, name: String): Int? = when (imageId) {
+    "dev-xfce", "dev", "debian-dev", "razrabotka" -> R.drawable.logo_dev
+    else -> distroLogo(name)
+}
+
+/** Короткое имя системы для приглашения оболочки: «debian-12» → «debian». */
+fun systemHost(imageId: String): String = imageId.takeWhile { it.isLetter() }.ifEmpty { "linux" }

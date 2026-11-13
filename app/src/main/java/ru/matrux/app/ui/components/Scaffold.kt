@@ -25,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import ru.matrux.app.R
 import ru.matrux.app.ui.theme.Matrux
 
@@ -49,7 +50,6 @@ fun TabScreen(
             .fillMaxSize()
             .background(Matrux.colors.canvas),
     ) {
-        AppBackdrop()
         Column(
             Modifier
                 .fillMaxSize()
@@ -70,6 +70,7 @@ fun TabScreen(
                         .fillMaxWidth()
                         .padding(horizontal = Matrux.space.page)
                         .padding(top = Matrux.space.unit * 2),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                     content = bottom,
                 )
             }
@@ -81,39 +82,48 @@ fun TabScreen(
 @Composable
 fun NavBar(current: Tab, onTab: (Tab) -> Unit) {
     val colors = Matrux.colors
-    Row(
+    Column(
         Modifier
             .fillMaxWidth()
-            .background(colors.surface)
-            .navigationBarsPadding()
-            .height(Matrux.space.navBar),
-        horizontalArrangement = Arrangement.SpaceAround,
-        verticalAlignment = Alignment.CenterVertically,
+            .background(colors.navBar),
     ) {
-        Tab.entries.forEach { tab ->
-            val tint = if (tab == current) colors.accent else colors.muted
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .semantics { selected = tab == current }
-                    .clickable(role = Role.Tab) { onTab(tab) },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                LucideIcon(tab.icon, tint)
-                Spacer(Modifier.height(Matrux.space.unit / 2))
-                Text(stringResource(tab.label), style = Matrux.type.caption, color = tint)
+        Box(Modifier.fillMaxWidth().height(1.dp).background(colors.hairline))
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .height(Matrux.space.navBar),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Tab.entries.forEach { tab ->
+                val tint = if (tab == current) colors.accent else colors.muted
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .semantics { selected = tab == current }
+                        .clickable(role = Role.Tab) { onTab(tab) },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    LucideIcon(tab.icon, tint)
+                    Spacer(Modifier.height(Matrux.space.unit / 2))
+                    Text(
+                        stringResource(tab.label),
+                        style = if (tab == current) Matrux.type.captionStrong else Matrux.type.caption,
+                        color = tint,
+                        maxLines = 1,
+                    )
+                }
             }
         }
     }
 }
 
+/** Заголовок экрана. Подпись-пояснение убрана по требованию владельца: остаётся только название. */
 @Composable
+@Suppress("UNUSED_PARAMETER")
 fun ScreenTitle(title: String, sub: String?) {
     Text(title, style = Matrux.type.display, color = Matrux.colors.ink)
-    if (sub != null) {
-        Spacer(Modifier.height(Matrux.space.unit))
-        Text(sub, style = Matrux.type.body, color = Matrux.colors.muted)
-    }
 }

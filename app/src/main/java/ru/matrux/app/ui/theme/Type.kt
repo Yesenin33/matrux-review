@@ -12,53 +12,48 @@ import androidx.compose.ui.unit.sp
 import ru.matrux.app.R
 
 @OptIn(ExperimentalTextApi::class)
-private fun manrope(weight: Int) = Font(
-    R.font.manrope,
-    weight = FontWeight(weight),
-    variationSettings = FontVariation.Settings(FontVariation.weight(weight)),
-)
-
-val Manrope = FontFamily(manrope(400), manrope(500), manrope(600), manrope(700))
-
-@OptIn(ExperimentalTextApi::class)
 private fun inter(weight: Int) = Font(
     R.font.inter,
     weight = FontWeight(weight),
     variationSettings = FontVariation.Settings(FontVariation.weight(weight)),
 )
 
-val Inter = FontFamily(inter(400), inter(600))
+val Inter = FontFamily(inter(400), inter(500), inter(600), inter(700))
+
+/** Манропа больше не используется: оставлена как псевдоним, чтобы старый код компилировался. */
+val Manrope: FontFamily get() = Inter
 
 val Mono = FontFamily(Font(R.font.mono, weight = FontWeight.Medium))
 
 @Immutable
 data class MatruxType(
     val display: TextStyle = TextStyle(
-        fontFamily = Manrope,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 32.sp,
-        lineHeight = 36.sp,
+        fontFamily = Inter,
+        fontWeight = FontWeight.Bold,
+        fontSize = 34.sp,
+        lineHeight = 41.sp,
         letterSpacing = (-0.02).em,
     ),
     val title: TextStyle = TextStyle(
-        fontFamily = Manrope,
-        fontWeight = FontWeight.SemiBold,
+        fontFamily = Inter,
+        fontWeight = FontWeight.Bold,
         fontSize = 20.sp,
-        lineHeight = 26.sp,
-        letterSpacing = (-0.01).em,
+        lineHeight = 25.sp,
+        letterSpacing = (-0.015).em,
     ),
     val lead: TextStyle = TextStyle(
-        fontFamily = Manrope,
+        fontFamily = Inter,
         fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
+        fontSize = 17.sp,
         lineHeight = 24.sp,
-        letterSpacing = (-0.005).em,
+        letterSpacing = (-0.01).em,
     ),
     val body: TextStyle = TextStyle(
-        fontFamily = Manrope,
+        fontFamily = Inter,
         fontWeight = FontWeight.Normal,
-        fontSize = 15.sp,
+        fontSize = 16.sp,
         lineHeight = 22.sp,
+        letterSpacing = (-0.01).em,
     ),
     val bodyStrong: TextStyle = body.copy(fontWeight = FontWeight.SemiBold),
     val code: TextStyle = TextStyle(
@@ -66,17 +61,38 @@ data class MatruxType(
         fontWeight = FontWeight.Medium,
         fontSize = 13.sp,
         lineHeight = 20.sp,
-        letterSpacing = (-0.01).em,
         fontFeatureSettings = "liga 0, calt 0",
     ),
     val caption: TextStyle = TextStyle(
-        fontFamily = Manrope,
+        fontFamily = Inter,
         fontWeight = FontWeight.Normal,
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.005.em,
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
     ),
     val captionStrong: TextStyle = caption.copy(fontWeight = FontWeight.SemiBold),
+    val value: TextStyle = TextStyle(
+        fontFamily = Mono,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        fontFeatureSettings = "liga 0, calt 0",
+    ),
+    val big: TextStyle = TextStyle(
+        fontFamily = Inter,
+        fontWeight = FontWeight.Bold,
+        fontSize = 56.sp,
+        lineHeight = 60.sp,
+        letterSpacing = (-0.03).em,
+        fontFeatureSettings = "tnum",
+    ),
+    val price: TextStyle = TextStyle(
+        fontFamily = Inter,
+        fontWeight = FontWeight.Bold,
+        fontSize = 40.sp,
+        lineHeight = 44.sp,
+        letterSpacing = (-0.03).em,
+        fontFeatureSettings = "tnum",
+    ),
 )
 
 fun MatruxType.inFamily(family: FontFamily): MatruxType = copy(

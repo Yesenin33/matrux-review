@@ -37,12 +37,12 @@ object Matrux {
 }
 
 fun MatruxColors.toScheme(dark: Boolean = false): ColorScheme = if (dark) darkColorScheme(
-    primary = accent,
-    onPrimary = Color(0xFFFFFFFF),
+    primary = action,
+    onPrimary = onAction,
     primaryContainer = accentTint,
     onPrimaryContainer = ink,
     secondary = inkSoft,
-    onSecondary = Color(0xFFFFFFFF),
+    onSecondary = canvas,
     background = canvas,
     onBackground = ink,
     surface = surface,
@@ -54,12 +54,12 @@ fun MatruxColors.toScheme(dark: Boolean = false): ColorScheme = if (dark) darkCo
     error = danger,
     onError = Color(0xFFFFFFFF),
 ) else lightColorScheme(
-    primary = accent,
-    onPrimary = surface,
+    primary = action,
+    onPrimary = onAction,
     primaryContainer = accentTint,
-    onPrimaryContainer = accent,
+    onPrimaryContainer = ink,
     secondary = inkSoft,
-    onSecondary = surface,
+    onSecondary = canvas,
     background = canvas,
     onBackground = ink,
     surface = surface,
@@ -69,7 +69,7 @@ fun MatruxColors.toScheme(dark: Boolean = false): ColorScheme = if (dark) darkCo
     outline = hairline,
     outlineVariant = hairline,
     error = danger,
-    onError = surface,
+    onError = Color(0xFFFFFFFF),
 )
 
 fun MatruxType.toTypography(): Typography = Typography(

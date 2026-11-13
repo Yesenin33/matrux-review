@@ -2,29 +2,36 @@ package ru.matrux.app.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import ru.matrux.app.R
+import ru.matrux.app.data.Failure
 import ru.matrux.app.install.InstallState
-import ru.matrux.app.ui.components.ErrorWords
+import ru.matrux.app.ui.components.DistroLogo
 import ru.matrux.app.ui.components.GhostButton
-import ru.matrux.app.ui.components.Note
+import ru.matrux.app.ui.components.Group
+import ru.matrux.app.ui.components.GroupDivider
+import ru.matrux.app.ui.components.Lucide
+import ru.matrux.app.ui.components.Plaque
 import ru.matrux.app.ui.components.PrimaryButton
 import ru.matrux.app.ui.components.ProgressBar
-import ru.matrux.app.ui.components.ScreenTitle
+import ru.matrux.app.ui.components.StateBlock
 import ru.matrux.app.ui.components.Tab
 import ru.matrux.app.ui.components.TabScreen
+import ru.matrux.app.ui.components.ValueRow
 import ru.matrux.app.ui.etaText
-import ru.matrux.app.ui.failureBody
 import ru.matrux.app.ui.failureTitle
+import ru.matrux.app.ui.imageLogo
 import ru.matrux.app.ui.sizeText
 import ru.matrux.app.ui.theme.Matrux
 
@@ -37,109 +44,161 @@ data class InstallActions(
     val onHome: () -> Unit = {},
     val onCatalog: () -> Unit = {},
     val onTab: (Tab) -> Unit = {},
+    val onSubscribe: () -> Unit = {},
 )
 
 @Composable
 fun InstallScreen(state: InstallState, metered: Boolean, actions: InstallActions) {
-    TabScreen(Tab.CATALOG, actions.onTab) {
-        Spacer(Modifier.height(Matrux.space.block))
+    TabScreen(
+        Tab.CATALOG,
+        actions.onTab,
+        scroll = true,
+        bottom = {
+            when (state) {
+                InstallState.Idle -> PrimaryButton(stringResource(R.string.home_open_catalog), actions.onCatalog)
+                is InstallState.ConfirmMetered -> {
+                    PrimaryButton(stringResource(R.string.install_metered_go), actions.onConfirmMetered)
+                    GhostButton(stringResource(R.string.install_metered_wait), actions.onWaitWifi)
+                }
+                is InstallState.Running -> GhostButton(stringResource(R.string.install_cancel), actions.onCancel)
+                is InstallState.Failed -> {
+                    if (state.failure == Failure.NeedSubscription) {
+                        PrimaryButton(stringResource(R.string.pro_buy), actions.onSubscribe)
+                    } else {
+                        PrimaryButton(stringResource(R.string.install_retry), actions.onRetry)
+                    }
+                    GhostButton(stringResource(R.string.install_cancel), actions.onCancel)
+                }
+                is InstallState.Done -> {
+                    PrimaryButton(stringResource(R.string.home_launch), actions.onLaunch)
+                    GhostButton(stringResource(R.string.install_to_home), actions.onHome)
+                }
+            }
+            Spacer(Modifier.height(Matrux.space.unit))
+        },
+    ) {
+        Spacer(Modifier.height(Matrux.space.unit * 2))
         when (state) {
-            InstallState.Idle -> Idle(actions)
-            is InstallState.ConfirmMetered -> Metered(state, actions)
-            is InstallState.Running -> Running(state, metered, actions)
-            is InstallState.Failed -> Failed(state, actions)
-            is InstallState.Done -> Done(state, actions)
+            InstallState.Idle -> StateBlock(Lucide.Package, Matrux.colors.graySolid, stringResource(R.string.install_title_idle))
+            is InstallState.ConfirmMetered -> Metered(state)
+            is InstallState.Running -> Running(state)
+            is InstallState.Failed -> Failed(state)
+            is InstallState.Done -> Done(state)
         }
-        Spacer(Modifier.height(Matrux.space.unit * 2))
+        Spacer(Modifier.height(Matrux.space.block))
     }
 }
 
 @Composable
-private fun ColumnScope.Bottom(content: @Composable ColumnScope.() -> Unit) {
-    Spacer(Modifier.weight(1f))
-    Column(verticalArrangement = Arrangement.spacedBy(Matrux.space.unit * 2), content = content)
-}
-
-@Composable
-private fun ColumnScope.Idle(actions: InstallActions) {
-    ScreenTitle(stringResource(R.string.install_title_idle), null)
-    Bottom { PrimaryButton(stringResource(R.string.home_open_catalog), actions.onCatalog) }
-}
-
-@Composable
-private fun ColumnScope.Metered(state: InstallState.ConfirmMetered, actions: InstallActions) {
-    ScreenTitle(state.image.name, null)
-    Spacer(Modifier.height(Matrux.space.block))
-    Text(stringResource(R.string.install_metered_title), style = Matrux.type.title, color = Matrux.colors.ink)
-    Spacer(Modifier.height(Matrux.space.unit))
-    Text(stringResource(R.string.install_metered_detail, sizeText(state.image.sizeBytes)), style = Matrux.type.body, color = Matrux.colors.muted)
-    Bottom {
-        Column(verticalArrangement = Arrangement.spacedBy(Matrux.space.unit)) {
-            PrimaryButton(stringResource(R.string.install_metered_go), actions.onConfirmMetered)
-            GhostButton(stringResource(R.string.install_metered_wait), actions.onWaitWifi)
+private fun Head(name: String, logo: Int?, badge: @Composable () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        DistroLogo(logo)
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                name,
+                style = Matrux.type.display.copy(fontSize = 28.sp, lineHeight = 34.sp),
+                color = Matrux.colors.ink,
+                maxLines = 1,
+            )
+            badge()
         }
     }
 }
 
 @Composable
-private fun ColumnScope.Running(state: InstallState.Running, metered: Boolean, actions: InstallActions) {
-    ScreenTitle(
-        state.image.name,
-        stringResource(if (state.waitingForNetwork) R.string.install_waiting_sub else R.string.install_running_sub),
-    )
-    Spacer(Modifier.height(Matrux.space.block))
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-        Text("${state.percent}%", style = Matrux.type.bodyStrong, color = Matrux.colors.ink)
-        Text(
-            state.etaSeconds?.let { stringResource(R.string.install_eta, etaText(it)) } ?: stringResource(R.string.install_eta_unknown),
-            style = Matrux.type.caption,
-            color = Matrux.colors.muted,
+private fun Big(percent: Int, color: Color = Matrux.colors.bar) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(percent.toString(), style = Matrux.type.big, color = Matrux.colors.ink)
+            Text(
+                " %",
+                style = Matrux.type.display.copy(fontSize = 28.sp),
+                color = Matrux.colors.muted,
+                modifier = Modifier.padding(bottom = 6.dp),
+            )
+        }
+        ProgressBar(percent / 100f, color = color)
+    }
+}
+
+@Composable
+private fun Rows(downloaded: String, unpacked: String, eta: String?) {
+    Group {
+        ValueRow(stringResource(R.string.install_label_downloaded), downloaded)
+        GroupDivider(inset = Matrux.space.card)
+        ValueRow(stringResource(R.string.install_label_unpacked), unpacked)
+        if (eta != null) {
+            GroupDivider(inset = Matrux.space.card)
+            ValueRow(stringResource(R.string.install_label_eta), eta)
+        }
+    }
+}
+
+@Composable
+private fun Metered(state: InstallState.ConfirmMetered) {
+    val colors = Matrux.colors
+    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        Head(state.image.name, imageLogo(state.image)) {
+            Plaque(stringResource(R.string.install_metered_title), colors.graySolid)
+        }
+        Group { ValueRow(stringResource(R.string.install_size), sizeText(state.image.sizeBytes)) }
+    }
+}
+
+@Composable
+private fun Running(state: InstallState.Running) {
+    val colors = Matrux.colors
+    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        Head(state.image.name, imageLogo(state.image)) {
+            if (state.waitingForNetwork) {
+                Plaque(stringResource(R.string.fail_no_connection_title), colors.graySolid, icon = Lucide.WifiOff)
+            } else {
+                Plaque(stringResource(R.string.install_state_running), colors.infoSolid)
+            }
+        }
+        Big(state.percent, if (state.waitingForNetwork) colors.graySolid else colors.bar)
+        Rows(
+            stringResource(R.string.install_of, sizeText(state.downloaded), sizeText(state.total)),
+            stringResource(R.string.install_of, sizeText(state.unpacked), sizeText(state.total)),
+            state.etaSeconds?.let { etaText(it) },
         )
     }
-    Spacer(Modifier.height(Matrux.space.unit + Matrux.space.unit / 4))
-    ProgressBar(state.fraction)
-    Spacer(Modifier.height(Matrux.space.block))
-    Column(verticalArrangement = Arrangement.spacedBy(Matrux.space.unit * 2)) {
-        Text(stringResource(R.string.install_downloaded, sizeText(state.downloaded), sizeText(state.total)), style = Matrux.type.body, color = Matrux.colors.ink)
-        Text(
-            stringResource(R.string.install_unpacked, sizeText(state.unpacked), sizeText(state.total)),
-            style = Matrux.type.body,
-            color = if (state.unpacked > 0) Matrux.colors.ink else Matrux.colors.muted,
+}
+
+@Composable
+private fun Failed(state: InstallState.Failed) {
+    val colors = Matrux.colors
+    val total = state.image.sizeBytes
+    val percent = if (total > 0) (state.downloaded * 100 / total).toInt().coerceIn(0, 100) else 0
+    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        Head(state.image.name, imageLogo(state.image)) {
+            Plaque(failureTitle(state.failure), colors.dangerSolid, icon = Lucide.CircleAlert)
+        }
+        if (state.downloaded > 0) {
+            Big(percent, colors.dangerSolid)
+            Group {
+                ValueRow(
+                    stringResource(R.string.install_label_downloaded),
+                    stringResource(R.string.install_of, sizeText(state.downloaded), sizeText(total)),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun Done(state: InstallState.Done) {
+    val colors = Matrux.colors
+    val total = sizeText(state.image.sizeBytes)
+    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        Head(state.image.name, imageLogo(state.image)) {
+            Plaque(stringResource(R.string.install_done), colors.successSolid, icon = Lucide.Check)
+        }
+        Big(100, colors.successSolid)
+        Rows(
+            stringResource(R.string.install_of, total, total),
+            stringResource(R.string.install_of, total, total),
+            null,
         )
-    }
-    Bottom {
-        GhostButton(stringResource(R.string.install_cancel), actions.onCancel)
-    }
-}
-
-@Composable
-private fun ColumnScope.Failed(state: InstallState.Failed, actions: InstallActions) {
-    ScreenTitle(state.image.name, null)
-    Spacer(Modifier.height(Matrux.space.block))
-    ErrorWords(failureTitle(state.failure), failureBody(state.failure))
-    if (state.downloaded > 0) {
-        Spacer(Modifier.height(Matrux.space.unit * 2))
-        Text(stringResource(R.string.install_kept, sizeText(state.downloaded)), style = Matrux.type.caption, color = Matrux.colors.muted)
-    }
-    Bottom {
-        Column(verticalArrangement = Arrangement.spacedBy(Matrux.space.unit)) {
-            PrimaryButton(stringResource(R.string.install_retry), actions.onRetry)
-            GhostButton(stringResource(R.string.install_cancel), actions.onCancel)
-        }
-    }
-}
-
-@Composable
-private fun ColumnScope.Done(state: InstallState.Done, actions: InstallActions) {
-    ScreenTitle(state.image.name, stringResource(R.string.install_done_detail))
-    Spacer(Modifier.height(Matrux.space.block))
-    ProgressBar(1f)
-    Spacer(Modifier.height(Matrux.space.unit + Matrux.space.unit / 4))
-    Text(stringResource(R.string.install_done), style = Matrux.type.bodyStrong, color = Matrux.colors.success)
-    Bottom {
-        Column(verticalArrangement = Arrangement.spacedBy(Matrux.space.unit)) {
-            PrimaryButton(stringResource(R.string.home_launch), actions.onLaunch)
-            GhostButton(stringResource(R.string.install_to_home), actions.onHome)
-        }
     }
 }

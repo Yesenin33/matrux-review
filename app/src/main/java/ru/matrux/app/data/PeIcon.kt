@@ -25,7 +25,7 @@ object PeIcon {
 
             val peOffset = readU32(raf, 0x3C)
             if (peOffset <= 0 || peOffset + 24 > raf.length()) return null
-            if (readU32(raf, peOffset) != 0x00004550) return null // PE\0\0
+            if (readU32(raf, peOffset) != 0x00004550L) return null // PE\0\0
 
             val sectionsCount = readU16(raf, peOffset + 6)
             val optSize = readU16(raf, peOffset + 20)

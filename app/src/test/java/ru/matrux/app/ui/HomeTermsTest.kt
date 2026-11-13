@@ -82,16 +82,16 @@ class HomeTermsTest {
             assertFalse(it, source.contains(it))
         }
         val actions = HomeActions::class.java.declaredFields.map { it.name }.filterNot { it.startsWith("$") }.toSet()
-        assertEquals(setOf("onSection", "onSubscribe", "onTab", "dark", "onTheme"), actions)
+        assertEquals(setOf("onSection", "onSubscribe", "onTab", "dark", "onTheme", "onLaunch", "onOpenSystem"), actions)
     }
 
     @Test
     fun knowledgeShowsCourses() {
         val source = File(screens, "KnowledgeScreen.kt").readText()
-        assertTrue(source.contains("CourseCardRow"))
+        assertTrue(source.contains("CourseRow"))
         assertTrue(source.contains("knowledge_title"))
         val actions = KnowledgeActions::class.java.declaredFields.map { it.name }.filterNot { it.startsWith("$") }.toSet()
-        assertEquals(setOf("onCourse", "onTab"), actions)
+        assertEquals(setOf("onCourse", "onTab", "onSources"), actions)
     }
 
     @Test

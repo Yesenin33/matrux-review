@@ -36,6 +36,7 @@ import ru.matrux.app.learn.Verdict
 import ru.matrux.app.ui.components.GhostButton
 import ru.matrux.app.ui.components.Lucide
 import ru.matrux.app.ui.components.LucideIcon
+import ru.matrux.app.ui.components.Plaque
 import ru.matrux.app.ui.components.PrimaryButton
 import ru.matrux.app.ui.learn.CodeBlock
 import ru.matrux.app.ui.learn.CodeEditor
@@ -65,7 +66,7 @@ fun LessonScreen(ui: LessonUi, actions: LessonActions, draft: String? = null, pi
     Column(
         Modifier
             .fillMaxSize()
-            .background(colors.surface)
+            .background(colors.canvas)
             .statusBarsPadding(),
     ) {
         BackRow(ui.course.title, actions.onBack)
@@ -234,7 +235,7 @@ fun LessonScreen(ui: LessonUi, actions: LessonActions, draft: String? = null, pi
 
 @Composable
 private fun Heading(text: String) {
-    Text(text, style = Matrux.type.bodyStrong, color = Matrux.colors.ink)
+    Text(text, style = Matrux.type.title, color = Matrux.colors.ink)
     Spacer(Modifier.height(Matrux.space.unit))
 }
 
@@ -249,7 +250,7 @@ private fun Options(options: List<String>, chosen: Int, onPick: (Int) -> Unit) {
                     .fillMaxWidth()
                     .heightIn(min = Matrux.space.touch)
                     .clip(Matrux.shapes.control)
-                    .background(colors.canvas)
+                    .background(colors.surface)
                     .clickable(role = Role.RadioButton) { onPick(index) }
                     .padding(horizontal = Matrux.space.unit + Matrux.space.unit / 2, vertical = Matrux.space.unit),
                 verticalAlignment = Alignment.CenterVertically,
@@ -278,22 +279,14 @@ private fun Result(verdict: Verdict, task: Task) {
     }
     when (verdict) {
         is Verdict.Pass -> {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                LucideIcon(Lucide.BadgeCheck, colors.success)
-                Spacer(Modifier.width(Matrux.space.unit))
-                Text(stringResource(R.string.lesson_pass), style = Matrux.type.bodyStrong, color = colors.success)
-            }
+            Plaque(stringResource(R.string.lesson_pass), colors.successSolid, icon = Lucide.Check)
             verdict.output?.takeIf { it.isNotEmpty() }?.let {
                 Spacer(Modifier.height(Matrux.space.unit))
                 CodeBlock(it, "")
             }
         }
         is Verdict.Fail -> {
-            Text(stringResource(R.string.lesson_fail), style = Matrux.type.bodyStrong, color = colors.ink)
-            if (task is Task.Run && task.runtime == Runtime.WEB) {
-                Spacer(Modifier.height(Matrux.space.unit / 2))
-                Text(stringResource(R.string.lesson_web_fail), style = Matrux.type.body, color = colors.inkSoft)
-            }
+            Plaque(stringResource(R.string.lesson_fail), colors.dangerSolid, icon = Lucide.CircleAlert)
             verdict.actual?.let {
                 Spacer(Modifier.height(Matrux.space.unit))
                 Text(stringResource(R.string.lesson_got), style = Matrux.type.caption, color = colors.muted)

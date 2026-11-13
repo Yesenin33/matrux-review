@@ -22,10 +22,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import ru.matrux.app.billing.Plan
 import ru.matrux.app.billing.Terms
 import ru.matrux.app.ui.discountText
@@ -33,7 +37,6 @@ import ru.matrux.app.ui.perMonthText
 import ru.matrux.app.ui.rubText
 import ru.matrux.app.ui.termLabel
 import ru.matrux.app.ui.theme.Matrux
-import ru.matrux.app.ui.theme.cardShadow
 
 @Composable
 fun TermSwitch(terms: Terms, onSelect: (Plan) -> Unit, modifier: Modifier = Modifier) {
@@ -52,7 +55,7 @@ fun TermSwitch(terms: Terms, onSelect: (Plan) -> Unit, modifier: Modifier = Modi
         modifier
             .fillMaxWidth()
             .clip(Matrux.shapes.control)
-            .background(colors.canvas)
+            .background(colors.surfaceAlt)
             .padding(space.trackInset),
     ) {
         val segment = maxWidth / offers.size
@@ -60,13 +63,12 @@ fun TermSwitch(terms: Terms, onSelect: (Plan) -> Unit, modifier: Modifier = Modi
         Box(
             Modifier
                 .width(segment)
-                .height(space.touch)
+                .height(44.dp)
                 .graphicsLayer { translationX = position * shift }
-                .cardShadow(Matrux.shapes.radiusSegment)
                 .clip(Matrux.shapes.segment)
-                .background(colors.surface),
+                .background(if (colors.canvas.luminance() > 0.5f) colors.canvas else Color(0xFF636366)),
         )
-        Row(Modifier.fillMaxWidth().height(space.touch).selectableGroup()) {
+        Row(Modifier.fillMaxWidth().height(44.dp).selectableGroup()) {
             offers.forEach { offer ->
                 val selected = offer.plan == terms.selected
                 val tint = if (selected) colors.ink else colors.muted
@@ -105,11 +107,11 @@ fun TermPrice(terms: Terms, modifier: Modifier = Modifier) {
     val offer = terms.selectedOffer ?: return
     val price = offer.priceRub ?: return
     Column(modifier) {
-        Text(rubText(price), style = Matrux.type.display, color = Matrux.colors.ink)
+        Text(rubText(price), style = Matrux.type.price, color = Matrux.colors.ink)
         val perMonth = offer.perMonthRub
         if (perMonth != null && offer.plan.months > 1) {
             Spacer(Modifier.height(Matrux.space.unit / 2))
-            Text(perMonthText(perMonth), style = Matrux.type.caption, color = Matrux.colors.muted)
+            Text(perMonthText(perMonth), style = Matrux.type.value.copy(fontSize = 13.sp), color = Matrux.colors.muted)
         }
     }
 }

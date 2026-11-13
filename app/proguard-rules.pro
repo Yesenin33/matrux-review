@@ -23,3 +23,8 @@
 
 -keep class ru.matrux.app.MainActivity { *; }
 -keep class ru.matrux.app.service.** { *; }
+
+# --- JNI: нативные мосты не переименовывать, иначе Java_..._методы не найдутся
+-keepclasseswithmembernames class * {
+    native <methods>;
+}

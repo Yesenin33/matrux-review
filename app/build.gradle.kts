@@ -36,19 +36,13 @@ android {
     }
     compileSdk = 34
 
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-        }
-    }
-
     defaultConfig {
         applicationId = "ru.matrux.app"
         minSdk = 26
         targetSdk = 34
         versionCode = matruxVersionCode
         versionName = matruxVersionName
-        ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
+        ndk { abiFilters += listOf("arm64-v8a") }
         buildConfigField("String", "API_BASE", quoted(prop("matrux.apiBase")))
         buildConfigField("String", "MANIFEST_PUBKEY", quoted(prop("matrux.manifestPubkey")))
         buildConfigField("String", "PRODUCT_PRO_MONTH", quoted(prop("matrux.product1m")))

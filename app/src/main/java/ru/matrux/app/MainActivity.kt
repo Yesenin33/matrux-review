@@ -104,11 +104,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.ui.platform.LocalContext
-import ru.matrux.app.data.
-import ru.matrux.app.ui.screens.Screen
-import ru.matrux.app.data.Store
 import ru.matrux.app.data.PeIcon
-import ru.matrux.app..RuntimeProbe
 import java.io.File
 import java.time.ZoneId
 import kotlinx.coroutines.Dispatchers
@@ -118,7 +114,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-enum class Route { HOME, CATALOG, , INSTALL, KNOWLEDGE, SUBSCRIPTION, LAUNCH, DESKTOP, SECTION, COURSE, LESSON, SOURCES }
+enum class Route { HOME, CATALOG, INSTALL, KNOWLEDGE, SUBSCRIPTION, LAUNCH, DESKTOP, SECTION, COURSE, LESSON, SOURCES }
 
 private const val STUCK_MS = 25_000L
 private const val AUTOTEST_EXTRA = "matrux_autotest"
@@ -267,6 +263,24 @@ class MainActivity : ComponentActivity() {
         val signIn by graph.signIn.collectAsStateWithLifecycle()
         val blank by graph.session.blank.collectAsStateWithLifecycle()
         val scope = rememberCoroutineScope()
+
+        // Диагностические пробы (запускаются через am start --ez ...)
+        val diagCtx = LocalContext.current
+        LaunchedEffect(Unit) {
+            val a = (diagCtx as? android.app.Activity)
+            if (a?.intent?.getBooleanExtra("matrux_wl", false) == true) {
+                val r = withContext(Dispatchers.IO) { RuntimeProbe.wlTest(diagCtx) }
+                android.util.Log.i("MatruxWl", "ok=" + r.ok + " :: " + r.output.replace("\n", " | ").takeLast(1500))
+            }
+            if (a?.intent?.getBooleanExtra("matrux_wine", false) == true) {
+                val r = withContext(Dispatchers.IO) { RuntimeProbe.wineDirect(diagCtx) }
+                android.util.Log.i("MatruxWine", "ok=" + r.ok + " :: " + r.output.replace("\n", " | ").takeLast(1600))
+            }
+            if (a?.intent?.getBooleanExtra("matrux_probe", false) == true) {
+                val r = withContext(Dispatchers.IO) { RuntimeProbe.run(diagCtx) }
+                android.util.Log.i("MatruxProbe", "ok=" + r.ok + " :: " + r.output.replace("\n", " | ").takeLast(1200))
+            }
+        }
         val terms by graph.plans.terms.collectAsStateWithLifecycle()
         var offerOpen by rememberSaveable { mutableStateOf(false) }
         val onboardFlags by graph.onboarding.flags.collectAsStateWithLifecycle()
@@ -343,51 +357,12 @@ class MainActivity : ComponentActivity() {
         }
 
         val context = LocalContext.current
-        val  = remember { Store(context) }
-        var s by remember { mutableStateOf(.games()) }
 
-        val pickExe = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            if (uri != null) {
-                val name = (context, uri) ?: "game.exe"
-                val tmp = File(context.cacheDir, "pc-import.tmp")
-                runCatching {
-                    context.contentResolver.openInputStream(uri)?.use { input ->
-                        tmp.outputStream().use { output -> input.copyTo(output) }
-                    }
-                    val icon = PeIcon.extractPng(tmp)
-                    .import(
-                        name = name.removeSuffix(".exe").removeSuffix(".EXE"),
-                        open = { out -> tmp.inputStream().use { it.copyTo(out) } },
-                        iconBytes = icon,
-                    )
-                }
-                tmp.delete()
-                s = .games()
-            }
-        }
-
-        var probeText by remember { mutableStateOf<String?>(null) }
-        val onProbe: () -> Unit = {
-            scope.launch {
-                probeText = "проверяю контейнер…"
-                val result = withContext(Dispatchers.IO) { RuntimeProbe.run(context) }
-                probeText = result.output
-            }
-        }
-
-        val open: () -> Unit = { game ->
-            android.widget.Toast.makeText(
-                context,
-                context.getString(R.string._run_pending, game.name),
-                android.widget.Toast.LENGTH_SHORT,
-            ).show()
-        }
 
         val onTab: (Tab) -> Unit = { tab ->
             route = when (tab) {
                 Tab.HOME -> Route.HOME
                 Tab.CATALOG -> if (install is InstallState.Running || install is InstallState.Failed) Route.INSTALL else Route.CATALOG
-                Tab. -> Route.
                 Tab.KNOWLEDGE -> Route.KNOWLEDGE
                 Tab.SUBSCRIPTION -> Route.SUBSCRIPTION
             }
@@ -461,19 +436,6 @@ class MainActivity : ComponentActivity() {
             label = "route",
         ) { current ->
             when (current) {
-                Route. -> Screen(
-                    games = s,
-                    iconPath = { game -> .iconFile(game)?.absolutePath },
-                    onTab = onTab,
-                    onAdd = { pickExe.launch(arrayOf("*/*")) },
-                    onOpen = { game -> open(game) },
-                    onDelete = { game ->
-                        .remove(game)
-                        s = .games()
-                    },
-                    onProbe = onProbe,
-                    probe = probeText,
-                )
                 Route.HOME -> HomeScreen(
                     homeSections(sheets, paid),
                     HomeActions(
@@ -741,14 +703,3 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private fun (context: android.content.Context, uri: android.net.Uri): String? =
-    runCatching {
-        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-            if (cursor.moveToFirst()) {
-                val index = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                if (index >= 0) cursor.getString(index) else null
-            } else {
-                null
-            }
-        }
-    }.getOrNull()

@@ -264,23 +264,6 @@ class MainActivity : ComponentActivity() {
         val blank by graph.session.blank.collectAsStateWithLifecycle()
         val scope = rememberCoroutineScope()
 
-        // Диагностические пробы (запускаются через am start --ez ...)
-        val diagCtx = LocalContext.current
-        LaunchedEffect(Unit) {
-            val a = (diagCtx as? android.app.Activity)
-            if (a?.intent?.getBooleanExtra("matrux_wl", false) == true) {
-                val r = withContext(Dispatchers.IO) { RuntimeProbe.wlTest(diagCtx) }
-                android.util.Log.i("MatruxWl", "ok=" + r.ok + " :: " + r.output.replace("\n", " | ").takeLast(1500))
-            }
-            if (a?.intent?.getBooleanExtra("matrux_wine", false) == true) {
-                val r = withContext(Dispatchers.IO) { RuntimeProbe.wineDirect(diagCtx) }
-                android.util.Log.i("MatruxWine", "ok=" + r.ok + " :: " + r.output.replace("\n", " | ").takeLast(1600))
-            }
-            if (a?.intent?.getBooleanExtra("matrux_probe", false) == true) {
-                val r = withContext(Dispatchers.IO) { RuntimeProbe.run(diagCtx) }
-                android.util.Log.i("MatruxProbe", "ok=" + r.ok + " :: " + r.output.replace("\n", " | ").takeLast(1200))
-            }
-        }
         val terms by graph.plans.terms.collectAsStateWithLifecycle()
         var offerOpen by rememberSaveable { mutableStateOf(false) }
         val onboardFlags by graph.onboarding.flags.collectAsStateWithLifecycle()
